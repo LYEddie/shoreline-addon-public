@@ -1,0 +1,53 @@
+{
+  "required": true,
+  "package": "me.lyeddie.addon.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "MixinBiomeEffects",
+    "MixinBlock",
+    "MixinBlockCollisionSpliterator",
+    "MixinClientConnection",
+    "MixinClientPlayerEntity",
+    "MixinClientPlayerInteractionManager",
+    "MixinClientPlayNetworkHandler",
+    "MixinClientWorld",
+    "MixinConnectScreen",
+    "MixinDecoderHandler",
+    "MixinEntity",
+    "MixinFireworkRocketEntity",
+    "MixinGameMenuScreen",
+    "MixinItemUsageContext",
+    "MixinKeyboardInput",
+    "MixinLivingEntity",
+    "MixinMinecraftClient",
+    "MixinPlayerEntity",
+    "MixinPlayerEntityRenderer",
+    "MixinPlayerInteractEntityC2SPacket",
+    "MixinRenderTickCounter",
+    "MixinServerPlayerEntity",
+    "MixinShulkerBoxSlot",
+    "MixinSlimeBlock",
+    "MixinTridentItem",
+    "MixinWorldRenderer",
+    "accessor.AccessorBundlePacket",
+    "accessor.AccessorClientConnection",
+    "accessor.AccessorClientPlayerInteractionManager",
+    "accessor.AccessorClientWorld",
+    "accessor.AccessorEntityVelocityUpdateS2CPacket",
+    "accessor.AccessorExplosionS2CPacket",
+    "accessor.AccessorFireworkRocketEntity",
+    "accessor.AccessorKeyBinding",
+    "accessor.AccessorMinecraftClient",
+    "accessor.AccessorPlayerMoveC2SPacket",
+    "accessor.AccessorTextRenderer",
+    "accessor.AccessorWorldRenderer",
+    "meteor.MixinFriends",
+    "meteor.MixinTitleScreen"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "mixins": [
+    "meteor.SystemsMixin"
+  ]
+}
