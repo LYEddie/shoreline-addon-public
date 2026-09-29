@@ -1,4 +1,4 @@
-package me.lyeddie.addon.tabs;
+package me.lyeddie.addon.util.tabs;
 
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.module.impl.Disabler;

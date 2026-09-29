@@ -9,7 +9,7 @@ import me.lyeddie.addon.hud.Logo;
 import me.lyeddie.addon.hud.Watermark;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.module.impl.*;
-import me.lyeddie.addon.tabs.ShorelineTab;
+import me.lyeddie.addon.util.tabs.ShorelineTab;
 import me.lyeddie.addon.util.BuildConfig;
 import meteordevelopment.meteorclient.addons.GithubRepo;
 import meteordevelopment.meteorclient.addons.MeteorAddon;

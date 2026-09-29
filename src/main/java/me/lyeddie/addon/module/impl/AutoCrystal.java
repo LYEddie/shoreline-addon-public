@@ -8,7 +8,7 @@ import me.lyeddie.addon.events.irrevocable.PlayerTickEvent;
 import me.lyeddie.addon.events.irrevocable.RunTickEvent;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.module.CombatModule;
-import me.lyeddie.addon.tabs.TabConfigs;
+import me.lyeddie.addon.util.tabs.TabConfigs;
 import me.lyeddie.addon.util.*;
 import me.lyeddie.addon.util.literal.*;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;

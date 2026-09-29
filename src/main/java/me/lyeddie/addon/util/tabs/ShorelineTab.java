@@ -1,4 +1,4 @@
-package me.lyeddie.addon.tabs;
+package me.lyeddie.addon.util.tabs;
 
 import meteordevelopment.meteorclient.gui.GuiTheme;
 import meteordevelopment.meteorclient.gui.tabs.Tab;

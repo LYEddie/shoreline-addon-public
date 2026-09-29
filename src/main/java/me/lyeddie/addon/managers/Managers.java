@@ -1,15 +1,7 @@
 package me.lyeddie.addon.managers;
 
 import me.lyeddie.addon.managers.impl.*;
-import me.lyeddie.addon.tabs.TabEvents;
-import me.lyeddie.addon.util.BuildConfig;
-import meteordevelopment.meteorclient.utils.render.prompts.OkPrompt;
-import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.gui.screen.TitleScreen;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Locale;
+import me.lyeddie.addon.util.tabs.TabEvents;
 
 public class Managers {
     private static boolean initialized;

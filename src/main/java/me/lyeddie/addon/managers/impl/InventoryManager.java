@@ -7,7 +7,7 @@ import me.lyeddie.addon.events.ItemDesyncEvent;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.mixin.impl.accessor.AccessorBundlePacket;
 import me.lyeddie.addon.module.impl.Replenish;
-import me.lyeddie.addon.tabs.TabConfigs;
+import me.lyeddie.addon.util.tabs.TabConfigs;
 import me.lyeddie.addon.util.CacheTimer;
 import me.lyeddie.addon.util.Globals;
 import me.lyeddie.addon.util.Timer;

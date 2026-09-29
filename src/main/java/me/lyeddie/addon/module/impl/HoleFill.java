@@ -7,7 +7,7 @@ import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.managers.impl.util.Hole;
 import me.lyeddie.addon.managers.impl.util.HoleType;
 import me.lyeddie.addon.module.ObsidianPlacerModule;
-import me.lyeddie.addon.tabs.TabConfigs;
+import me.lyeddie.addon.util.tabs.TabConfigs;
 import me.lyeddie.addon.util.Animation;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.renderer.ShapeMode;

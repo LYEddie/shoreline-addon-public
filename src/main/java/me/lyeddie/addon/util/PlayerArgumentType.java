@@ -1,4 +1,4 @@
-package me.lyeddie.addon.api;
+package me.lyeddie.addon.util;
 
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.arguments.ArgumentType;
@@ -6,7 +6,6 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import me.lyeddie.addon.util.Globals;
 import net.minecraft.client.network.PlayerListEntry;
 
 import java.util.Collection;

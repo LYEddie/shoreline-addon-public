@@ -1,4 +1,4 @@
-package me.lyeddie.addon.tabs;
+package me.lyeddie.addon.util.tabs;
 
 import me.lyeddie.addon.events.FriendAddedEvent;
 import me.lyeddie.addon.events.MenuDisconnectEvent;

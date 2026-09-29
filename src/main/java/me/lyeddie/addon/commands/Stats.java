@@ -1,7 +1,7 @@
 package me.lyeddie.addon.commands;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import me.lyeddie.addon.api.PlayerArgumentType;
+import me.lyeddie.addon.util.PlayerArgumentType;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.util.Helpers;
 import meteordevelopment.meteorclient.commands.Command;

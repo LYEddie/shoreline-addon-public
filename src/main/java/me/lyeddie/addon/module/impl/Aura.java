@@ -2,13 +2,13 @@ package me.lyeddie.addon.module.impl;
 
 import me.lyeddie.addon.module.CombatModule;
 import me.lyeddie.addon.Shoreline;
-import me.lyeddie.addon.api.Interpolation;
+import me.lyeddie.addon.util.Interpolation;
 import me.lyeddie.addon.events.irrevocable.DisconnectEvent;
 import me.lyeddie.addon.events.irrevocable.PlayerTickEvent;
 import me.lyeddie.addon.events.irrevocable.RemoveEntityEvent;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.managers.impl.util.TickSync;
-import me.lyeddie.addon.tabs.TabConfigs;
+import me.lyeddie.addon.util.tabs.TabConfigs;
 import me.lyeddie.addon.util.*;
 import me.lyeddie.addon.util.literal.EnchantmentUtil;
 import me.lyeddie.addon.util.literal.EntityUtil;
@@ -45,7 +45,6 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 import org.apache.commons.lang3.mutable.MutableDouble;
 
-import java.awt.*;
 import java.util.Comparator;
 import java.util.stream.Stream;
 

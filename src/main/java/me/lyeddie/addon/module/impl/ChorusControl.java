@@ -2,7 +2,7 @@ package me.lyeddie.addon.module.impl;
 
 import me.lyeddie.addon.Shoreline;
 import me.lyeddie.addon.module.AddonModule;
-import me.lyeddie.addon.tabs.TabConfigs;
+import me.lyeddie.addon.util.tabs.TabConfigs;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;

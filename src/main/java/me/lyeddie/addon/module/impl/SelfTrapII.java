@@ -4,7 +4,7 @@ import me.lyeddie.addon.Shoreline;
 import me.lyeddie.addon.events.irrevocable.PlayerTickEvent;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.module.ObsidianPlacerModule;
-import me.lyeddie.addon.tabs.TabConfigs;
+import me.lyeddie.addon.util.tabs.TabConfigs;
 import me.lyeddie.addon.util.Animation;
 import me.lyeddie.addon.util.BlastResistantBlocks;
 import me.lyeddie.addon.util.literal.PositionUtil;

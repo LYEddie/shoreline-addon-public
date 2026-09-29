@@ -1,6 +1,6 @@
 package me.lyeddie.addon.mixin.impl.meteor;
 
-import me.lyeddie.addon.tabs.TabConfigs;
+import me.lyeddie.addon.util.tabs.TabConfigs;
 import meteordevelopment.meteorclient.systems.System;
 import meteordevelopment.meteorclient.systems.Systems;
 import org.spongepowered.asm.mixin.Mixin;

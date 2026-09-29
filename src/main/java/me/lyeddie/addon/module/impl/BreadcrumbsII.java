@@ -1,10 +1,10 @@
 package me.lyeddie.addon.module.impl;
 
 import me.lyeddie.addon.Shoreline;
-import me.lyeddie.addon.api.Interpolation;
+import me.lyeddie.addon.util.Interpolation;
 import me.lyeddie.addon.events.irrevocable.PlayerTickEvent;
 import me.lyeddie.addon.events.irrevocable.RemoveEntityEvent;
-import me.lyeddie.addon.tabs.TabConfigs;
+import me.lyeddie.addon.util.tabs.TabConfigs;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.settings.*;
 import me.lyeddie.addon.module.AddonModule;

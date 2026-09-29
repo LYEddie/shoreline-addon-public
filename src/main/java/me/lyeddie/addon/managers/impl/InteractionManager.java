@@ -3,7 +3,7 @@ package me.lyeddie.addon.managers.impl;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.managers.impl.util.RotationCallback;
 import me.lyeddie.addon.module.impl.AirPlaceII;
-import me.lyeddie.addon.tabs.TabConfigs;
+import me.lyeddie.addon.util.tabs.TabConfigs;
 import me.lyeddie.addon.util.Globals;
 import me.lyeddie.addon.util.literal.MovementUtil;
 import me.lyeddie.addon.util.literal.RotationUtil;

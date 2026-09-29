@@ -5,7 +5,7 @@ import me.lyeddie.addon.events.irrevocable.DisconnectEvent;
 import me.lyeddie.addon.events.irrevocable.PlayerTickEvent;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.module.BlockPlacerModule;
-import me.lyeddie.addon.tabs.TabConfigs;
+import me.lyeddie.addon.util.tabs.TabConfigs;
 import me.lyeddie.addon.util.Animation;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.settings.*;

@@ -2,7 +2,7 @@ package me.lyeddie.addon.module.impl;
 
 import me.lyeddie.addon.Shoreline;
 import me.lyeddie.addon.events.irrevocable.EntityDeathEvent;
-import me.lyeddie.addon.tabs.TabConfigs;
+import me.lyeddie.addon.util.tabs.TabConfigs;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.settings.IntSetting;
