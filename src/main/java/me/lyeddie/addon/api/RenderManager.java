@@ -1,8 +1,8 @@
 package me.lyeddie.addon.api;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import me.lyeddie.addon.mixin.accessor.AccessorTextRenderer;
-import me.lyeddie.addon.mixin.accessor.AccessorWorldRenderer;
+import me.lyeddie.addon.mixin.impl.accessor.AccessorTextRenderer;
+import me.lyeddie.addon.mixin.impl.accessor.AccessorWorldRenderer;
 import me.lyeddie.addon.util.Globals;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.*;

@@ -1,6 +1,6 @@
 {
   "required": true,
-  "package": "me.lyeddie.addon.mixin",
+  "package": "me.lyeddie.addon.mixin.impl",
   "compatibilityLevel": "JAVA_21",
   "client": [
     "MixinBiomeEffects",

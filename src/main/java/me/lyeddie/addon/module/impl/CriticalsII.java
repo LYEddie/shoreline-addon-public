@@ -2,7 +2,7 @@ package me.lyeddie.addon.module.impl;
 
 import me.lyeddie.addon.Shoreline;
 import me.lyeddie.addon.events.staged.OutboundPostPacketEvent;
-import me.lyeddie.addon.imixin.impl.IPlayerInteractEntityC2SPacket;
+import me.lyeddie.addon.mixin.IPlayerInteractEntityC2SPacket;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.util.*;
 import me.lyeddie.addon.util.literal.EntityUtil;

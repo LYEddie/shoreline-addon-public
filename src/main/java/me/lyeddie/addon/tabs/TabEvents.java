@@ -3,7 +3,7 @@ package me.lyeddie.addon.tabs;
 import me.lyeddie.addon.events.FriendAddedEvent;
 import me.lyeddie.addon.events.MenuDisconnectEvent;
 import me.lyeddie.addon.managers.Managers;
-import me.lyeddie.addon.mixin.accessor.AccessorPlayerMoveC2SPacket;
+import me.lyeddie.addon.mixin.impl.accessor.AccessorPlayerMoveC2SPacket;
 import me.lyeddie.addon.util.*;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;

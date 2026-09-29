@@ -6,7 +6,7 @@ import me.lyeddie.addon.events.FireworkVelocityEvent;
 import me.lyeddie.addon.events.TridentWaterEvent;
 import me.lyeddie.addon.events.irrevocable.DisconnectEvent;
 import me.lyeddie.addon.managers.Managers;
-import me.lyeddie.addon.mixin.accessor.AccessorFireworkRocketEntity;
+import me.lyeddie.addon.mixin.impl.accessor.AccessorFireworkRocketEntity;
 import me.lyeddie.addon.module.AddonModule;
 import me.lyeddie.addon.util.CacheTimer;
 import me.lyeddie.addon.util.EnumFormatter;

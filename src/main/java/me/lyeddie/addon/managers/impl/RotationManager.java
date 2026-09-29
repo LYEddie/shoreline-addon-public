@@ -4,7 +4,7 @@ import me.lyeddie.addon.api.Interpolation;
 import me.lyeddie.addon.events.*;
 import me.lyeddie.addon.events.irrevocable.PlayerTickEvent;
 import me.lyeddie.addon.events.staged.*;
-import me.lyeddie.addon.imixin.impl.IClientPlayerEntity;
+import me.lyeddie.addon.mixin.IClientPlayerEntity;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.managers.impl.util.Rotation;
 import me.lyeddie.addon.tabs.TabConfigs;

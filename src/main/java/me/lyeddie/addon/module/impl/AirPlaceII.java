@@ -6,7 +6,7 @@ import me.lyeddie.addon.api.RenderManager;
 import me.lyeddie.addon.events.ItemUseEvent;
 import me.lyeddie.addon.events.irrevocable.RenderWorldEvent;
 import me.lyeddie.addon.managers.Managers;
-import me.lyeddie.addon.mixin.accessor.AccessorMinecraftClient;
+import me.lyeddie.addon.mixin.impl.accessor.AccessorMinecraftClient;
 import me.lyeddie.addon.module.AddonModule;
 import me.lyeddie.addon.tabs.TabConfigs;
 import meteordevelopment.meteorclient.events.world.TickEvent;

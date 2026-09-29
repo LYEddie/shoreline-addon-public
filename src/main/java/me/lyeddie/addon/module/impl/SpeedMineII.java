@@ -6,7 +6,7 @@ import me.lyeddie.addon.api.RenderManager;
 import me.lyeddie.addon.events.AttackBlockEvent;
 import me.lyeddie.addon.events.irrevocable.RenderWorldEvent;
 import me.lyeddie.addon.managers.Managers;
-import me.lyeddie.addon.mixin.accessor.AccessorClientPlayerInteractionManager;
+import me.lyeddie.addon.mixin.impl.accessor.AccessorClientPlayerInteractionManager;
 import me.lyeddie.addon.module.CombatModule;
 import me.lyeddie.addon.tabs.TabConfigs;
 import me.lyeddie.addon.util.*;

@@ -6,7 +6,7 @@ import me.lyeddie.addon.events.irrevocable.MovementSlowdownEvent;
 import me.lyeddie.addon.events.irrevocable.SetCurrentHandEvent;
 import me.lyeddie.addon.events.staged.PrePlayerUpdateEvent;
 import me.lyeddie.addon.managers.Managers;
-import me.lyeddie.addon.mixin.accessor.AccessorKeyBinding;
+import me.lyeddie.addon.mixin.impl.accessor.AccessorKeyBinding;
 import me.lyeddie.addon.util.literal.PositionUtil;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;

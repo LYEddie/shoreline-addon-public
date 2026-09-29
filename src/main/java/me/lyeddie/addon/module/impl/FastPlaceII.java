@@ -2,7 +2,7 @@ package me.lyeddie.addon.module.impl;
 
 import me.lyeddie.addon.Shoreline;
 import me.lyeddie.addon.managers.Managers;
-import me.lyeddie.addon.mixin.accessor.AccessorMinecraftClient;
+import me.lyeddie.addon.mixin.impl.accessor.AccessorMinecraftClient;
 import me.lyeddie.addon.util.CacheTimer;
 import me.lyeddie.addon.util.SneakBlocks;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;

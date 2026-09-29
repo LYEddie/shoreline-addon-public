@@ -2,8 +2,8 @@ package me.lyeddie.addon.managers.impl;
 
 import me.lyeddie.addon.events.ConnectScreenEvent;
 import me.lyeddie.addon.events.irrevocable.DisconnectEvent;
-import me.lyeddie.addon.imixin.impl.IClientPlayNetworkHandler;
-import me.lyeddie.addon.mixin.accessor.AccessorClientWorld;
+import me.lyeddie.addon.mixin.IClientPlayNetworkHandler;
+import me.lyeddie.addon.mixin.impl.accessor.AccessorClientWorld;
 import me.lyeddie.addon.util.Globals;
 import me.lyeddie.addon.util.PerSecondCounter;
 import meteordevelopment.meteorclient.MeteorClient;
