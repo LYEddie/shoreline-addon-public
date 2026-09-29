@@ -2,12 +2,9 @@ package me.lyeddie.addon.module.impl;
 
 import com.google.common.collect.Lists;
 import me.lyeddie.addon.Shoreline;
-import me.lyeddie.addon.api.RenderBuffers;
-import me.lyeddie.addon.api.RenderManager;
 import me.lyeddie.addon.events.*;
 import me.lyeddie.addon.events.irrevocable.DisconnectEvent;
 import me.lyeddie.addon.events.irrevocable.PlayerTickEvent;
-import me.lyeddie.addon.events.irrevocable.RenderWorldEvent;
 import me.lyeddie.addon.events.irrevocable.RunTickEvent;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.module.CombatModule;
@@ -15,6 +12,8 @@ import me.lyeddie.addon.tabs.TabConfigs;
 import me.lyeddie.addon.util.*;
 import me.lyeddie.addon.util.literal.*;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
+import meteordevelopment.meteorclient.events.render.Render3DEvent;
+import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.orbit.EventHandler;
@@ -583,9 +582,8 @@ public class AutoCrystal extends CombatModule {
     }
 
     @EventHandler
-    public void onRenderWorld(RenderWorldEvent event) {
+    public void onRender(Render3DEvent event) {
         if (renderConfig.get()) {
-            RenderBuffers.preRender();
             BlockPos renderPos1 = null;
             double factor = 0.0f;
             for (Map.Entry<BlockPos, Animation> set : fadeList.entrySet()) {
@@ -601,18 +599,13 @@ public class AutoCrystal extends CombatModule {
                 set.getValue().setState(false);
                 int boxAlpha = (int) (40 * set.getValue().getFactor());
                 int lineAlpha = (int) (100 * set.getValue().getFactor());
-                Color boxColor = TabConfigs.get().getClampColor(boxAlpha);
-                Color lineColor = TabConfigs.get().getClampColor(lineAlpha);
-                RenderManager.renderBox(event.getMatrices(), set.getKey(), boxColor.getRGB());
-                RenderManager.renderBoundingBox(event.getMatrices(), set.getKey(), 1.5f, lineColor.getRGB());
+                event.renderer.box(set.getKey(), TabConfigs.get().getClampColor(boxAlpha), TabConfigs.get().getClampColor(lineAlpha), ShapeMode.Both, 0);
             }
 
             if (debugDamageConfig.get() && renderPos1 != null) {
-                RenderManager.renderSign(String.format("%.1f", renderDamage),
+                Managers.RENDERS2D.renderSign(String.format("%.1f", renderDamage),
                     renderPos1.toCenterPos(), new Color(255, 255, 255, (int) (255.0f * factor)).getRGB());
             }
-
-            RenderBuffers.postRender();
 
             fadeList.entrySet().removeIf(e ->
                 e.getValue().getFactor() == 0.0);

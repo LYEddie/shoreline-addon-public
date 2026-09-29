@@ -1,10 +1,7 @@
 package me.lyeddie.addon.module.impl;
 
 import me.lyeddie.addon.Shoreline;
-import me.lyeddie.addon.api.RenderBuffers;
-import me.lyeddie.addon.api.RenderManager;
 import me.lyeddie.addon.events.AttackBlockEvent;
-import me.lyeddie.addon.events.irrevocable.RenderWorldEvent;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.module.CombatModule;
 import me.lyeddie.addon.tabs.TabConfigs;
@@ -14,7 +11,9 @@ import me.lyeddie.addon.util.literal.EntityUtil;
 import me.lyeddie.addon.util.literal.PositionUtil;
 import me.lyeddie.addon.util.literal.RotationUtil;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
+import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
+import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
@@ -642,40 +641,38 @@ public class AutoMine extends CombatModule {
     }
 
     @EventHandler
-    public void onRenderWorld(RenderWorldEvent event) {
+    public void onRender(Render3DEvent event) {
         if (mc.player.isCreative() || mc.player.isSpectator()) {
             return;
         }
 
-        RenderBuffers.preRender();
         if (instantMineAnim != null && instantMineAnim.animation().getFactor() > 0.01f) {
-            renderMiningData(event.getMatrices(), event.getTickDelta(),
+            renderMiningData(event,
                 instantMineAnim, true);
         }
 
         if (doubleBreakConfig.get() && packetMineAnim != null && packetMineAnim.animation().getFactor() > 0.01f) {
-            renderMiningData(event.getMatrices(), event.getTickDelta(),
+            renderMiningData(event,
                 packetMineAnim, false);
         }
-        RenderBuffers.postRender();
     }
 
-    public void renderMiningData(MatrixStack matrixStack, float tickDelta, MineAnimation mineAnimation, boolean instantMine) {
+    public void renderMiningData(Render3DEvent event, MineAnimation mineAnimation, boolean instantMine) {
         MineData data = mineAnimation.data();
         Animation animation = mineAnimation.animation();
         int boxAlpha = (int) (40 * animation.getFactor());
         int lineAlpha = (int) (100 * animation.getFactor());
 
-        int boxColor;
-        int lineColor;
+        SettingColor boxColor;
+        SettingColor lineColor;
         if (smoothColorConfig.get()) {
-            boxColor = !canMine(data.getState()) ? getClampColor(colorDoneConfig.get(), boxAlpha).getRGB() :
-                interpolateColor(Math.min(data.getBlockDamage(), 1.0f), getClampColor(colorDoneConfig.get(), boxAlpha), getClampColor(colorConfig.get(), boxAlpha)).getRGB();
-            lineColor = !canMine(data.getState()) ? getClampColor(colorDoneConfig.get(), lineAlpha).getRGB() :
-                interpolateColor(Math.min(data.getBlockDamage(), 1.0f), getClampColor(colorDoneConfig.get(), lineAlpha), getClampColor(colorConfig.get(), lineAlpha)).getRGB();
+            boxColor = !canMine(data.getState()) ? getClampColor(colorDoneConfig.get(), boxAlpha) :
+                interpolateColor(Math.min(data.getBlockDamage(), 1.0f), getClampColor(colorDoneConfig.get(), boxAlpha), getClampColor(colorConfig.get(), boxAlpha));
+            lineColor = !canMine(data.getState()) ? getClampColor(colorDoneConfig.get(), lineAlpha) :
+                interpolateColor(Math.min(data.getBlockDamage(), 1.0f), getClampColor(colorDoneConfig.get(), lineAlpha), getClampColor(colorConfig.get(), lineAlpha));
         } else {
-            boxColor = data.getBlockDamage() >= 0.95f || !canMine(data.getState()) ? getClampColor(colorDoneConfig.get(), boxAlpha).getRGB() : getClampColor(colorConfig.get(), boxAlpha).getRGB();
-            lineColor = data.getBlockDamage() >= 0.95f || !canMine(data.getState()) ? getClampColor(colorDoneConfig.get(), lineAlpha).getRGB() : getClampColor(colorConfig.get(), lineAlpha).getRGB();
+            boxColor = data.getBlockDamage() >= 0.95f || !canMine(data.getState()) ? getClampColor(colorDoneConfig.get(), boxAlpha) : getClampColor(colorConfig.get(), boxAlpha);
+            lineColor = data.getBlockDamage() >= 0.95f || !canMine(data.getState()) ? getClampColor(colorDoneConfig.get(), lineAlpha) : getClampColor(colorConfig.get(), lineAlpha);
         }
 
         BlockPos mining = data.getPos();
@@ -688,13 +685,12 @@ public class AutoMine extends CombatModule {
         Vec3d center = render1.offset(mining).getCenter();
         float total = instantMine ? toFloat(speedConfig.get()) : 1.0f;
         float scale = (instantMine && data.getBlockDamage() >= speedConfig.get()) || !canMine(data.getState()) ? 1.0f :
-            MathHelper.clamp((data.getBlockDamage() + (data.getBlockDamage() - data.getLastDamage()) * tickDelta) / total, 0.0f, 1.0f);
+            MathHelper.clamp((data.getBlockDamage() + (data.getBlockDamage() - data.getLastDamage()) * event.tickDelta) / total, 0.0f, 1.0f);
         double dx = (render1.maxX - render1.minX) / 2.0;
         double dy = (render1.maxY - render1.minY) / 2.0;
         double dz = (render1.maxZ - render1.minZ) / 2.0;
         final Box scaled = new Box(center, center).expand(dx * scale, dy * scale, dz * scale);
-        RenderManager.renderBox(matrixStack, scaled, boxColor);
-        RenderManager.renderBoundingBox(matrixStack, scaled, 1.5f, lineColor);
+        event.renderer.box(scaled, boxColor, lineColor, ShapeMode.Both, 0);
     }
 
     public void startMining(MineData data) {

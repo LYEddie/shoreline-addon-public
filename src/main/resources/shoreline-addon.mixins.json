@@ -28,7 +28,6 @@
     "MixinShulkerBoxSlot",
     "MixinSlimeBlock",
     "MixinTridentItem",
-    "MixinWorldRenderer",
     "accessor.AccessorBundlePacket",
     "accessor.AccessorClientConnection",
     "accessor.AccessorClientPlayerInteractionManager",
@@ -39,8 +38,6 @@
     "accessor.AccessorKeyBinding",
     "accessor.AccessorMinecraftClient",
     "accessor.AccessorPlayerMoveC2SPacket",
-    "accessor.AccessorTextRenderer",
-    "accessor.AccessorWorldRenderer",
     "meteor.MixinFriends",
     "meteor.SystemsMixin"
   ],

@@ -31,6 +31,7 @@ public class Managers {
     public static TotemManager TOTEM;
 
     public static TabEvents TAB_EVENTS; // ¿
+    public static Renders2D RENDERS2D; // ¿
 
     public static void init() {
         if (!isInitialized()) {
@@ -50,6 +51,7 @@ public class Managers {
             TOTEM = new TotemManager();
 
             TAB_EVENTS = new TabEvents();
+            RENDERS2D = new Renders2D();
 
             initialized = true;
         }

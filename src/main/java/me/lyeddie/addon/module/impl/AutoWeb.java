@@ -1,15 +1,13 @@
 package me.lyeddie.addon.module.impl;
 
 import me.lyeddie.addon.Shoreline;
-import me.lyeddie.addon.api.RenderBuffers;
-import me.lyeddie.addon.api.RenderManager;
 import me.lyeddie.addon.events.irrevocable.DisconnectEvent;
 import me.lyeddie.addon.events.irrevocable.PlayerTickEvent;
-import me.lyeddie.addon.events.irrevocable.RenderWorldEvent;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.module.BlockPlacerModule;
 import me.lyeddie.addon.tabs.TabConfigs;
 import me.lyeddie.addon.util.Animation;
+import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.orbit.EventHandler;
@@ -17,8 +15,6 @@ import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -168,13 +164,11 @@ public class AutoWeb extends BlockPlacerModule {
     }
 
     @EventHandler
-    public void onRenderWorld(RenderWorldEvent event) {
+    public void onRender(Render3DEvent event) {
         if (renderConfig.get()) {
-            RenderBuffers.preRender();
             for (Map.Entry<BlockPos, Animation> set : fadeList.entrySet()) {
                 set.getValue().setState(false);
                 int lineAlpha = (int) (120 * set.getValue().getFactor());
-                Color lineColor = TabConfigs.get().getClampColor(lineAlpha);
                 BlockPos blockPos = set.getKey();
                 double x1 = blockPos.getX();
                 double y1 = blockPos.getY();
@@ -182,10 +176,9 @@ public class AutoWeb extends BlockPlacerModule {
                 double x2 = blockPos.getX() + 1.0;
                 double y2 = blockPos.getY() + 1.0;
                 double z2 = blockPos.getZ() + 1.0;
-                RenderManager.renderPlane(event.getMatrices(), x1, y1, z1, x2, y2, z2, lineColor.getRGB());
-                RenderManager.renderPlane(event.getMatrices(), x2, y1, z1, x1, y2, z2, lineColor.getRGB());
+                event.renderer.quadVertical(x1, y1, z1, x2, y2, z2, TabConfigs.get().getClampColor(lineAlpha));
+                event.renderer.quadVertical(x2, y1, z1, x1, y2, z2, TabConfigs.get().getClampColor(lineAlpha));
             }
-            RenderBuffers.postRender();
 
             if (webs.isEmpty()) {
                 return;

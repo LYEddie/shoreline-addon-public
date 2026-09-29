@@ -152,9 +152,9 @@ public class TabConfigs extends System<TabConfigs> implements Globals {
         return new Color(config.r, config.g, config.b).getRGB();
     }
 
-    public Color getClampColor(int alpha) {
+    public SettingColor getClampColor(int alpha) {
         SettingColor config = colorConfig.get();
-        return new Color(config.r, config.g, config.b, MathHelper.clamp(alpha, 0, 255));
+        return new SettingColor(config.r, config.g, config.b, MathHelper.clamp(alpha, 0, 255));
     }
 
     public boolean getMovementFix() {

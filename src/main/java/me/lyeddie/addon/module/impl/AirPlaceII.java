@@ -1,15 +1,14 @@
 package me.lyeddie.addon.module.impl;
 
 import me.lyeddie.addon.Shoreline;
-import me.lyeddie.addon.api.RenderBuffers;
-import me.lyeddie.addon.api.RenderManager;
 import me.lyeddie.addon.events.ItemUseEvent;
-import me.lyeddie.addon.events.irrevocable.RenderWorldEvent;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.mixin.impl.accessor.AccessorMinecraftClient;
 import me.lyeddie.addon.module.AddonModule;
 import me.lyeddie.addon.tabs.TabConfigs;
+import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
+import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.entity.Entity;
@@ -107,7 +106,7 @@ public class AirPlaceII extends AddonModule {
     }
 
     @EventHandler
-    public void onRenderWorld(RenderWorldEvent event) {
+    public void onRender(Render3DEvent event) {
         if (mc.player == null || !manualConfig.get()) {
             return;
         }
@@ -128,9 +127,7 @@ public class AirPlaceII extends AddonModule {
         if (!mc.world.isAir(blockPos) || isEntityInBlockPos(blockPos)) {
             return;
         }
-        RenderBuffers.preRender();
-        RenderManager.renderBoundingBox(event.getMatrices(), blockPos, 1.5f, TabConfigs.get().getClampColor(145).getRGB());
-        RenderBuffers.postRender();
+        event.renderer.box(blockPos, TabConfigs.get().getClampColor(64), TabConfigs.get().getClampColor(145), ShapeMode.Both, 0);
     }
 
     private boolean isEntityInBlockPos(final BlockPos blockPos) {

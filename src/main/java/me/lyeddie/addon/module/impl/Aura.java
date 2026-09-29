@@ -3,12 +3,9 @@ package me.lyeddie.addon.module.impl;
 import me.lyeddie.addon.module.CombatModule;
 import me.lyeddie.addon.Shoreline;
 import me.lyeddie.addon.api.Interpolation;
-import me.lyeddie.addon.api.RenderBuffers;
-import me.lyeddie.addon.api.RenderManager;
 import me.lyeddie.addon.events.irrevocable.DisconnectEvent;
 import me.lyeddie.addon.events.irrevocable.PlayerTickEvent;
 import me.lyeddie.addon.events.irrevocable.RemoveEntityEvent;
-import me.lyeddie.addon.events.irrevocable.RenderWorldEvent;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.managers.impl.util.TickSync;
 import me.lyeddie.addon.tabs.TabConfigs;
@@ -18,6 +15,8 @@ import me.lyeddie.addon.util.literal.EntityUtil;
 import me.lyeddie.addon.util.literal.PlayerUtil;
 import me.lyeddie.addon.util.literal.RotationUtil;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
+import meteordevelopment.meteorclient.events.render.Render3DEvent;
+import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
@@ -416,7 +415,7 @@ public class Aura extends CombatModule {
     }
 
     @EventHandler
-    public void onRenderWorld(RenderWorldEvent event) {
+    public void onRender(Render3DEvent event) {
         if (AutoCrystal.getInstance().isAttacking() || AutoCrystal.getInstance().isPlacing() || mc.player.isSpectator()) {
             return;
         }
@@ -424,14 +423,9 @@ public class Aura extends CombatModule {
             long currentTime = System.currentTimeMillis() - lastAttackTime;
             float animFactor = 1.0f - MathHelper.clamp(currentTime / 1000f, 0.0f, 1.0f);
             int attackDelay = (int) (70.0 * animFactor);
-            RenderBuffers.preRender();
 
             SettingColor set = TabConfigs.get().getColor();
-            Color col = new Color(set.r, set.g, set.b);
-
-            RenderManager.renderBox(event.getMatrices(), Interpolation.getInterpolatedEntityBox(entityTarget), TabConfigs.get().getClampColor(30 + attackDelay).getRGB());
-            RenderManager.renderBoundingBox(event.getMatrices(), Interpolation.getInterpolatedEntityBox(entityTarget), 1.5f, col.getRGB());
-            RenderBuffers.postRender();
+            event.renderer.box(Interpolation.getInterpolatedEntityBox(entityTarget), TabConfigs.get().getClampColor(30 + attackDelay), new SettingColor(set.r, set.g, set.b), ShapeMode.Both, 0);
         }
     }
 

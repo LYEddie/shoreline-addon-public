@@ -1,15 +1,14 @@
 package me.lyeddie.addon.module.impl;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import me.lyeddie.addon.Shoreline;
 import me.lyeddie.addon.api.Interpolation;
-import me.lyeddie.addon.api.RenderBuffers;
 import me.lyeddie.addon.events.irrevocable.PlayerTickEvent;
 import me.lyeddie.addon.events.irrevocable.RemoveEntityEvent;
-import me.lyeddie.addon.events.irrevocable.RenderWorldEvent;
 import me.lyeddie.addon.tabs.TabConfigs;
+import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.settings.*;
 import me.lyeddie.addon.module.AddonModule;
+import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -18,7 +17,6 @@ import net.minecraft.entity.projectile.thrown.EnderPearlEntity;
 import net.minecraft.entity.projectile.thrown.ExperienceBottleEntity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,12 +42,6 @@ public class BreadcrumbsII extends AddonModule {
         .defaultValue(1000)
         .min(0)
         .sliderMax(5000)
-        .build());
-    public final Setting<Double> widthConfig = sgGeneral.add(new DoubleSetting.Builder()
-        .name("Width").description("The line width of the path")
-        .defaultValue(1.0)
-        .min(1.0)
-        .sliderMax(5.0)
         .build());
     private final Setting<Boolean> selfConfig = sgTargets.add(new BoolSetting.Builder()
         .name("Self").description("Renders breadcrumbs on player")
@@ -118,31 +110,25 @@ public class BreadcrumbsII extends AddonModule {
     }
 
     @EventHandler
-    public void onRenderWorld(RenderWorldEvent event) {
-        event.getMatrices().push();
-        RenderBuffers.preRender();
-        RenderSystem.lineWidth(toFloat(widthConfig.get()));
-        RenderBuffers.LINES.begin(event.getMatrices());
+    public void onRender(Render3DEvent event) {
         for (Map.Entry<Integer, List<TimedPosition>> entry : positions.entrySet()) {
             List<TimedPosition> timedPositions = entry.getValue();
             for (int i = 0; i < timedPositions.size(); i++) {
                 TimedPosition timedPosition = timedPositions.get(i);
+                SettingColor lineCol;
                 if (!infiniteConfig.get()) {
                     float fade = 1.0f - MathHelper.clamp((System.currentTimeMillis() - timedPosition.time()) / (float) fadeTimeConfig.get(), 0.0f, 1.0f);
-                    RenderBuffers.LINES.color(TabConfigs.get().getClampColor((int) (fade * 255.0f)).getRGB());
+                    lineCol = TabConfigs.get().getClampColor((int) (fade * 255.0f));
                 } else {
-                    RenderBuffers.LINES.color(TabConfigs.get().getColorRGB());
+                    lineCol = TabConfigs.get().colorConfig.get();
                 }
                 if (i > 1) {
                     Vec3d vec3d = timedPositions.get(i - 1).pos();
                     Vec3d vec3d2 = timedPosition.pos();
-                    RenderBuffers.LINES.vertexLine(vec3d.x, vec3d.y, vec3d.z, vec3d2.x, vec3d2.y, vec3d2.z);
+                    event.renderer.line(vec3d.x, vec3d.y, vec3d.z, vec3d2.x, vec3d2.y, vec3d2.z, lineCol);
                 }
             }
         }
-        RenderBuffers.LINES.end();
-        RenderBuffers.postRender();
-        event.getMatrices().pop();
     }
 
     public boolean checkEntity(Entity entity) {

@@ -1,10 +1,7 @@
 package me.lyeddie.addon.module.impl;
 
 import me.lyeddie.addon.Shoreline;
-import me.lyeddie.addon.api.RenderBuffers;
-import me.lyeddie.addon.api.RenderManager;
 import me.lyeddie.addon.events.AttackBlockEvent;
-import me.lyeddie.addon.events.irrevocable.RenderWorldEvent;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.mixin.impl.accessor.AccessorClientPlayerInteractionManager;
 import me.lyeddie.addon.module.CombatModule;
@@ -13,7 +10,9 @@ import me.lyeddie.addon.util.*;
 import me.lyeddie.addon.util.literal.EnchantmentUtil;
 import me.lyeddie.addon.util.literal.RotationUtil;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
+import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
+import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
@@ -33,7 +32,6 @@ import net.minecraft.util.math.*;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
-
 import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -310,7 +308,7 @@ public class SpeedMineII extends CombatModule {
     }
 
     @EventHandler
-    public void onRenderWorld(final RenderWorldEvent event) {
+    public void onRender(final Render3DEvent event) {
         if (mc.player.isCreative() || modeConfig.get() != SpeedmineMode.PACKET) {
             return;
         }
@@ -319,23 +317,22 @@ public class SpeedMineII extends CombatModule {
             return;
         }
 
-        RenderBuffers.preRender();
         for (Map.Entry<MiningData, Animation> set : fadeList.entrySet()) {
             MiningData data = set.getKey();
             set.getValue().setState(false);
             int boxAlpha = (int) (40 * set.getValue().getFactor());
             int lineAlpha = (int) (100 * set.getValue().getFactor());
 
-            int boxColor;
-            int lineColor;
+            SettingColor boxColor;
+            SettingColor lineColor;
             if (smoothColorConfig.get()) {
-                boxColor = data.getState().isAir() ? getClampColor(colorDoneConfig.get(), boxAlpha).getRGB() :
-                    interpolateColor(Math.min(data.getBlockDamage(), 1.0f), getClampColor(colorDoneConfig.get(), boxAlpha), getClampColor(colorConfig.get(), boxAlpha)).getRGB();
-                lineColor = data.getState().isAir() ? getClampColor(colorDoneConfig.get(), lineAlpha).getRGB() :
-                    interpolateColor(Math.min(data.getBlockDamage(), 1.0f), getClampColor(colorDoneConfig.get(), lineAlpha), getClampColor(colorConfig.get(), lineAlpha)).getRGB();
+                boxColor = data.getState().isAir() ? getClampColor(colorDoneConfig.get(), boxAlpha) :
+                    interpolateColor(Math.min(data.getBlockDamage(), 1.0f), getClampColor(colorDoneConfig.get(), boxAlpha), getClampColor(colorConfig.get(), boxAlpha));
+                lineColor = data.getState().isAir() ? getClampColor(colorDoneConfig.get(), lineAlpha) :
+                    interpolateColor(Math.min(data.getBlockDamage(), 1.0f), getClampColor(colorDoneConfig.get(), lineAlpha), getClampColor(colorConfig.get(), lineAlpha));
             } else {
-                boxColor = data.getBlockDamage() >= 0.95f || data.getState().isAir() ? getClampColor(colorDoneConfig.get(), boxAlpha).getRGB() : getClampColor(colorConfig.get(), boxAlpha).getRGB();
-                lineColor = data.getBlockDamage() >= 0.95f || data.getState().isAir() ? getClampColor(colorDoneConfig.get(), lineAlpha).getRGB() : getClampColor(colorConfig.get(), lineAlpha).getRGB();
+                boxColor = data.getBlockDamage() >= 0.95f || data.getState().isAir() ? getClampColor(colorDoneConfig.get(), boxAlpha) : getClampColor(colorConfig.get(), boxAlpha);
+                lineColor = data.getBlockDamage() >= 0.95f || data.getState().isAir() ? getClampColor(colorDoneConfig.get(), lineAlpha) : getClampColor(colorConfig.get(), lineAlpha);
             }
 
             BlockPos mining = data.getPos();
@@ -347,13 +344,12 @@ public class SpeedMineII extends CombatModule {
                 mining.getY() + render1.maxY, mining.getZ() + render1.maxZ);
             Vec3d center = render.getCenter();
             float total = isDataPacketMine(data) ? 1.0f : toFloat(speedConfig.get());
-            float scale = data.getState().isAir() ? 1.0f : MathHelper.clamp((data.getBlockDamage() + (data.getBlockDamage() - data.getLastDamage()) * event.getTickDelta()) / total, 0.0f, 1.0f);
+            float scale = data.getState().isAir() ? 1.0f : MathHelper.clamp((data.getBlockDamage() + (data.getBlockDamage() - data.getLastDamage()) * event.tickDelta) / total, 0.0f, 1.0f);
             double dx = (render1.maxX - render1.minX) / 2.0;
             double dy = (render1.maxY - render1.minY) / 2.0;
             double dz = (render1.maxZ - render1.minZ) / 2.0;
             final Box scaled = new Box(center, center).expand(dx * scale, dy * scale, dz * scale);
-            RenderManager.renderBox(event.getMatrices(), scaled, boxColor);
-            RenderManager.renderBoundingBox(event.getMatrices(), scaled, 1.5f, lineColor);
+            event.renderer.box(scaled, boxColor, lineColor, ShapeMode.Both, 0);
         }
         for (MiningData data : miningQueue) {
             if (data.getState().isAir()) {
@@ -364,7 +360,6 @@ public class SpeedMineII extends CombatModule {
         }
         fadeList.entrySet().removeIf(e ->
             e.getValue().getFactor() == 0.0);
-        RenderBuffers.postRender();
     }
 
     private void startManualMine(BlockPos pos, Direction direction) {

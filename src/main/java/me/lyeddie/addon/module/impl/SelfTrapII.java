@@ -1,10 +1,7 @@
 package me.lyeddie.addon.module.impl;
 
 import me.lyeddie.addon.Shoreline;
-import me.lyeddie.addon.api.RenderBuffers;
-import me.lyeddie.addon.api.RenderManager;
 import me.lyeddie.addon.events.irrevocable.PlayerTickEvent;
-import me.lyeddie.addon.events.irrevocable.RenderWorldEvent;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.module.ObsidianPlacerModule;
 import me.lyeddie.addon.tabs.TabConfigs;
@@ -12,6 +9,8 @@ import me.lyeddie.addon.util.Animation;
 import me.lyeddie.addon.util.BlastResistantBlocks;
 import me.lyeddie.addon.util.literal.PositionUtil;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
+import meteordevelopment.meteorclient.events.render.Render3DEvent;
+import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.Block;
@@ -26,8 +25,6 @@ import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.*;
-
-import java.awt.*;
 import java.util.*;
 import java.util.List;
 
@@ -409,20 +406,14 @@ public class SelfTrapII extends ObsidianPlacerModule {
     }
 
     @EventHandler
-    public void onRenderWorld(RenderWorldEvent event) {
+    public void onRender(Render3DEvent event) {
         if (renderConfig.get()) {
-            RenderBuffers.preRender();
             for (Map.Entry<BlockPos, Animation> set : fadeList.entrySet()) {
                 set.getValue().setState(false);
                 int boxAlpha = (int) (40 * set.getValue().getFactor());
                 int lineAlpha = (int) (100 * set.getValue().getFactor());
-                Color boxColor = TabConfigs.get().getClampColor(boxAlpha);
-                Color lineColor = TabConfigs.get().getClampColor(lineAlpha);
-                RenderManager.renderBox(event.getMatrices(), set.getKey(), boxColor.getRGB());
-                RenderManager.renderBoundingBox(event.getMatrices(), set.getKey(), 1.5f, lineColor.getRGB());
+                event.renderer.box(set.getKey(), TabConfigs.get().getClampColor(boxAlpha), TabConfigs.get().getClampColor(lineAlpha), ShapeMode.Both, 0);
             }
-
-            RenderBuffers.postRender();
 
             if (placements.isEmpty()) {
                 return;

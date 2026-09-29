@@ -1,11 +1,10 @@
 package me.lyeddie.addon.module.impl;
 
 import me.lyeddie.addon.Shoreline;
-import me.lyeddie.addon.api.RenderBuffers;
-import me.lyeddie.addon.api.RenderManager;
-import me.lyeddie.addon.events.irrevocable.RenderWorldEvent;
 import me.lyeddie.addon.util.BlastResistantBlocks;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
+import meteordevelopment.meteorclient.events.render.Render3DEvent;
+import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.ColorSetting;
 import meteordevelopment.meteorclient.settings.DoubleSetting;
 import meteordevelopment.meteorclient.settings.Setting;
@@ -62,11 +61,11 @@ public class BreakHighlight extends AddonModule {
     }
 
     @EventHandler
-    public void onRenderWorld(RenderWorldEvent event) {
+    public void onRender(Render3DEvent event) {
         if (mc.player == null || mc.world == null) {
             return;
         }
-        RenderBuffers.preRender();
+
         for (Map.Entry<BlockBreakingProgressS2CPacket, Long> mine : breakingProgress.entrySet()) {
             BlockPos mining = mine.getKey().getPos();
             long elapsedTime = System.currentTimeMillis() - mine.getValue();
@@ -96,18 +95,12 @@ public class BreakHighlight extends AddonModule {
             double dy = (render1.maxY - render1.minY) / 2.0;
             double dz = (render1.maxZ - render1.minZ) / 2.0;
             final Box scaled = new Box(center, center).expand(dx * scale, dy * scale, dz * scale);
-            RenderManager.renderBox(event.getMatrices(), scaled, getClampColor(colorConfig.get(), 40).getRGB());
-            RenderManager.renderBoundingBox(event.getMatrices(), scaled, 1.5f, getClampColor(colorConfig.get(), 100).getRGB());
+            event.renderer.box(scaled, getClampColor(colorConfig.get(), 40), getClampColor(colorConfig.get(), 100), ShapeMode.Both, 0);
         }
-        RenderBuffers.postRender();
     }
 
     private BlockBreakingProgressS2CPacket getPacketFromPos(BlockPos pos) {
         return breakingProgress.keySet().stream().filter(p -> p.getPos().equals(pos)).findFirst().orElse(null);
-    }
-
-    public Color getClampColor(SettingColor set, int alpha) {
-        return new java.awt.Color(set.r, set.g, set.b, MathHelper.clamp(alpha, 0, 255));
     }
 
     public static BreakHighlight getInstance() {

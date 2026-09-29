@@ -1,18 +1,16 @@
 package me.lyeddie.addon.module.impl;
 
 import me.lyeddie.addon.Shoreline;
-import me.lyeddie.addon.api.RenderBuffers;
-import me.lyeddie.addon.api.RenderManager;
-import me.lyeddie.addon.events.irrevocable.RenderWorldEvent;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.managers.impl.util.Hole;
 import me.lyeddie.addon.managers.impl.util.HoleType;
 import me.lyeddie.addon.util.Animation;
+import meteordevelopment.meteorclient.events.render.Render3DEvent;
+import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.*;
 import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Box;
 
 import java.awt.*;
@@ -125,7 +123,7 @@ public class HoleESPII extends AddonModule {
     }
 
     @EventHandler
-    public void onRenderWorld(RenderWorldEvent event) {
+    public void onRender(Render3DEvent event) {
         if (mc.player == null) {
             return;
         }
@@ -136,7 +134,6 @@ public class HoleESPII extends AddonModule {
             }
         }
 
-        RenderBuffers.preRender();
         for (Map.Entry<Hole, Animation> set : fadeList.entrySet()) {
             Hole hole = set.getKey();
             double dist = hole.squaredDistanceTo(mc.player);
@@ -162,14 +159,13 @@ public class HoleESPII extends AddonModule {
             int boxAlpha = (int) (color.getAlpha() * set.getValue().getFactor());
             int lineAlpha = (int) (100 * set.getValue().getFactor());
 
-            renderHole(event.getMatrices(), hole, getHoleColor(hole.getSafety(), boxAlpha),
+            renderHole(event, hole, getHoleColor(hole.getSafety(), boxAlpha),
                 getHoleColor(hole.getSafety(), lineAlpha));
         }
 
-        RenderBuffers.postRender();
     }
 
-    private void renderHole(MatrixStack matrixStack, Hole hole, int color1, int color2) {
+    private void renderHole(Render3DEvent event, Hole hole, SettingColor color1, SettingColor color2) {
         Box render;
         if (hole.getSafety() == HoleType.VOID) {
             render = new Box(hole.getPos().getX(), hole.getPos().getY(), hole.getPos().getZ(), hole.getPos().getX() + 1, hole.getPos().getY() + heightConfig.get(), hole.getPos().getZ() + 1);
@@ -177,12 +173,13 @@ public class HoleESPII extends AddonModule {
             render = hole.getBoundingBox(heightConfig.get());
         }
 
-        RenderManager.renderBox(matrixStack, render, color1);
+        event.renderer.box(render, color1, color1, ShapeMode.Sides, 0);
         if (outlineConfig.get()) {
-            RenderManager.renderBoundingBox(matrixStack, render, 1.5f, color2);
+            event.renderer.box(render, color2, color2, ShapeMode.Lines, 0);
         }
         if (crossConfig.get()) {
-            RenderManager.renderBoundingCross(matrixStack, render, 2.0f, color2);
+            event.renderer.line(render.minX, render.minY, render.minZ, render.maxX, render.minY, render.maxZ, color2);
+            event.renderer.line(render.maxX, render.minY, render.minZ, render.minX, render.minY, render.maxZ, color2);
         }
     }
 
@@ -200,12 +197,12 @@ public class HoleESPII extends AddonModule {
         });
     }
 
-    private int getHoleColor(HoleType holeType, int alpha) {
+    private SettingColor getHoleColor(HoleType holeType, int alpha) {
         return switch (holeType) {
-            case OBSIDIAN -> getClampColor(obsidianConfig.get(), alpha).getRGB();
-            case OBSIDIAN_BEDROCK -> getClampColor(mixedConfig.get(), alpha).getRGB();
-            case BEDROCK -> getClampColor(bedrockConfig.get(), alpha).getRGB();
-            case VOID -> getClampColor(voidColorConfig.get(), alpha).getRGB();
+            case OBSIDIAN -> getClampColor(obsidianConfig.get(), alpha);
+            case OBSIDIAN_BEDROCK -> getClampColor(mixedConfig.get(), alpha);
+            case BEDROCK -> getClampColor(bedrockConfig.get(), alpha);
+            case VOID -> getClampColor(voidColorConfig.get(), alpha);
         };
     }
 

@@ -1,13 +1,12 @@
 package me.lyeddie.addon.module.impl;
 
 import me.lyeddie.addon.Shoreline;
-import me.lyeddie.addon.api.RenderBuffers;
-import me.lyeddie.addon.api.RenderManager;
-import me.lyeddie.addon.events.irrevocable.RenderWorldEvent;
 import me.lyeddie.addon.module.AddonModule;
 import me.lyeddie.addon.tabs.TabConfigs;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
+import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
+import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ChorusFruitItem;
@@ -76,14 +75,11 @@ public class ChorusControl extends AddonModule {
     }
 
     @EventHandler
-    public void onRenderWorld(RenderWorldEvent event) {
+    public void onRender(Render3DEvent event) {
         if (teleportPacket != null) {
             Vec3d vec3d = new Vec3d(teleportPacket.getX(), teleportPacket.getY(), teleportPacket.getZ());
             Box teleportBox = PlayerEntity.STANDING_DIMENSIONS.getBoxAt(vec3d);
-            RenderBuffers.preRender();
-            RenderManager.renderBox(event.getMatrices(), teleportBox, TabConfigs.get().getClampColor(60).getRGB());
-            RenderManager.renderBoundingBox(event.getMatrices(), teleportBox, 1.5f, TabConfigs.get().getClampColor(100).getRGB());
-            RenderBuffers.postRender();
+            event.renderer.box(teleportBox, TabConfigs.get().getClampColor(60), TabConfigs.get().getClampColor(100), ShapeMode.Both, 0);
         }
     }
 }

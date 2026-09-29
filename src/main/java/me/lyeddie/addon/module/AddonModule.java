@@ -46,8 +46,12 @@ public class AddonModule extends Module {
         ((IChatHud) mc.inGameHud.getChatHud()).meteor$add(text, id);
     }
 
-    public Color getClampColor(SettingColor set, int alpha) {
+/*    public Color getClampColor(SettingColor set, int alpha) {
         return new Color(set.r, set.g, set.b, MathHelper.clamp(alpha, 0, 255));
+    }*/
+
+    public SettingColor getClampColor(SettingColor set, int alpha) {
+        return new SettingColor(set.r, set.g, set.b, MathHelper.clamp(alpha, 0, 255));
     }
 
     public Color getSettingColor(SettingColor set) {
@@ -72,16 +76,16 @@ public class AddonModule extends Module {
         return bd.doubleValue();
     }
 
-    public static Color interpolateColor(float value, Color start, Color end) {
-        float sr = start.getRed() / 255.0f;
-        float sg = start.getGreen() / 255.0f;
-        float sb = start.getBlue() / 255.0f;
-        float sa = start.getAlpha() / 255.0f;
-        float er = end.getRed() / 255.0f;
-        float eg = end.getGreen() / 255.0f;
-        float eb = end.getBlue() / 255.0f;
-        float ea = end.getAlpha() / 255.0f;
-        return new Color(sr * value + er * (1.0f - value),
+    public static SettingColor interpolateColor(float value, SettingColor start, SettingColor end) {
+        float sr = start.r / 255.0f;
+        float sg = start.g / 255.0f;
+        float sb = start.b / 255.0f;
+        float sa = start.a / 255.0f;
+        float er = end.r / 255.0f;
+        float eg = end.g / 255.0f;
+        float eb = end.b / 255.0f;
+        float ea = end.a / 255.0f;
+        return new SettingColor(sr * value + er * (1.0f - value),
                 sg * value + eg * (1.0f - value),
                 sb * value + eb * (1.0f - value),
                 sa * value + ea * (1.0f - value));
