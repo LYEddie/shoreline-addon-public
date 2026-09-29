@@ -13,6 +13,8 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.MathHelper;
 import java.awt.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 // idc bout formatting
 public class AddonModule extends Module {
@@ -62,6 +64,27 @@ public class AddonModule extends Module {
     // :nerd_exploding_skull:
     public double getValueSq(float inp) {
         return inp * inp;
+    }
+
+    public static double round(double value, int places) {
+        BigDecimal bd = new BigDecimal(value);
+        bd = bd.setScale(places, RoundingMode.HALF_UP);
+        return bd.doubleValue();
+    }
+
+    public static Color interpolateColor(float value, Color start, Color end) {
+        float sr = start.getRed() / 255.0f;
+        float sg = start.getGreen() / 255.0f;
+        float sb = start.getBlue() / 255.0f;
+        float sa = start.getAlpha() / 255.0f;
+        float er = end.getRed() / 255.0f;
+        float eg = end.getGreen() / 255.0f;
+        float eb = end.getBlue() / 255.0f;
+        float ea = end.getAlpha() / 255.0f;
+        return new Color(sr * value + er * (1.0f - value),
+                sg * value + eg * (1.0f - value),
+                sb * value + eb * (1.0f - value),
+                sa * value + ea * (1.0f - value));
     }
 
     private MutableText formatMsg(String message, Formatting defaultColor) {

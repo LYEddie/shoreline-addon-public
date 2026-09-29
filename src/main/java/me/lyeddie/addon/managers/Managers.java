@@ -13,8 +13,6 @@ import java.util.Locale;
 
 public class Managers {
     private static boolean initialized;
-    private final File oneTimeFile = new File(FabricLoader.getInstance().getGameDir().toFile(), "SHORELINE_ADDON.NOT_FOR_SALE");
-    private final boolean isLangMexicanOalgo = Locale.getDefault().getLanguage().equalsIgnoreCase("es");
     private static final Managers INSTANCE = new Managers();
 
     public static AntiCheatManager ANTICHEAT;
@@ -63,32 +61,5 @@ public class Managers {
 
     public static Managers INST() {
         return INSTANCE;
-    }
-
-    public void info(TitleScreen scr) {
-        if (!oneTimeFile.exists()) {
-            OkPrompt.create()
-                .title("Shoreline Addon-%s %s".formatted(BuildConfig.HASH, BuildConfig.BUILD_TIME))
-                .message(isLangMexicanOalgo ? "Hola, este addon es un paste feo del \"Shoreline Client\" (sitio web: shoreline.dev)" : "Hello, this addon is a horrible paste from \"Shoreline Client\" (website: shoreline.dev)")
-                .message(isLangMexicanOalgo ? "Si pagaste por esto te estafaron." : "If you paid for this, you have been scammed.")
-                .onOk(() -> {
-                    scr.close();
-                    try {
-                        final boolean did = oneTimeFile.createNewFile();
-                    } catch (IOException e) {
-                        log(e);
-                    }
-                })
-                .dontShowAgainCheckboxVisible(false)
-                .show();
-        }
-    }
-
-    public void log(Exception ex) {
-        System.out.println("<?> " + ex.getMessage());
-    }
-
-    public void log(String str) {
-        System.out.println("<?> " + str);
     }
 }

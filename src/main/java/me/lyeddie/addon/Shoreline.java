@@ -30,7 +30,7 @@ public class Shoreline extends MeteorAddon {
 
     @Override
     public void onInitialize() {
-        LOG.info("initializing diddyhax!!1 -> %s at %s".formatted(BuildConfig.HASH, BuildConfig.BUILD_TIME));
+        LOG.info("initializing floydline!!1 -> %s at %s".formatted(BuildConfig.HASH, BuildConfig.BUILD_TIME));
 
         Managers.init();
         registerModules(Modules.get());

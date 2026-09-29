@@ -3,14 +3,14 @@
   "id": "shoreline-addon",
   "version": "${version}",
   "name": "Shoreline Addon",
-  "description": "good tech now on meteor",
+  "description": "cool tech now on meteor",
   "authors": [
     "Linus",
-    "LYEddie"
+    "LYEddie",
+    "Edisson"
   ],
   "contact": {
-    "repo": "https://github.com/LYEddie/shoreline-addon-public",
-    "discord": "https://discord.gg/invite"
+    "repo": "https://github.com/LYEddie/shoreline-addon-public"
   },
   "icon": "assets/shoreline/icon.png",
   "environment": "client",

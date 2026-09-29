@@ -1,6 +1,5 @@
 package me.lyeddie.addon.tabs;
 
-import me.lyeddie.addon.Shoreline;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.module.impl.Disabler;
 import me.lyeddie.addon.util.Globals;
@@ -9,7 +8,6 @@ import meteordevelopment.meteorclient.systems.System;
 import meteordevelopment.meteorclient.systems.Systems;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 import java.awt.Color;
 

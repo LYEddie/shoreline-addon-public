@@ -42,12 +42,9 @@
     "accessor.AccessorTextRenderer",
     "accessor.AccessorWorldRenderer",
     "meteor.MixinFriends",
-    "meteor.MixinTitleScreen"
+    "meteor.SystemsMixin"
   ],
   "injectors": {
     "defaultRequire": 1
-  },
-  "mixins": [
-    "meteor.SystemsMixin"
-  ]
+  }
 }

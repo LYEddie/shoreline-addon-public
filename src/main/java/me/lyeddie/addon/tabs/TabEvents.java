@@ -5,7 +5,6 @@ import me.lyeddie.addon.events.MenuDisconnectEvent;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.mixin.accessor.AccessorPlayerMoveC2SPacket;
 import me.lyeddie.addon.util.*;
-import me.lyeddie.addon.util.literal.DirectionUtil;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.utils.player.ChatUtils;
@@ -23,6 +22,7 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 
 import java.time.Instant;
@@ -46,7 +46,7 @@ public class TabEvents implements Globals, Helpers {
         if (TabConfigs.get().isNCP() && TabConfigs.get().raytraceSpoofConfig.get() && event.packet instanceof PlayerInteractBlockC2SPacket packet && raytraceTimer.passed(250)) {
             BlockHitResult packetResult = packet.getBlockHitResult();
             BlockPos pos = packetResult.getBlockPos();
-            BlockHitResult result = mc.world.raycast(new RaycastContext(mc.player.getEyePos(), DirectionUtil.getDirectionOffsetPos(pos, packetResult.getSide()), RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE, mc.player));
+            BlockHitResult result = mc.world.raycast(new RaycastContext(mc.player.getEyePos(), getDirectionOffsetPos(pos, packetResult.getSide()), RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE, mc.player));
             if (mc.world.isSpaceEmpty(mc.player.getBoundingBox().stretch(0.0, 0.15, 0.0)) && result != null && result.getType() == HitResult.Type.BLOCK && !result.getBlockPos().equals(pos)) {
                 pitch = -75;
                 raytraceTimer.reset();
@@ -126,5 +126,17 @@ public class TabEvents implements Globals, Helpers {
     @EventHandler
     public void onFriends(FriendAddedEvent event) {
         ChatUtils.sendPlayerMsg("/msg %s %s".formatted(event.friend.getName(), TabConfigs.get().customNotifySetting.get()));
+    }
+
+    public static Vec3d getDirectionOffsetPos(BlockPos pos, Direction direction) {
+        Vec3d pos1 = pos.toCenterPos();
+        return switch (direction) {
+            case UP -> pos1.add(0.0, 0.5, 0.0);
+            case DOWN -> pos1.add(0.0, -0.5, 0.0);
+            case NORTH -> pos1.add(0.0, 0.0, -0.5);
+            case SOUTH -> pos1.add(0.0, 0.0, 0.5);
+            case WEST -> pos1.add(-0.5, 0.0, 0.0);
+            case EAST -> pos1.add(0.5, 0.0, 0.0);
+        };
     }
 }

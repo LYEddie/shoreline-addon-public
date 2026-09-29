@@ -9,9 +9,7 @@ import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.mixin.accessor.AccessorClientPlayerInteractionManager;
 import me.lyeddie.addon.module.CombatModule;
 import me.lyeddie.addon.tabs.TabConfigs;
-import me.lyeddie.addon.tabs.TabEvents;
 import me.lyeddie.addon.util.*;
-import me.lyeddie.addon.util.literal.ColorUtil;
 import me.lyeddie.addon.util.literal.EnchantmentUtil;
 import me.lyeddie.addon.util.literal.RotationUtil;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
@@ -332,9 +330,9 @@ public class SpeedMineII extends CombatModule {
             int lineColor;
             if (smoothColorConfig.get()) {
                 boxColor = data.getState().isAir() ? getClampColor(colorDoneConfig.get(), boxAlpha).getRGB() :
-                    ColorUtil.interpolateColor(Math.min(data.getBlockDamage(), 1.0f), getClampColor(colorDoneConfig.get(), boxAlpha), getClampColor(colorConfig.get(), boxAlpha)).getRGB();
+                    interpolateColor(Math.min(data.getBlockDamage(), 1.0f), getClampColor(colorDoneConfig.get(), boxAlpha), getClampColor(colorConfig.get(), boxAlpha)).getRGB();
                 lineColor = data.getState().isAir() ? getClampColor(colorDoneConfig.get(), lineAlpha).getRGB() :
-                    ColorUtil.interpolateColor(Math.min(data.getBlockDamage(), 1.0f), getClampColor(colorDoneConfig.get(), lineAlpha), getClampColor(colorConfig.get(), lineAlpha)).getRGB();
+                    interpolateColor(Math.min(data.getBlockDamage(), 1.0f), getClampColor(colorDoneConfig.get(), lineAlpha), getClampColor(colorConfig.get(), lineAlpha)).getRGB();
             } else {
                 boxColor = data.getBlockDamage() >= 0.95f || data.getState().isAir() ? getClampColor(colorDoneConfig.get(), boxAlpha).getRGB() : getClampColor(colorConfig.get(), boxAlpha).getRGB();
                 lineColor = data.getBlockDamage() >= 0.95f || data.getState().isAir() ? getClampColor(colorDoneConfig.get(), lineAlpha).getRGB() : getClampColor(colorConfig.get(), lineAlpha).getRGB();

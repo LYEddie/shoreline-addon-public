@@ -58,7 +58,6 @@ public class Logo extends HudElement {
         double scale = logoScale.get();
         double w = width * scale / scaleDiv.get();
         double h = height * scale / scaleDiv.get();
-
         double finalX = x;
         double finalW = w;
 
@@ -69,12 +68,7 @@ public class Logo extends HudElement {
 
         setSize(Math.abs(finalW) + widgetBorder.get(), h + widgetBorder.get());
         float border = widgetBorder.get() > 0 ? (widgetBorder.get() / 2) : 0;
-
-        MatrixStack matrixStack = new MatrixStack();
-        GL.bindTexture(logoFile);
-        Renderer2D.TEXTURE.begin();
-        Renderer2D.TEXTURE.texQuad(border + finalX, border + y, finalW, h, sampleColor.get());
-        Renderer2D.TEXTURE.render(matrixStack);
+        renderer.texture(logoFile, border + finalX, border + y, finalW, h, sampleColor.get());
     }
 
     public enum SideMode {

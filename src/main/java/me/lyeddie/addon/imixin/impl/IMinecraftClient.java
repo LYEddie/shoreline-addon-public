@@ -1,11 +1,9 @@
 package me.lyeddie.addon.imixin.impl;
 
-import me.lyeddie.addon.imixin.IMixin;
-
-@IMixin
+@SuppressWarnings("unused")
 public interface IMinecraftClient {
-    void leftClick();
 
+    void leftClick();
     void rightClick();
 }
 

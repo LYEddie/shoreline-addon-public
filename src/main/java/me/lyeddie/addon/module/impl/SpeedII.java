@@ -4,7 +4,6 @@ import me.lyeddie.addon.Shoreline;
 import me.lyeddie.addon.events.PlayerMoveEvent;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.util.EnumFormatter;
-import me.lyeddie.addon.util.literal.MathUtil;
 import me.lyeddie.addon.util.literal.MovementUtil;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
@@ -288,20 +287,20 @@ public class SpeedII extends AddonModule {
                 if (timerConfig.get()) {
                     TimerII.getInstance().setTimer(1.0888f);
                 }
-                if (MathUtil.round(mc.player.getY() - (double) (int) mc.player.getY(), 3) == MathUtil.round(0.4, 3)) {
+                if (round(mc.player.getY() - (double) (int) mc.player.getY(), 3) == round(0.4, 3)) {
                     Managers.MOVEMENT.setMotionY(0.31 + jumpEffect);
                     event.setY(0.31 + jumpEffect);
-                } else if (MathUtil.round(mc.player.getY() - (double) (int) mc.player.getY(), 3) == MathUtil.round(0.71, 3)) {
+                } else if (round(mc.player.getY() - (double) (int) mc.player.getY(), 3) == round(0.71, 3)) {
                     Managers.MOVEMENT.setMotionY(0.04 + jumpEffect);
                     event.setY(0.04 + jumpEffect);
-                } else if (MathUtil.round(mc.player.getY() - (double) (int) mc.player.getY(), 3) == MathUtil.round(0.75, 3)) {
+                } else if (round(mc.player.getY() - (double) (int) mc.player.getY(), 3) == round(0.75, 3)) {
                     Managers.MOVEMENT.setMotionY(-0.2 - jumpEffect);
                     event.setY(-0.2 - jumpEffect);
-                } else if (MathUtil.round(mc.player.getY() - (double) (int) mc.player.getY(), 3) == MathUtil.round(0.55, 3)) {
+                } else if (round(mc.player.getY() - (double) (int) mc.player.getY(), 3) == round(0.55, 3)) {
                     Managers.MOVEMENT.setMotionY(-0.14 + jumpEffect);
                     event.setY(-0.14 + jumpEffect);
                 } else {
-                    if (MathUtil.round(mc.player.getY() - (double) (int) mc.player.getY(), 3) == MathUtil.round(0.41, 3)) {
+                    if (round(mc.player.getY() - (double) (int) mc.player.getY(), 3) == round(0.41, 3)) {
                         Managers.MOVEMENT.setMotionY(-0.2 + jumpEffect);
                         event.setY(-0.2 + jumpEffect);
                     }
@@ -367,18 +366,18 @@ public class SpeedII extends AddonModule {
                     strafe = 1;
                     return;
                 }
-                if (MathUtil.round(mc.player.getY() - (double) (int) mc.player.getY(), 3) == MathUtil.round(0.4, 3)) {
+                if (round(mc.player.getY() - (double) (int) mc.player.getY(), 3) == round(0.4, 3)) {
                     Managers.MOVEMENT.setMotionY(0.31 + jumpEffect);
                     event.setY(0.31 + jumpEffect);
-                } else if (MathUtil.round(mc.player.getY() - (double) (int) mc.player.getY(), 3) == MathUtil.round(0.71, 3)) {
+                } else if (round(mc.player.getY() - (double) (int) mc.player.getY(), 3) == round(0.71, 3)) {
                     Managers.MOVEMENT.setMotionY(0.04 + jumpEffect);
                     event.setY(0.04 + jumpEffect);
-                } else if (MathUtil.round(mc.player.getY() - (double) (int) mc.player.getY(), 3) == MathUtil.round(0.75, 3)) {
+                } else if (round(mc.player.getY() - (double) (int) mc.player.getY(), 3) == round(0.75, 3)) {
                     Managers.MOVEMENT.setMotionY(-0.2 - jumpEffect);
                     event.setY(-0.2 - jumpEffect);
                 }
                 if (!mc.world.isSpaceEmpty(null, mc.player.getBoundingBox().offset(0.0, -0.56, 0.0))
-                    && MathUtil.round(mc.player.getY() - (double) (int) mc.player.getY(), 3) == MathUtil.round(0.55, 3)) {
+                    && round(mc.player.getY() - (double) (int) mc.player.getY(), 3) == round(0.55, 3)) {
                     Managers.MOVEMENT.setMotionY(-0.14 + jumpEffect);
                     event.setY(-0.14 + jumpEffect);
                 }
@@ -421,7 +420,7 @@ public class SpeedII extends AddonModule {
                     strafe = 4;
                     return;
                 }
-                if (MathUtil.round(mc.player.getY() - ((int) mc.player.getY()), 3) == MathUtil.round(0.138, 3)) {
+                if (round(mc.player.getY() - ((int) mc.player.getY()), 3) == round(0.138, 3)) {
                     Managers.MOVEMENT.setMotionY(mc.player.getVelocity().y - (0.08 + jumpEffect));
                     event.setY(event.getY() - (0.0931 + jumpEffect));
                     Managers.POSITION.setPositionY(mc.player.getY() - (0.0931 + jumpEffect));
