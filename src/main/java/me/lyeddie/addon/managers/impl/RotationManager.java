@@ -187,14 +187,14 @@ public class RotationManager implements Globals {
     public void setRotationSilent(float yaw, float pitch) {
         setRotation(new Rotation(MAX_VALUE, yaw, pitch, true));
         Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(
-            mc.player.getX(), mc.player.getY(), mc.player.getZ(), yaw, pitch, mc.player.isOnGround()));
+            mc.player.getX(), mc.player.getY(), mc.player.getZ(), yaw, pitch, mc.player.isOnGround(), mc.player.horizontalCollision));
     }
 
     public void setRotationSilentSync() {
         float yaw = mc.player.getYaw();
         float pitch = mc.player.getPitch();
         setRotation(new Rotation(MAX_VALUE, yaw, pitch, true));
-        Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(mc.player.getX(), mc.player.getY(), mc.player.getZ(), yaw, pitch, mc.player.isOnGround()));
+        Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(mc.player.getX(), mc.player.getY(), mc.player.getZ(), yaw, pitch, mc.player.isOnGround(), mc.player.horizontalCollision));
     }
 
     public boolean removeRotation(Rotation request) {

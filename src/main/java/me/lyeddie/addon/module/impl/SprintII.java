@@ -111,7 +111,7 @@ public class SprintII extends RotationModule {
         return MovementUtil.isInputtingMovement()
             && !mc.player.isSneaking()
             && !mc.player.isRiding()
-            && !mc.player.isFallFlying()
+            && !mc.player.isGliding()
             && !mc.player.isTouchingWater()
             && !mc.player.isInLava()
             && !mc.player.isHoldingOntoLadder()

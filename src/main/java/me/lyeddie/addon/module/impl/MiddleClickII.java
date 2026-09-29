@@ -60,7 +60,7 @@ public class MiddleClickII extends AddonModule {
                 }
             } else {
                 Item item = null;
-                if (mc.player.isFallFlying() && fireworkConfig.get()) {
+                if (mc.player.isGliding() && fireworkConfig.get()) {
                     item = Items.FIREWORK_ROCKET;
                 } else if (pearlConfig.get()) {
                     item = Items.ENDER_PEARL;

@@ -9,8 +9,8 @@ import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ChorusFruitItem;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
@@ -67,7 +67,7 @@ public class ChorusControl extends AddonModule {
         }
         if (!cancelChorusTeleport && mc.player.isUsingItem()) {
             ItemStack stack = mc.player.getStackInHand(mc.player.getActiveHand());
-            if (stack.getItem() instanceof ChorusFruitItem
+            if (stack.isOf(Items.CHORUS_FRUIT)
                 && stack.getMaxUseTime(mc.player) - mc.player.getItemUseTime() <= 1) {
                 cancelChorusTeleport = true;
             }
@@ -77,7 +77,7 @@ public class ChorusControl extends AddonModule {
     @EventHandler
     public void onRender(Render3DEvent event) {
         if (teleportPacket != null) {
-            Vec3d vec3d = new Vec3d(teleportPacket.getX(), teleportPacket.getY(), teleportPacket.getZ());
+            Vec3d vec3d = teleportPacket.change().position();
             Box teleportBox = PlayerEntity.STANDING_DIMENSIONS.getBoxAt(vec3d);
             event.renderer.box(teleportBox, TabConfigs.get().getClampColor(60), TabConfigs.get().getClampColor(100), ShapeMode.Both, 0);
         }

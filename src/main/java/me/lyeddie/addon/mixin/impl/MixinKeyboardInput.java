@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MixinKeyboardInput {
 
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
-    private void hookTick$Pre(boolean slowDown, float slowDownFactor, CallbackInfo info) {
+    private void hookTick$Pre(CallbackInfo info) {
         PreKeyboardTickEvent eventA = new PreKeyboardTickEvent((Input) (Object) this);
         MeteorClient.EVENT_BUS.post(eventA);
         if (eventA.isCancelled()) {
@@ -22,9 +22,8 @@ public class MixinKeyboardInput {
         }
     }
 
-    @Inject(method = "tick", at = @At(value = "FIELD", target = "Lnet/minecraft/" +
-        "client/input/KeyboardInput;sneaking:Z", shift = At.Shift.BEFORE), cancellable = true)
-    private void hookTick$Post(boolean slowDown, float f, CallbackInfo ci) {
+    @Inject(method = "tick", at = @At("RETURN"), cancellable = true)
+    private void hookTick$Post(CallbackInfo ci) {
         PostKeyboardTickEvent eventB = new PostKeyboardTickEvent((Input) (Object) this);
         MeteorClient.EVENT_BUS.post(eventB);
         if (eventB.isCancelled()) {

@@ -11,13 +11,13 @@ public interface Helpers {
 
     default void info(Class<?> klass, String par) {
         String out = "(" + klass.getSimpleName() + ") " + par;
-        if (mc.player != null) mc.player.sendMessage(Text.of(out));
+        if (mc.player != null) mc.player.sendMessage(Text.of(out), false);
         else Shoreline.LOG.info(out);
     }
 
     default void info(String str, String par) {
         String out = "(%s) ".formatted(str) + par;
-        if (mc.player != null) mc.player.sendMessage(Text.of(out));
+        if (mc.player != null) mc.player.sendMessage(Text.of(out), false);
         else Shoreline.LOG.info(out);
     }
 }

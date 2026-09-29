@@ -7,6 +7,7 @@ import me.lyeddie.addon.util.Globals;
 import meteordevelopment.meteorclient.MeteorClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.player.PlayerPosition;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkThreadUtils;
 import net.minecraft.network.packet.Packet;
@@ -32,56 +33,40 @@ public abstract class MixinClientPlayNetworkHandler implements IClientPlayNetwor
         MeteorClient.EVENT_BUS.post(serverRotationEvent);
         if (serverRotationEvent.isCancelled()) {
             ci.cancel();
-            double i;
-            double h;
-            double g;
-            double f;
-            double e;
-            double d;
             NetworkThreadUtils.forceMainThread(packet, (ClientPlayNetworkHandler) (Object) this, mc);
             ClientPlayerEntity playerEntity = mc.player;
-            Vec3d vec3d = playerEntity.getVelocity();
-            boolean bl = packet.getFlags().contains(PositionFlag.X);
-            boolean bl2 = packet.getFlags().contains(PositionFlag.Y);
-            boolean bl3 = packet.getFlags().contains(PositionFlag.Z);
-            if (bl) {
-                d = vec3d.getX();
-                e = playerEntity.getX() + packet.getX();
-                playerEntity.lastRenderX += packet.getX();
-                playerEntity.prevX += packet.getX();
+            PlayerPosition resolved = PlayerPosition.apply(PlayerPosition.fromEntity(playerEntity), packet.change(), packet.relatives());
+            Vec3d position = resolved.position();
+            Vec3d change = packet.change().position();
+            if (packet.relatives().contains(PositionFlag.X)) {
+                playerEntity.lastRenderX += change.x;
+                playerEntity.prevX += change.x;
             } else {
-                d = 0.0;
-                playerEntity.lastRenderX = e = packet.getX();
-                playerEntity.prevX = e;
+                playerEntity.lastRenderX = position.x;
+                playerEntity.prevX = position.x;
             }
-            if (bl2) {
-                f = vec3d.getY();
-                g = playerEntity.getY() + packet.getY();
-                playerEntity.lastRenderY += packet.getY();
-                playerEntity.prevY += packet.getY();
+            if (packet.relatives().contains(PositionFlag.Y)) {
+                playerEntity.lastRenderY += change.y;
+                playerEntity.prevY += change.y;
             } else {
-                f = 0.0;
-                playerEntity.lastRenderY = g = packet.getY();
-                playerEntity.prevY = g;
+                playerEntity.lastRenderY = position.y;
+                playerEntity.prevY = position.y;
             }
-            if (bl3) {
-                h = vec3d.getZ();
-                i = playerEntity.getZ() + packet.getZ();
-                playerEntity.lastRenderZ += packet.getZ();
-                playerEntity.prevZ += packet.getZ();
+            if (packet.relatives().contains(PositionFlag.Z)) {
+                playerEntity.lastRenderZ += change.z;
+                playerEntity.prevZ += change.z;
             } else {
-                h = 0.0;
-                playerEntity.lastRenderZ = i = packet.getZ();
-                playerEntity.prevZ = i;
+                playerEntity.lastRenderZ = position.z;
+                playerEntity.prevZ = position.z;
             }
             float yaw = serverRotationEvent.getYaw();
             float pitch = serverRotationEvent.getPitch();
-            playerEntity.setPosition(e, g, i);
-            playerEntity.setVelocity(d, f, h);
-            getConnection().send(new TeleportConfirmC2SPacket(packet.getTeleportId()));
+            playerEntity.setPosition(position);
+            playerEntity.setVelocity(resolved.deltaMovement());
+            getConnection().send(new TeleportConfirmC2SPacket(packet.teleportId()));
             getConnection().send(new PlayerMoveC2SPacket.Full(playerEntity.getX(), playerEntity.getY(),
                 playerEntity.getZ(), Float.isNaN(yaw) ? playerEntity.getYaw() : yaw,
-                Float.isNaN(pitch) ? playerEntity.getPitch() : pitch, false));
+                Float.isNaN(pitch) ? playerEntity.getPitch() : pitch, false, playerEntity.horizontalCollision));
         }
     }
 

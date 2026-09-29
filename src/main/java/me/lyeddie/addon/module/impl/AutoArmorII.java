@@ -8,8 +8,10 @@ import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.AttributeModifiersComponent;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -72,13 +74,15 @@ public class AutoArmorII extends AddonModule {
         boots.clear();
         for (int j = 0; j < 36; j++) {
             ItemStack stack = mc.player.getInventory().getStack(j);
-            if (stack.isEmpty() || !(stack.getItem() instanceof ArmorItem armor)) {
+            if (stack.isEmpty() || !(stack.getItem() instanceof ArmorItem)) {
                 continue;
             }
             if (noBindingConfig.get() && hasEnchantment(stack, Enchantments.BINDING_CURSE)) {
                 continue;
             }
-            int index = armor.getSlotType().getEntitySlotId();
+            var equippable = stack.get(DataComponentTypes.EQUIPPABLE);
+            if (equippable == null) continue;
+            int index = equippable.slot().getEntitySlotId();
             float dura = (stack.getMaxDamage() - stack.getDamage()) / (float) stack.getMaxDamage();
             if (dura < minDurabilityConfig.get()) {
                 continue;
@@ -189,10 +193,7 @@ public class AutoArmorII extends AddonModule {
                 return 0;
             }
             final ItemStack otherStack = other.getArmorStack();
-            ArmorItem armorItem = (ArmorItem) armorStack.getItem();
-            ArmorItem otherItem = (ArmorItem) otherStack.getItem();
-            int durabilityDiff = armorItem.getMaterial().value().getProtection(armorItem.getType())
-                - otherItem.getMaterial().value().getProtection(otherItem.getType());
+            int durabilityDiff = Double.compare(getArmorValue(armorStack), getArmorValue(otherStack));
             if (durabilityDiff != 0) {
                 return durabilityDiff;
             }
@@ -219,5 +220,15 @@ public class AutoArmorII extends AddonModule {
         public int getSlot() {
             return slot;
         }
+    }
+
+    private double getArmorValue(ItemStack stack) {
+        AttributeModifiersComponent modifiers = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
+        if (modifiers == null) return 0.0;
+
+        return modifiers.modifiers().stream()
+            .filter(entry -> entry.attribute().equals(EntityAttributes.ARMOR))
+            .mapToDouble(entry -> entry.modifier().value())
+            .sum();
     }
 }

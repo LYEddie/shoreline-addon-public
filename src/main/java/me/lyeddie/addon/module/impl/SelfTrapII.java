@@ -234,7 +234,7 @@ public class SelfTrapII extends ObsidianPlacerModule {
         }
 
         if (serverPacket instanceof ExplosionS2CPacket packet && replaceConfig.get() == ReplaceMode.FAST) {
-            BlockPos pos = BlockPos.ofFloored(packet.getX(), packet.getY(), packet.getZ());
+            BlockPos pos = BlockPos.ofFloored(packet.center());
             if (surround.contains(pos)) {
                 BlockSlot blockItem = getResistantBlockItem();
                 if (blockItem == null) return;

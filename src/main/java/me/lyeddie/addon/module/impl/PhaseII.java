@@ -136,7 +136,7 @@ public class PhaseII extends ObsidianPlacerModule {
                 }
             }
 
-            if (pearlSlot == -1 || mc.player.getItemCooldownManager().isCoolingDown(Items.ENDER_PEARL)) {
+            if (pearlSlot == -1 || mc.player.getItemCooldownManager().isCoolingDown(mc.player.getInventory().getStack(pearlSlot))) {
                 toggle();
                 return;
             }
@@ -282,7 +282,7 @@ public class PhaseII extends ObsidianPlacerModule {
                     event.cancel();
                     event.setVoxelShape(VoxelShapes.empty());
                 }
-                if (mc.player.input.sneaking || (mc.player.input.jumping
+                if (mc.player.input.playerInput.sneak() || (mc.player.input.playerInput.jump()
                     && event.getPos().getY() > mc.player.getY())) {
                     event.cancel();
                 }
@@ -320,10 +320,10 @@ public class PhaseII extends ObsidianPlacerModule {
             case SAND -> {
                 Managers.MOVEMENT.setMotionY(0.0);
                 if (mc.isWindowFocused()) {
-                    if (mc.player.input.jumping) {
+                    if (mc.player.input.playerInput.jump()) {
                         Managers.MOVEMENT.setMotionY(mc.player.getVelocity().y + 0.3);
                     }
-                    if (mc.player.input.sneaking) {
+                    if (mc.player.input.playerInput.sneak()) {
                         Managers.MOVEMENT.setMotionY(mc.player.getVelocity().y - 0.3);
                     }
                 }

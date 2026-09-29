@@ -17,59 +17,50 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(TridentItem.class)
 public abstract class MixinTridentItem implements Globals {
 
-    @Shadow
-    protected static boolean isAboutToBreak(ItemStack stack) {
-        return false;
-    }
-
-    @Shadow
-    public abstract int getMaxUseTime(ItemStack stack, LivingEntity user);
-
     @Inject(method = "use", at = @At(value = "HEAD"), cancellable = true)
-    private void hookUse(World world, PlayerEntity user, Hand hand, CallbackInfoReturnable<TypedActionResult<ItemStack>> cir) {
+    private void hookUse(World world, PlayerEntity user, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
         TridentWaterEvent tridentWaterEvent = new TridentWaterEvent();
         MeteorClient.EVENT_BUS.post(tridentWaterEvent);
         if (tridentWaterEvent.isCancelled()) {
             cir.cancel();
             ItemStack itemStack = user.getStackInHand(hand);
             if (itemStack.getDamage() >= itemStack.getMaxDamage() - 1) {
-                cir.setReturnValue(TypedActionResult.fail(itemStack));
+                cir.setReturnValue(ActionResult.FAIL);
                 return;
             }
             user.setCurrentHand(hand);
-            cir.setReturnValue(TypedActionResult.consume(itemStack));
+            cir.setReturnValue(ActionResult.CONSUME);
         }
     }
 
     @Inject(method = "onStoppedUsing", at = @At(value = "HEAD"), cancellable = true)
-    private void hookOnStoppedUsing(ItemStack stack, World world, LivingEntity user, int remainingUseTicks, CallbackInfo ci) {
+    private void hookOnStoppedUsing(ItemStack stack, World world, LivingEntity user, int remainingUseTicks, CallbackInfoReturnable<Boolean> cir) {
         if (!(user instanceof PlayerEntity playerEntity)) {
             return;
         }
-        int var6 = this.getMaxUseTime(stack, user) - remainingUseTicks;
+        int var6 = stack.getMaxUseTime(user) - remainingUseTicks;
         TridentWaterEvent tridentWaterEvent = new TridentWaterEvent();
         MeteorClient.EVENT_BUS.post(tridentWaterEvent);
         if (tridentWaterEvent.isCancelled()) {
-            ci.cancel();
+            boolean used = false;
             if (var6 >= 10) {
                 float f = EnchantmentHelper.getTridentSpinAttackStrength(stack, playerEntity);
                 if (!(f > 0.0F) || playerEntity.isTouchingWaterOrRain()) {
-                    if (!isAboutToBreak(stack)) {
+                    if (!stack.willBreakNextUse()) {
+                        used = true;
                         RegistryEntry<SoundEvent> registryEntry = EnchantmentHelper.getEffect(stack, EnchantmentEffectComponentTypes.TRIDENT_SOUND).orElse(SoundEvents.ITEM_TRIDENT_THROW);
                         if (!world.isClient) {
                             stack.damage(1, playerEntity, LivingEntity.getSlotForHand(user.getActiveHand()));
@@ -111,6 +102,7 @@ public abstract class MixinTridentItem implements Globals {
                     }
                 }
             }
+            cir.setReturnValue(used);
         }
     }
 }

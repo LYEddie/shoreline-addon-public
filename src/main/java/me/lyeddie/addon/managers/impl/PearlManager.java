@@ -35,11 +35,11 @@ public class PearlManager implements Globals {
                 return;
             }
 
-            if (!pearlBB.contains(packet.getX(), packet.getY(), packet.getZ())) {
+            if (!pearlBB.contains(packet.change().position())) {
                 event.cancel();
-                mc.getNetworkHandler().getConnection().send(new TeleportConfirmC2SPacket(packet.getTeleportId()));
+                mc.getNetworkHandler().getConnection().send(new TeleportConfirmC2SPacket(packet.teleportId()));
                 mc.getNetworkHandler().getConnection().send(new PlayerMoveC2SPacket.Full(mc.player.getX(), mc.player.getY(),
-                    mc.player.getZ(), mc.player.getYaw(), mc.player.getPitch(), false));
+                    mc.player.getZ(), mc.player.getYaw(), mc.player.getPitch(), false, mc.player.horizontalCollision));
             }
             lastThrownAngles = null;
         }

@@ -8,7 +8,7 @@ import net.minecraft.block.ShapeContext;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockCollisionSpliterator;
-import net.minecraft.world.BlockView;
+import net.minecraft.world.CollisionView;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -17,14 +17,14 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 public class MixinBlockCollisionSpliterator implements Globals {
 
     @Redirect(method = "computeNext", at = @At(value = "INVOKE", target = "Lnet/minecraft/" +
-        "block/BlockState;getCollisionShape(Lnet/minecraft/world/BlockView;Lnet/minecraft/" +
-        "util/math/BlockPos;Lnet/minecraft/block/ShapeContext;)Lnet/minecraft/util/shape/VoxelShape;"))
-    private VoxelShape hookGetCollisionShape(BlockState instance, BlockView blockView, BlockPos blockPos, ShapeContext shapeContext) {
-        VoxelShape voxelShape = instance.getCollisionShape(blockView, blockPos, shapeContext);
-        if (blockView != mc.world) {
+        "block/ShapeContext;getCollisionShape(Lnet/minecraft/block/BlockState;Lnet/minecraft/" +
+        "world/CollisionView;Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/util/shape/VoxelShape;"))
+    private VoxelShape hookGetCollisionShape(ShapeContext instance, BlockState blockState, CollisionView collisionView, BlockPos blockPos) {
+        VoxelShape voxelShape = instance.getCollisionShape(blockState, collisionView, blockPos);
+        if (collisionView != mc.world) {
             return voxelShape;
         }
-        BlockCollisionEvent blockCollisionEvent = new BlockCollisionEvent(voxelShape, blockPos, instance);
+        BlockCollisionEvent blockCollisionEvent = new BlockCollisionEvent(voxelShape, blockPos, blockState);
         MeteorClient.EVENT_BUS.post(blockCollisionEvent);
         if (blockCollisionEvent.isCancelled()) {
             return blockCollisionEvent.getVoxelShape();

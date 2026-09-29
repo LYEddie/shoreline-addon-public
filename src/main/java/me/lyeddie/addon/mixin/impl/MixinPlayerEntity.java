@@ -2,8 +2,6 @@ package me.lyeddie.addon.mixin.impl;
 
 import me.lyeddie.addon.events.PushFluidsEvent;
 import me.lyeddie.addon.events.SprintResetEvent;
-import me.lyeddie.addon.events.staged.PostPlayerJumpEvent;
-import me.lyeddie.addon.events.staged.PrePlayerJumpEvent;
 import me.lyeddie.addon.util.Globals;
 import meteordevelopment.meteorclient.MeteorClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -41,27 +39,6 @@ public abstract class MixinPlayerEntity extends LivingEntity implements Globals 
             cir.setReturnValue(false);
             cir.cancel();
         }
-    }
-
-    @Inject(method = "jump", at = @At(value = "HEAD"), cancellable = true)
-    private void hookJumpPre(CallbackInfo ci) {
-        if ((Object) this != mc.player) {
-            return;
-        }
-        PrePlayerJumpEvent playerJumpEvent = new PrePlayerJumpEvent();
-        MeteorClient.EVENT_BUS.post(playerJumpEvent);
-        if (playerJumpEvent.isCancelled()) {
-            ci.cancel();
-        }
-    }
-
-    @Inject(method = "jump", at = @At(value = "RETURN"), cancellable = true)
-    private void hookJumpPost(CallbackInfo ci) {
-        if ((Object) this != mc.player) {
-            return;
-        }
-        PostPlayerJumpEvent playerJumpEvent = new PostPlayerJumpEvent();
-        MeteorClient.EVENT_BUS.post(playerJumpEvent);
     }
 
     @Redirect(method = "attack", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;setVelocity(Lnet/minecraft/util/math/Vec3d;)V"))

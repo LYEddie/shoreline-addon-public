@@ -349,12 +349,12 @@ public class Aura extends CombatModule {
             PlayerInventory inventory = mc.player.getInventory();
             ItemStack itemStack = inventory.getStack((slot == -1 || !swordCheckConfig.get()) ? mc.player.getInventory().selectedSlot : slot);
 
-            MutableDouble attackSpeed = new MutableDouble(mc.player.getAttributeBaseValue(EntityAttributes.GENERIC_ATTACK_SPEED));
+            MutableDouble attackSpeed = new MutableDouble(mc.player.getAttributeBaseValue(EntityAttributes.ATTACK_SPEED));
 
             AttributeModifiersComponent attributeModifiers = itemStack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
             if (attributeModifiers != null) {
                 attributeModifiers.applyModifiers(EquipmentSlot.MAINHAND, (entry, modifier) -> {
-                    if (entry == EntityAttributes.GENERIC_ATTACK_SPEED) {
+                    if (entry.equals(EntityAttributes.ATTACK_SPEED)) {
                         attackSpeed.add(modifier.value());
                     }
                 });
@@ -455,18 +455,18 @@ public class Aura extends CombatModule {
         int slot = -1;
         for (int i = 0; i < 9; i++) {
             final ItemStack stack = mc.player.getInventory().getStack(i);
-            if (stack.getItem() instanceof SwordItem swordItem) {
+            if (stack.getItem() instanceof SwordItem) {
                 float sharpness = EnchantmentUtil.getLevel(stack,
                     Enchantments.SHARPNESS) * 0.5f + 0.5f;
-                float dmg = swordItem.getMaterial().getAttackDamage() + sharpness;
+                float dmg = getAttackDamage(stack) + sharpness;
                 if (dmg > sharp) {
                     sharp = dmg;
                     slot = i;
                 }
-            } else if (stack.getItem() instanceof AxeItem axeItem) {
+            } else if (stack.getItem() instanceof AxeItem) {
                 float sharpness = EnchantmentUtil.getLevel(stack,
                     Enchantments.SHARPNESS) * 0.5f + 0.5f;
-                float dmg = axeItem.getMaterial().getAttackDamage() + sharpness;
+                float dmg = getAttackDamage(stack) + sharpness;
                 if (dmg > sharp) {
                     sharp = dmg;
                     slot = i;
@@ -490,6 +490,19 @@ public class Aura extends CombatModule {
             }
         }
         return slot;
+    }
+
+    private float getAttackDamage(ItemStack stack) {
+        AttributeModifiersComponent modifiers = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
+        if (modifiers == null) return 0.0f;
+
+        double damage = 0.0;
+        for (AttributeModifiersComponent.Entry entry : modifiers.modifiers()) {
+            if (entry.attribute().equals(EntityAttributes.ATTACK_DAMAGE)) {
+                damage += entry.modifier().value();
+            }
+        }
+        return (float) damage;
     }
 
     private int getBreachMaceSlot() {

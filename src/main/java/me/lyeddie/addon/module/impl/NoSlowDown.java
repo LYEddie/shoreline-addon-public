@@ -239,7 +239,7 @@ public class NoSlowDown extends AddonModule {
     @EventHandler
     public void onMovementSlowdown(MovementSlowdownEvent event) {
         if (sneakConfig.get() && mc.player.isSneaking() || crawlConfig.get() && mc.player.isCrawling()) {
-            float f = 1.0f / (float) mc.player.getAttributeValue(EntityAttributes.PLAYER_SNEAKING_SPEED);
+            float f = 1.0f / (float) mc.player.getAttributeValue(EntityAttributes.SNEAKING_SPEED);
             event.input.movementForward *= f;
             event.input.movementSideways *= f;
         }

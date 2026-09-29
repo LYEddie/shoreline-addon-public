@@ -58,7 +58,7 @@ public class TabConfigs extends System<TabConfigs> implements Globals {
             .defaultValue(false)
             .visible(() -> modeConfig.get() == Anticheats.N_C_P)
             .onChanged(ts -> {
-                if (!ts) { // needed to be post i think :retard_patrick_star:
+                if (!ts && Managers.TAB_EVENTS != null) { // Settings reset before managers initialize on startup.
                     Managers.TAB_EVENTS.pitch = Float.NaN;
                 }
             })

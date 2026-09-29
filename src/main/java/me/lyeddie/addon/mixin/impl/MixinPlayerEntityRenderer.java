@@ -3,11 +3,9 @@ package me.lyeddie.addon.mixin.impl;
 import me.lyeddie.addon.events.RenderPlayerEvent;
 import meteordevelopment.meteorclient.MeteorClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.PlayerEntityRenderer;
-import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -15,47 +13,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(PlayerEntityRenderer.class)
 public class MixinPlayerEntityRenderer {
 
-    @Unique
-    private float yaw, prevYaw, bodyYaw, prevBodyYaw, headYaw, prevHeadYaw;
-    @Unique
-    private float pitch, prevPitch;
-    @Unique
-    private boolean prevSneaking;
-
-    @Inject(method = "render(Lnet/minecraft/client/network/" + "AbstractClientPlayerEntity;FFLnet/minecraft/client/util/" + "math/MatrixStack;Lnet/minecraft/client/render " + "/VertexConsumerProvider;I)V", at = @At(value = "HEAD"))
-    private void onRenderHead(AbstractClientPlayerEntity abstractClientPlayerEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, CallbackInfo ci) {
-        final RenderPlayerEvent renderPlayerEvent = new RenderPlayerEvent(abstractClientPlayerEntity);
+    @Inject(method = "updateRenderState(Lnet/minecraft/client/network/AbstractClientPlayerEntity;Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;F)V", at = @At("TAIL"))
+    private void hookUpdateRenderState(AbstractClientPlayerEntity player, PlayerEntityRenderState state, float tickDelta, CallbackInfo ci) {
+        RenderPlayerEvent renderPlayerEvent = new RenderPlayerEvent(player);
         MeteorClient.EVENT_BUS.post(renderPlayerEvent);
-        yaw = abstractClientPlayerEntity.getYaw();
-        prevYaw = abstractClientPlayerEntity.prevYaw;
-        bodyYaw = abstractClientPlayerEntity.bodyYaw;
-        prevBodyYaw = abstractClientPlayerEntity.prevBodyYaw;
-        headYaw = abstractClientPlayerEntity.headYaw;
-        prevHeadYaw = abstractClientPlayerEntity.prevHeadYaw;
-        pitch = abstractClientPlayerEntity.getPitch();
-        prevPitch = abstractClientPlayerEntity.prevPitch;
-        prevSneaking = abstractClientPlayerEntity.isSneaking();
         if (renderPlayerEvent.isCancelled()) {
-            abstractClientPlayerEntity.setYaw(renderPlayerEvent.getYaw());
-            abstractClientPlayerEntity.prevYaw = renderPlayerEvent.getYaw();
-            abstractClientPlayerEntity.setBodyYaw(renderPlayerEvent.getYaw());
-            abstractClientPlayerEntity.prevBodyYaw = renderPlayerEvent.getYaw();
-            abstractClientPlayerEntity.setHeadYaw(renderPlayerEvent.getYaw());
-            abstractClientPlayerEntity.prevHeadYaw = renderPlayerEvent.getYaw();
-            abstractClientPlayerEntity.setPitch(renderPlayerEvent.getPitch());
-            abstractClientPlayerEntity.prevPitch = renderPlayerEvent.getPitch();
+            state.bodyYaw = renderPlayerEvent.getYaw();
+            state.yawDegrees = 0.0f;
+            state.pitch = renderPlayerEvent.getPitch();
         }
-    }
-
-    @Inject(method = "render(Lnet/minecraft/client/network/" + "AbstractClientPlayerEntity;FFLnet/minecraft/client/util/" + "math/MatrixStack;Lnet/minecraft/client/render " + "/VertexConsumerProvider;I)V", at = @At(value = "TAIL"))
-    private void onRenderTail(AbstractClientPlayerEntity abstractClientPlayerEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, CallbackInfo ci) {
-        abstractClientPlayerEntity.setYaw(yaw);
-        abstractClientPlayerEntity.prevYaw = prevYaw;
-        abstractClientPlayerEntity.setBodyYaw(bodyYaw);
-        abstractClientPlayerEntity.prevBodyYaw = prevBodyYaw;
-        abstractClientPlayerEntity.setHeadYaw(headYaw);
-        abstractClientPlayerEntity.prevHeadYaw = prevHeadYaw;
-        abstractClientPlayerEntity.setPitch(pitch);
-        abstractClientPlayerEntity.prevPitch = prevPitch;
     }
 }

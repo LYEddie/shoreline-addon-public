@@ -4,14 +4,15 @@ import me.lyeddie.addon.util.Globals;
 import net.minecraft.block.BlockState;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.DamageUtil;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -102,7 +103,7 @@ public class ExplosionUtil implements Globals {
         }
 
         if (entity instanceof LivingEntity livingEntity) {
-            damage = DamageUtil.getDamageLeft(livingEntity, (float) damage, damageSource, getArmor(livingEntity), (float) livingEntity.getAttributeValue(EntityAttributes.GENERIC_ARMOR_TOUGHNESS));
+            damage = DamageUtil.getDamageLeft(livingEntity, (float) damage, damageSource, getArmor(livingEntity), (float) livingEntity.getAttributeValue(EntityAttributes.ARMOR_TOUGHNESS));
             damage = getResistanceReduction(livingEntity, damage);
             damage = getProtectionReduction(livingEntity, damage, damageSource, assumeBestArmor);
         }
@@ -111,7 +112,7 @@ public class ExplosionUtil implements Globals {
     }
 
     private static float getArmor(LivingEntity entity) {
-        return (float) Math.floor(entity.getAttributeValue(EntityAttributes.GENERIC_ARMOR));
+        return (float) Math.floor(entity.getAttributeValue(EntityAttributes.ARMOR));
     }
 
     private static float getProtectionReduction(Entity player, double damage, DamageSource source, boolean assumeBestArmor) {
@@ -126,10 +127,11 @@ public class ExplosionUtil implements Globals {
         MutableInt mutableInt = new MutableInt();
         equipment.forEach(i -> {
             if (assumeBestArmor && EnchantmentUtil.isFakeEnchant2b2t(i)) {
-                mutableInt.add(i.getItem() instanceof ArmorItem armorItem && armorItem.getType() == ArmorItem.Type.LEGGINGS ? 8 : 4);
+                var equippable = i.get(DataComponentTypes.EQUIPPABLE);
+                mutableInt.add(equippable != null && equippable.slot() == EquipmentSlot.LEGS ? 8 : 4);
             } else {
-                int modifierBlast = EnchantmentHelper.getLevel(mc.world.getRegistryManager().get(Enchantments.BLAST_PROTECTION.getRegistryRef()).getEntry(Enchantments.BLAST_PROTECTION).get(), i);
-                int modifier = EnchantmentHelper.getLevel(mc.world.getRegistryManager().get(Enchantments.PROTECTION.getRegistryRef()).getEntry(Enchantments.PROTECTION).get(), i);
+                int modifierBlast = EnchantmentUtil.getLevel(i, Enchantments.BLAST_PROTECTION);
+                int modifier = EnchantmentUtil.getLevel(i, Enchantments.PROTECTION);
                 mutableInt.add(modifierBlast * 2 + modifier);
             }
         });

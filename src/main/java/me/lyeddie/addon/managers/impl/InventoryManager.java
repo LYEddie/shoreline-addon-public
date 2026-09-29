@@ -55,7 +55,7 @@ public class InventoryManager implements Globals {
     @EventHandler
     public void onPacketInbound(final PacketEvent.Receive event) {
         if (event.packet instanceof UpdateSelectedSlotS2CPacket packet) {
-            slot = packet.getSlot();
+            slot = packet.slot();
         }
 
         if (Replenish.getInstance().isInInventoryScreen() || !TabConfigs.get().isGrim()) {

@@ -92,18 +92,16 @@ public class TabEvents implements Globals, Helpers {
 
         if (TabConfigs.get().antiCrashConfig.get() && mc.world != null) {
             if (event.packet instanceof PlayerPositionLookS2CPacket packet
-                    && (packet.getX() > 30000000 || packet.getY() > mc.world.getTopY()
-                    || packet.getZ() > 30000000 || packet.getX() < -30000000
-                    || packet.getY() < mc.world.getBottomY() || packet.getZ() < -30000000)) {
+                    && (packet.change().position().x > 30000000 || packet.change().position().y > mc.world.getTopYInclusive()
+                    || packet.change().position().z > 30000000 || packet.change().position().x < -30000000
+                    || packet.change().position().y < mc.world.getBottomY() || packet.change().position().z < -30000000)) {
                 event.cancel();
             } else if (event.packet instanceof ExplosionS2CPacket packet
-                    && (packet.getX() > 30000000 || packet.getY() > mc.world.getTopY()
-                    || packet.getZ() > 30000000 || packet.getX() < -30000000
-                    || packet.getY() < mc.world.getBottomY() || packet.getZ() < -30000000
-                    || packet.getRadius() > 1000 || packet.getAffectedBlocks().size() > 1000
-                    || packet.getPlayerVelocityX() > 1000 || packet.getPlayerVelocityY() > 1000
-                    || packet.getPlayerVelocityZ() > 1000 || packet.getPlayerVelocityX() < -1000
-                    || packet.getPlayerVelocityY() < -1000 || packet.getPlayerVelocityZ() < -1000)) {
+                    && (packet.center().x > 30000000 || packet.center().y > mc.world.getTopYInclusive()
+                    || packet.center().z > 30000000 || packet.center().x < -30000000
+                    || packet.center().y < mc.world.getBottomY() || packet.center().z < -30000000
+                    || packet.playerKnockback().map(velocity -> Math.abs(velocity.x) > 1000
+                    || Math.abs(velocity.y) > 1000 || Math.abs(velocity.z) > 1000).orElse(false))) {
                 event.cancel();
             } else if (event.packet instanceof EntityVelocityUpdateS2CPacket packet
                     && (packet.getVelocityX() > 1000 || packet.getVelocityY() > 1000 ||

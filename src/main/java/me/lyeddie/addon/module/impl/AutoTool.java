@@ -7,10 +7,10 @@ import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.SwordItem;
-import net.minecraft.item.ToolItem;
 
 public class AutoTool extends AddonModule {
     private static AutoTool INST;
@@ -51,7 +51,7 @@ public class AutoTool extends AddonModule {
         float bestTool = 0.0f;
         for (int i = 0; i < 9; i++) {
             final ItemStack stack = mc.player.getInventory().getStack(i);
-            if (stack.isEmpty() || !(stack.getItem() instanceof ToolItem)) {
+            if (stack.isEmpty() || !stack.contains(DataComponentTypes.TOOL)) {
                 continue;
             }
             float speed = stack.getMiningSpeedMultiplier(state);

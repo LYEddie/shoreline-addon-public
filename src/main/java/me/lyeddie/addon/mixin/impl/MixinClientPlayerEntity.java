@@ -117,16 +117,16 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
                 boolean bl3 = g != 0.0 || h != 0.0;
                 if (hasVehicle()) {
                     Vec3d vec3d = getVelocity();
-                    networkHandler.sendPacket(new PlayerMoveC2SPacket.Full(vec3d.x, -999.0, vec3d.z, getYaw(), getPitch(), ground));
+                    networkHandler.sendPacket(new PlayerMoveC2SPacket.Full(vec3d.x, -999.0, vec3d.z, getYaw(), getPitch(), ground, horizontalCollision));
                     bl2 = false;
                 } else if (bl2 && bl3) {
-                    networkHandler.sendPacket(new PlayerMoveC2SPacket.Full(x, y, z, yaw, pitch, ground));
+                    networkHandler.sendPacket(new PlayerMoveC2SPacket.Full(x, y, z, yaw, pitch, ground, horizontalCollision));
                 } else if (bl2) {
-                    networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y, z, ground));
+                    networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y, z, ground, horizontalCollision));
                 } else if (bl3) {
-                    networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(yaw, pitch, ground));
+                    networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(yaw, pitch, ground, horizontalCollision));
                 } else if (lastOnGround != isOnGround()) {
-                    networkHandler.sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(ground));
+                    networkHandler.sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(ground, horizontalCollision));
                 }
                 if (bl2) {
                     lastX = x;
@@ -153,7 +153,7 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
         MeteorClient.EVENT_BUS.post(playerTickEvent);
     }
 
-    @Inject(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/input/Input;tick(ZF)V", shift = At.Shift.AFTER))
+    @Inject(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/input/Input;tick()V", shift = At.Shift.AFTER))
     private void hookTickMovementPost(CallbackInfo ci) {
         MovementSlowdownEvent movementUpdateEvent = new MovementSlowdownEvent(input);
         MeteorClient.EVENT_BUS.post(movementUpdateEvent);

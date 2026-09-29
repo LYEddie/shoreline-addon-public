@@ -4,10 +4,13 @@ import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import me.lyeddie.addon.events.JumpRotationEvent;
 import me.lyeddie.addon.events.LevitationEvent;
 import me.lyeddie.addon.events.PlayerClimbEvent;
+import me.lyeddie.addon.events.staged.PostPlayerJumpEvent;
+import me.lyeddie.addon.events.staged.PrePlayerJumpEvent;
 import me.lyeddie.addon.util.Globals;
 import meteordevelopment.meteorclient.MeteorClient;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.registry.entry.RegistryEntry;
 import org.spongepowered.asm.mixin.Mixin;
@@ -16,15 +19,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LivingEntity.class)
 public abstract class MixinLivingEntity extends MixinEntity implements Globals {
 
     @Shadow
     public abstract float getYaw(float tickDelta);
-
-    @Shadow
-    public abstract boolean hasStatusEffect(RegistryEntry<StatusEffect> par1);
 
     @ModifyExpressionValue(method = "jump", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;getYaw()F"))
     private float hookJump$getYaw(float original) {
@@ -41,14 +42,31 @@ public abstract class MixinLivingEntity extends MixinEntity implements Globals {
         return original;
     }
 
-    @Redirect(method = "travel", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;hasStatusEffect(Lnet/minecraft/registry/entry/RegistryEntry;)Z"))
-    private boolean hookHasStatusEffect(LivingEntity instance, RegistryEntry<StatusEffect> effect) {
+    @Inject(method = "jump", at = @At("HEAD"), cancellable = true)
+    private void hookJumpPre(CallbackInfo ci) {
+        if ((Object) this != mc.player) return;
+
+        PrePlayerJumpEvent event = new PrePlayerJumpEvent();
+        MeteorClient.EVENT_BUS.post(event);
+        if (event.isCancelled()) ci.cancel();
+    }
+
+    @Inject(method = "jump", at = @At("RETURN"))
+    private void hookJumpPost(CallbackInfo ci) {
+        if ((Object) this == mc.player) {
+            MeteorClient.EVENT_BUS.post(new PostPlayerJumpEvent());
+        }
+    }
+
+    @Redirect(method = "travelMidAir", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;getStatusEffect(Lnet/minecraft/registry/entry/RegistryEntry;)Lnet/minecraft/entity/effect/StatusEffectInstance;"))
+    private StatusEffectInstance hookGetStatusEffect(LivingEntity instance, RegistryEntry<StatusEffect> effect) {
+        StatusEffectInstance statusEffect = instance.getStatusEffect(effect);
         if (instance.equals(mc.player) && effect == StatusEffects.LEVITATION) {
             LevitationEvent levitationEvent = new LevitationEvent();
             MeteorClient.EVENT_BUS.post(levitationEvent);
-            return !levitationEvent.isCancelled() && hasStatusEffect(effect);
+            return levitationEvent.isCancelled() ? null : statusEffect;
         }
-        return hasStatusEffect(effect);
+        return statusEffect;
     }
 
     @Inject(method = "isClimbing", at = @At(value = "HEAD"), cancellable = true)

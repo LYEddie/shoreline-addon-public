@@ -164,7 +164,7 @@ public class SpeedII extends AddonModule {
                 || Disabler.getInstance().grimFireworkCheck()
                 || mc.player.getAbilities().flying
                 || mc.player.isRiding()
-                || mc.player.isFallFlying()
+                || mc.player.isGliding()
                 || mc.player.isHoldingOntoLadder()
                 || mc.player.fallDistance > 2.0f
                 || (mc.player.isInLava() || mc.player.isTouchingWater())
@@ -199,7 +199,7 @@ public class SpeedII extends AddonModule {
                 if (strafe == 1) {
                     speed = 1.35f * base - 0.01f;
                 } else if (strafe == 2) {
-                    if (mc.player.input.jumping || !mc.player.isOnGround()) {
+                    if (mc.player.input.playerInput.jump() || !mc.player.isOnGround()) {
                         return;
                     }
                     float jump = (speedModeConfig.get() == SpeedMode.STRAFE_B_HOP ? 0.4000000059604645f : 0.3999999463558197f) + jumpEffect;
@@ -245,7 +245,7 @@ public class SpeedII extends AddonModule {
                 if (strafe == 1) {
                     speed = 1.35f * base - 0.01f;
                 } else if (strafe == 2) {
-                    if (mc.player.input.jumping || !mc.player.isOnGround()) {
+                    if (mc.player.input.playerInput.jump() || !mc.player.isOnGround()) {
                         return;
                     }
                     float jump = 0.3999999463558197f + jumpEffect;
@@ -460,10 +460,7 @@ public class SpeedII extends AddonModule {
         if (mc.player == null || mc.world == null) {
             return;
         }
-        if (event.packet instanceof ExplosionS2CPacket packet) {
-            double x = packet.getPlayerVelocityX();
-            double z = packet.getPlayerVelocityZ();
-        } else if (event.packet instanceof EntityVelocityUpdateS2CPacket packet
+        if (event.packet instanceof EntityVelocityUpdateS2CPacket packet
             && packet.getEntityId() == mc.player.getId()) {
             double x = packet.getVelocityX();
             double z = packet.getVelocityZ();

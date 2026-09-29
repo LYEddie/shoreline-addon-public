@@ -73,7 +73,7 @@ public class PacketLogger extends AddonModule implements Helpers {
         .defaultValue(false)
         .build());
     private final Setting<Boolean> pickInventoryConfig = sgPackets.add(new BoolSetting.Builder()
-        .name("PickInventory").description("Logs PickFromInventoryC2SPacket")
+        .name("PickItem").description("Logs pick-item packets")
         .defaultValue(false)
         .build());
     private final Setting<Boolean> handSwingConfig = sgPackets.add(new BoolSetting.Builder()
@@ -156,7 +156,7 @@ public class PacketLogger extends AddonModule implements Helpers {
         Map<Identifier, Integer> packetCountMap = new HashMap<>();
         for (PacketLog packetLog : packetLogs) {
             Packet<?> packet = packetLog.packet();
-            Identifier identifier = packet.getPacketId().id();
+            Identifier identifier = packet.getPacketType().id();
             if (packetCountMap.containsKey(identifier)) {
                 packetCountMap.replace(identifier, packetCountMap.get(identifier) + 1);
             } else {
@@ -210,7 +210,7 @@ public class PacketLogger extends AddonModule implements Helpers {
             logPacket(packet, s);
         }
         if (event.packet instanceof VehicleMoveC2SPacket packet && vehicleMoveConfig.get()) {
-            logPacket(packet, "VehicleMove - x: %s, y: %s, z: %s, yaw: %s, pitch: %s", packet.getX(), packet.getY(), packet.getZ(), packet.getYaw(), packet.getPitch());
+            logPacket(packet, "VehicleMove - pos: %s, yaw: %s, pitch: %s", packet.position(), packet.yaw(), packet.pitch());
         }
         if (event.packet instanceof PlayerActionC2SPacket packet && playerActionConfig.get()) {
             logPacket(packet, "PlayerAction - action: %s, direction: %s, pos: %s", packet.getAction().name(), packet.getDirection().name(), packet.getPos().toShortString());
@@ -246,8 +246,11 @@ public class PacketLogger extends AddonModule implements Helpers {
         if (event.packet instanceof ClickSlotC2SPacket packet && clickSlotConfig.get()) {
             logPacket(packet, "ClickSlot - type: %s, slot: %s, button: %s, id: %s", packet.getActionType().name(), packet.getSlot(), packet.getButton(), packet.getSyncId());
         }
-        if (event.packet instanceof PickFromInventoryC2SPacket packet && pickInventoryConfig.get()) {
-            logPacket(packet, "PickInventory - slot: %s", packet.getSlot());
+        if (event.packet instanceof PickItemFromBlockC2SPacket packet && pickInventoryConfig.get()) {
+            logPacket(packet, "PickBlock - pos: %s, includeData: %s", packet.pos(), packet.includeData());
+        }
+        if (event.packet instanceof PickItemFromEntityC2SPacket packet && pickInventoryConfig.get()) {
+            logPacket(packet, "PickEntity - id: %s, includeData: %s", packet.id(), packet.includeData());
         }
         if (event.packet instanceof TeleportConfirmC2SPacket packet && teleportConfirmConfig.get()) {
             logPacket(packet, "TeleportConfirm - id: %s", packet.getTeleportId());

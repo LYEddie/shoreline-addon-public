@@ -91,7 +91,7 @@ public class Disabler extends AddonModule {
                 if (stack.getItem() instanceof FireworkRocketItem && i < 9) {
                     fireworkSlot = i;
                 }
-                if (stack.getItem() instanceof ElytraItem) {
+                if (stack.isOf(Items.ELYTRA)) {
                     elytraSlot = i;
                 }
             }
@@ -164,7 +164,7 @@ public class Disabler extends AddonModule {
     }
 
     public boolean isYawOverflow() {
-        return !mc.player.isFallFlying() && modeConfig.get() == Mode.GRIM_OVERFLOW;
+        return !mc.player.isGliding() && modeConfig.get() == Mode.GRIM_OVERFLOW;
     }
 
     public boolean grimFireworkCheck() {

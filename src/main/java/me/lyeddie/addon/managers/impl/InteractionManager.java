@@ -197,7 +197,8 @@ public final class InteractionManager implements Globals {
             MovementUtil.applySneak();
         }
         final ActionResult actionResult = packet ? placeBlockPacket(result, hand) : placeBlockInternally(result, hand);
-        if (actionResult.isAccepted() && actionResult.shouldSwingHand()) {
+        if (actionResult instanceof ActionResult.Success success
+            && success.swingSource() == ActionResult.SwingSource.CLIENT) {
             if (clientSwing) {
                 mc.player.swingHand(Hand.MAIN_HAND);
             } else {

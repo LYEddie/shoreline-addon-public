@@ -8,6 +8,7 @@ import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.*;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.screen.slot.SlotActionType;
@@ -34,8 +35,7 @@ public class ChestSwapII extends AddonModule {
     @Override
     public void onActivate() {
         ItemStack armorStack = mc.player.getInventory().getArmorStack(2);
-        if (armorStack.getItem() instanceof ArmorItem armorItem
-            && armorItem.getSlotType() == EquipmentSlot.CHEST) {
+        if (isChestArmor(armorStack)) {
             int elytraSlot = getElytraSlot();
             if (elytraSlot != -1) {
                 Managers.INVENTORY.pickupSlot(elytraSlot < 9 ? elytraSlot + 36 : elytraSlot);
@@ -43,7 +43,6 @@ public class ChestSwapII extends AddonModule {
                 Managers.INVENTORY.pickupSlot(elytraSlot < 9 ? elytraSlot + 36 : elytraSlot);
                 if (autoFireworkConfig.get() && !mc.player.isOnGround()) {
                     Managers.NETWORK.sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                    mc.player.startFallFlying();
                     int slot = -1;
                     for (int i = 0; i < 45; i++) {
                         ItemStack stack = mc.player.getInventory().getStack(i);
@@ -85,12 +84,11 @@ public class ChestSwapII extends AddonModule {
         int slot = -1;
         for (int i = 0; i < 36; i++) {
             ItemStack stack = mc.player.getInventory().getStack(i);
-            if (stack.getItem() instanceof ArmorItem armorItem
-                && armorItem.getSlotType() == EquipmentSlot.CHEST) {
-                if (armorItem.getMaterial() == ArmorMaterials.NETHERITE && priorityConfig.get() == Priority.NETHERITE) {
+            if (isChestArmor(stack)) {
+                if (stack.isOf(Items.NETHERITE_CHESTPLATE) && priorityConfig.get() == Priority.NETHERITE) {
                     slot = i;
                     break;
-                } else if (armorItem.getMaterial() == ArmorMaterials.DIAMOND && priorityConfig.get() == Priority.DIAMOND) {
+                } else if (stack.isOf(Items.DIAMOND_CHESTPLATE) && priorityConfig.get() == Priority.DIAMOND) {
                     slot = i;
                     break;
                 } else {
@@ -105,12 +103,17 @@ public class ChestSwapII extends AddonModule {
         int slot = -1;
         for (int i = 0; i < 36; i++) {
             ItemStack stack = mc.player.getInventory().getStack(i);
-            if (stack.getItem() instanceof ElytraItem) {
+            if (stack.isOf(Items.ELYTRA)) {
                 slot = i;
                 break;
             }
         }
         return slot;
+    }
+
+    private boolean isChestArmor(ItemStack stack) {
+        var equippable = stack.get(DataComponentTypes.EQUIPPABLE);
+        return stack.getItem() instanceof ArmorItem && equippable != null && equippable.slot() == EquipmentSlot.CHEST;
     }
 
     public static ChestSwapII getInstance() {

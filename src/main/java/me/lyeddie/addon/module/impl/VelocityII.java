@@ -27,10 +27,12 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static me.lyeddie.addon.util.Globals.RANDOM;
 
@@ -133,7 +135,7 @@ public class VelocityII extends AddonModule {
                     yaw = Managers.ROTATION.getRotationYaw();
                     pitch = Managers.ROTATION.getRotationPitch();
                 }
-                Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(mc.player.getX(), mc.player.getY(), mc.player.getZ(), yaw, pitch, mc.player.isOnGround()));
+                Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(mc.player.getX(), mc.player.getY(), mc.player.getZ(), yaw, pitch, mc.player.isOnGround(), mc.player.horizontalCollision));
                 Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, mc.player.isCrawling() ? mc.player.getBlockPos() : mc.player.getBlockPos().up(), Direction.DOWN));
             }
             cancelVelocity = false;
@@ -204,12 +206,7 @@ public class VelocityII extends AddonModule {
                     if (horizontalConfig.get() == 0.0f && verticalConfig.get() == 0.0f) {
                         event.cancel();
                     } else {
-                        ((AccessorExplosionS2CPacket) packet).setPlayerVelocityX((float) (packet.getPlayerVelocityX()
-                                                    * (horizontalConfig.get() / 100.0f)));
-                        ((AccessorExplosionS2CPacket) packet).setPlayerVelocityY((float) (packet.getPlayerVelocityY()
-                                                    * (verticalConfig.get() / 100.0f)));
-                        ((AccessorExplosionS2CPacket) packet).setPlayerVelocityZ((float) (packet.getPlayerVelocityZ()
-                                                    * (horizontalConfig.get() / 100.0f)));
+                        scaleExplosionKnockback(packet);
                     }
                 }
                 case GRIM -> {
@@ -224,7 +221,7 @@ public class VelocityII extends AddonModule {
             }
 
             if (event.isCancelled()) {
-                mc.executeSync(() -> ((AccessorClientWorld) mc.world).hookPlaySound(packet.getX(), packet.getY(), packet.getZ(),
+                mc.executeSync(() -> ((AccessorClientWorld) mc.world).hookPlaySound(packet.center().x, packet.center().y, packet.center().z,
                     SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.BLOCKS,
                     4.0f, (1.0f + (RANDOM.nextFloat() - RANDOM.nextFloat()) * 0.2f) * 0.7f, false, RANDOM.nextLong()));
             }
@@ -233,7 +230,7 @@ public class VelocityII extends AddonModule {
 
             for (Packet<?> packet1 : packet.getPackets()) {
                 if (packet1 instanceof ExplosionS2CPacket packet2 && explosionConfig.get()) {
-                    mc.executeSync(() -> ((AccessorClientWorld) mc.world).hookPlaySound(packet2.getX(), packet2.getY(), packet2.getZ(),
+                    mc.executeSync(() -> ((AccessorClientWorld) mc.world).hookPlaySound(packet2.center().x, packet2.center().y, packet2.center().z,
                         SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.BLOCKS,
                         4.0f, (1.0f + (RANDOM.nextFloat() - RANDOM.nextFloat()) * 0.2f) * 0.7f, false, RANDOM.nextLong()));
 
@@ -247,12 +244,7 @@ public class VelocityII extends AddonModule {
                             if (horizontalConfig.get() == 0.0f && verticalConfig.get() == 0.0f) {
                                 continue;
                             } else {
-                                ((AccessorExplosionS2CPacket) packet2).setPlayerVelocityX((float) (packet2.getPlayerVelocityX()
-                                                                    * (horizontalConfig.get() / 100.0f)));
-                                ((AccessorExplosionS2CPacket) packet2).setPlayerVelocityY((float) (packet2.getPlayerVelocityY()
-                                                                    * (verticalConfig.get() / 100.0f)));
-                                ((AccessorExplosionS2CPacket) packet2).setPlayerVelocityZ((float) (packet2.getPlayerVelocityZ()
-                                                                    * (horizontalConfig.get() / 100.0f)));
+                                scaleExplosionKnockback(packet2);
                             }
                         }
                         case GRIM -> {
@@ -325,8 +317,8 @@ public class VelocityII extends AddonModule {
         } else if (event.packet instanceof EntityDamageS2CPacket packet
             && packet.entityId() == mc.player.getId()
             && modeConfig.get() == VelocityMode.GRIM_V3 && isPhased()) {
-            Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(false));
-            Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(true));
+            Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(false, mc.player.horizontalCollision));
+            Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(true, mc.player.horizontalCollision));
         } else if (event.packet instanceof EntityStatusS2CPacket packet
             && packet.getStatus() == EntityStatuses.PULL_HOOKED_ENTITY && pushFishhookConfig.get()) {
             Entity entity = packet.getEntity(mc.world);
@@ -349,7 +341,7 @@ public class VelocityII extends AddonModule {
                     pitch = Managers.ROTATION.getRotationPitch();
                 }
                 Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(mc.player.getX(),
-                    mc.player.getY(), mc.player.getZ(), yaw, pitch, mc.player.isOnGround()));
+                    mc.player.getY(), mc.player.getZ(), yaw, pitch, mc.player.isOnGround(), mc.player.horizontalCollision));
                 Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK,
                     mc.player.isCrawling() ? mc.player.getBlockPos() : mc.player.getBlockPos().up(), Direction.DOWN));
             }
@@ -386,6 +378,17 @@ public class VelocityII extends AddonModule {
 
         return SurroundII.getInstance().getSurroundNoDown(mc.player).stream().noneMatch(
             blockPos -> mc.world.getBlockState(mc.player.isCrawling() ? blockPos : blockPos.up()).isReplaceable());
+    }
+
+    private void scaleExplosionKnockback(ExplosionS2CPacket packet) {
+        packet.playerKnockback().ifPresent(knockback -> {
+            Vec3d scaled = new Vec3d(
+                knockback.x * (horizontalConfig.get() / 100.0f),
+                knockback.y * (verticalConfig.get() / 100.0f),
+                knockback.z * (horizontalConfig.get() / 100.0f)
+            );
+            ((AccessorExplosionS2CPacket) (Object) packet).setPlayerKnockback(Optional.of(scaled));
+        });
     }
 
     private boolean isPhased() {

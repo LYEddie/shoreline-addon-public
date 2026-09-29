@@ -50,7 +50,7 @@ public class PositionManager implements Globals {
 
     public void setPosition(double x, double y, double z) {
         setPositionClient(x, y, z);
-        Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y, z, isOnGround()));
+        Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y, z, isOnGround(), mc.player.horizontalCollision));
     }
 
     public void setPositionClient(double x, double y, double z) {

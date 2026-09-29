@@ -102,7 +102,7 @@ public class CriticalsII extends AddonModule {
 
         if (event.packet instanceof IPlayerInteractEntityC2SPacket packet
             && packet.getType() == InteractType.ATTACK) {
-            if (mc.player.isRiding() || mc.player.isFallFlying()
+            if (mc.player.isRiding() || mc.player.isGliding()
                 || mc.player.isTouchingWater()
                 || mc.player.isInLava()
                 || mc.player.isHoldingOntoLadder()
@@ -142,25 +142,25 @@ public class CriticalsII extends AddonModule {
         double z = Managers.POSITION.getZ();
         switch (modeConfig.get()) {
             case VANILLA -> {
-                if (mc.player.isOnGround() && !mc.player.input.jumping) {
+                if (mc.player.isOnGround() && !mc.player.input.playerInput.jump()) {
                     double d = 1.0e-7 + 1.0e-7 * (1.0 + RANDOM.nextInt(RANDOM.nextBoolean() ? 34 : 43));
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 0.1016f + d * 3.0f, z, false));
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 0.0202f + d * 2.0f, z, false));
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 3.239e-4 + d, z, false));
+                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 0.1016f + d * 3.0f, z, false, mc.player.horizontalCollision));
+                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 0.0202f + d * 2.0f, z, false, mc.player.horizontalCollision));
+                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 3.239e-4 + d, z, false, mc.player.horizontalCollision));
                     mc.player.addCritParticles(e);
                 }
             }
             case PACKET -> {
-                if (mc.player.isOnGround() && !mc.player.input.jumping) {
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 0.0625f, z, false));
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y, z, false));
+                if (mc.player.isOnGround() && !mc.player.input.playerInput.jump()) {
+                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 0.0625f, z, false, mc.player.horizontalCollision));
+                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y, z, false, mc.player.horizontalCollision));
                     mc.player.addCritParticles(e);
                 }
             }
             case PACKET_STRICT -> {
-                if (attackTimer.passed(500) && mc.player.isOnGround() && !mc.player.input.jumping) {
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 1.1e-7f, z, false));
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 1.0e-8f, z, false));
+                if (attackTimer.passed(500) && mc.player.isOnGround() && !mc.player.input.playerInput.jump()) {
+                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 1.1e-7f, z, false, mc.player.horizontalCollision));
+                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 1.0e-8f, z, false, mc.player.horizontalCollision));
                     postUpdateGround = true;
                     attackTimer.reset();
                 }
@@ -181,9 +181,9 @@ public class CriticalsII extends AddonModule {
                         yaw = Managers.ROTATION.getRotationYaw();
                         pitch = Managers.ROTATION.getRotationPitch();
                     }
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(x, y + 0.0625, z, yaw, pitch, false));
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(x, y + 0.0625013579, z, yaw, pitch, false));
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(x, y + 1.3579e-6, z, yaw, pitch, false));
+                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(x, y + 0.0625, z, yaw, pitch, false, mc.player.horizontalCollision));
+                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(x, y + 0.0625013579, z, yaw, pitch, false, mc.player.horizontalCollision));
+                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(x, y + 1.3579e-6, z, yaw, pitch, false, mc.player.horizontalCollision));
                     attackTimer.reset();
                 }
             }
@@ -203,9 +203,9 @@ public class CriticalsII extends AddonModule {
                         yaw = Managers.ROTATION.getRotationYaw();
                         pitch = Managers.ROTATION.getRotationPitch();
                     }
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(x, y, z, yaw, pitch, true));
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(x, y + 0.0625f, z, yaw, pitch, false));
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(x, y + 0.04535f, z, yaw, pitch, false));
+                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(x, y, z, yaw, pitch, true, mc.player.horizontalCollision));
+                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(x, y + 0.0625f, z, yaw, pitch, false, mc.player.horizontalCollision));
+                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(x, y + 0.04535f, z, yaw, pitch, false, mc.player.horizontalCollision));
                 }
             }
             case LOW_HOP -> {
@@ -222,7 +222,7 @@ public class CriticalsII extends AddonModule {
 
         if (event.getPacket() instanceof PlayerInteractEntityC2SPacket) {
             if (postUpdateGround) {
-                Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY(), mc.player.getZ(), false));
+                Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY(), mc.player.getZ(), false, mc.player.horizontalCollision));
                 postUpdateGround = false;
             }
 

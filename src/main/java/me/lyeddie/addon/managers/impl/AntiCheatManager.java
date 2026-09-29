@@ -9,7 +9,6 @@ import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
-import net.minecraft.util.math.Vec3d;
 import java.util.Arrays;
 
 public final class AntiCheatManager implements Globals, Helpers {
@@ -36,8 +35,8 @@ public final class AntiCheatManager implements Globals, Helpers {
                 grimCheck();
             }
         } else if (event.packet instanceof PlayerPositionLookS2CPacket packet) {
-            lastSetback = new SetbackData(new Vec3d(packet.getX(), packet.getY(), packet.getZ()),
-                System.currentTimeMillis(), packet.getTeleportId());
+            lastSetback = new SetbackData(packet.change().position(),
+                System.currentTimeMillis(), packet.teleportId());
         }
     }
 

@@ -635,7 +635,7 @@ public class AutoCrystal extends CombatModule {
     private void handleServerPackets(Packet<?> serverPacket) {
         if (serverPacket instanceof ExplosionS2CPacket packet) {
             for (Entity entity : Lists.newArrayList(mc.world.getEntities())) {
-                if (entity instanceof EndCrystalEntity && entity.squaredDistanceTo(packet.getX(), packet.getY(), packet.getZ()) < 144.0) {
+                if (entity instanceof EndCrystalEntity && entity.squaredDistanceTo(packet.center()) < 144.0) {
                     mc.executeSync(() -> mc.world.removeEntity(entity.getId(), Entity.RemovalReason.DISCARDED));
                     antiStuckCrystals.remove(entity.getId());
                     Long attackTime = attackPackets.remove(entity.getId());

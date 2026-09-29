@@ -14,7 +14,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -88,17 +87,19 @@ public abstract class MixinClientPlayerInteractionManager implements Globals {
                     hand, sequence, Managers.ROTATION.isRotating() ? Managers.ROTATION.getRotationYaw() : player.getYaw(),
                     Managers.ROTATION.isRotating() ? Managers.ROTATION.getRotationPitch() : player.getPitch());
                 ItemStack itemStack = player.getStackInHand(hand);
-                if (player.getItemCooldownManager().isCoolingDown(itemStack.getItem())) {
+                if (player.getItemCooldownManager().isCoolingDown(itemStack)) {
                     mutableObject.setValue(ActionResult.PASS);
                     return playerInteractItemC2SPacket;
                 } else {
-                    TypedActionResult<ItemStack> typedActionResult = itemStack.use(mc.world, player, hand);
-                    ItemStack itemStack2 = typedActionResult.getValue();
-                    if (itemStack2 != itemStack) {
-                        player.setStackInHand(hand, itemStack2);
+                    ActionResult actionResult = itemStack.use(mc.world, player, hand);
+                    if (actionResult instanceof ActionResult.Success success) {
+                        ItemStack newStack = success.getNewHandStack();
+                        if (newStack != null) {
+                            player.setStackInHand(hand, newStack);
+                        }
                     }
 
-                    mutableObject.setValue(typedActionResult.getResult());
+                    mutableObject.setValue(actionResult);
                     return playerInteractItemC2SPacket;
                 }
             });
