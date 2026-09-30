@@ -6,17 +6,16 @@ import me.lyeddie.addon.managers.Managers;
 import meteordevelopment.meteorclient.settings.*;
 import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.client.gui.screen.ingame.InventoryScreen;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.AttributeModifiersComponent;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.Enchantments;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.entry.RegistryEntry;
-
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.Enchantments;
 import java.util.PriorityQueue;
 import java.util.Queue;
 
@@ -63,7 +62,7 @@ public class AutoArmorII extends AddonModule {
 
     @EventHandler
     public void onTick(PlayerTickEvent event) {
-        if (mc.currentScreen != null && !(mc.currentScreen instanceof InventoryScreen && inventoryConfig.get())) {
+        if (mc.screen != null && !(mc.screen instanceof InventoryScreen && inventoryConfig.get())) {
             return;
         }
 
@@ -72,17 +71,17 @@ public class AutoArmorII extends AddonModule {
         leggings.clear();
         boots.clear();
         for (int j = 0; j < 36; j++) {
-            ItemStack stack = mc.player.getInventory().getStack(j);
+            ItemStack stack = mc.player.getInventory().getItem(j);
             if (stack.isEmpty()) {
                 continue;
             }
             if (noBindingConfig.get() && hasEnchantment(stack, Enchantments.BINDING_CURSE)) {
                 continue;
             }
-            var equippable = stack.get(DataComponentTypes.EQUIPPABLE);
+            var equippable = stack.get(DataComponents.EQUIPPABLE);
             if (equippable == null || getArmorValue(stack) <= 0.0) continue;
-            int index = equippable.slot().getEntitySlotId();
-            float dura = (stack.getMaxDamage() - stack.getDamage()) / (float) stack.getMaxDamage();
+            int index = equippable.slot().getIndex();
+            float dura = (stack.getMaxDamage() - stack.getDamageValue()) / (float) stack.getMaxDamage();
             if (dura < minDurabilityConfig.get()) {
                 continue;
             }
@@ -99,7 +98,7 @@ public class AutoArmorII extends AddonModule {
             if (elytraPriorityConfig.get() && armorStack.getItem() == Items.ELYTRA) {
                 continue;
             }
-            float armorDura = (armorStack.getMaxDamage() - armorStack.getDamage()) / (float) armorStack.getMaxDamage();
+            float armorDura = (armorStack.getMaxDamage() - armorStack.getDamageValue()) / (float) armorStack.getMaxDamage();
             if (!armorStack.isEmpty() || armorDura >= minDurabilityConfig.get()) {
                 continue;
             }
@@ -143,11 +142,11 @@ public class AutoArmorII extends AddonModule {
         }
     }
 
-    public boolean hasEnchantment(ItemStack armorStack, RegistryKey<Enchantment> enchantment) {
-        if (armorStack.getComponents().contains(DataComponentTypes.ENCHANTMENTS)) {
-            for (RegistryEntry<Enchantment> entry : armorStack.getComponents()
-                .get(DataComponentTypes.ENCHANTMENTS).getEnchantments()) {
-                if (entry.getKey().isPresent() && entry.getKey().get().equals(enchantment)) {
+    public boolean hasEnchantment(ItemStack armorStack, ResourceKey<Enchantment> enchantment) {
+        if (armorStack.getComponents().has(DataComponents.ENCHANTMENTS)) {
+            for (Holder<Enchantment> entry : armorStack.getComponents()
+                .get(DataComponents.ENCHANTMENTS).keySet()) {
+                if (entry.unwrapKey().isPresent() && entry.unwrapKey().get().equals(enchantment)) {
                     return true;
                 }
             }
@@ -164,13 +163,13 @@ public class AutoArmorII extends AddonModule {
         PROTECTION(Enchantments.PROTECTION),
         PROJECTILE_PROTECTION(Enchantments.PROJECTILE_PROTECTION);
 
-        private final RegistryKey<Enchantment> enchant;
+        private final ResourceKey<Enchantment> enchant;
 
-        Priority(RegistryKey<Enchantment> enchant) {
+        Priority(ResourceKey<Enchantment> enchant) {
             this.enchant = enchant;
         }
 
-        public RegistryKey<Enchantment> getEnchantment() {
+        public ResourceKey<Enchantment> getEnchantment() {
             return enchant;
         }
     }
@@ -196,7 +195,7 @@ public class AutoArmorII extends AddonModule {
             if (durabilityDiff != 0) {
                 return durabilityDiff;
             }
-            RegistryKey<Enchantment> enchantment = priorityConfig.get().getEnchantment();
+            ResourceKey<Enchantment> enchantment = priorityConfig.get().getEnchantment();
             if (blastLeggingsConfig.get() && armorType == 2
                 && hasEnchantment(armorStack, Enchantments.BLAST_PROTECTION)) {
                 return -1;
@@ -222,21 +221,21 @@ public class AutoArmorII extends AddonModule {
     }
 
     private double getArmorValue(ItemStack stack) {
-        AttributeModifiersComponent modifiers = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
+        ItemAttributeModifiers modifiers = stack.get(DataComponents.ATTRIBUTE_MODIFIERS);
         if (modifiers == null) return 0.0;
 
         return modifiers.modifiers().stream()
-            .filter(entry -> entry.attribute().equals(EntityAttributes.ARMOR))
-            .mapToDouble(entry -> entry.modifier().value())
+            .filter(entry -> entry.attribute().equals(Attributes.ARMOR))
+            .mapToDouble(entry -> entry.modifier().amount())
             .sum();
     }
 
     private ItemStack getArmorStack(int armorSlot) {
-        return mc.player.getEquippedStack(switch (armorSlot) {
-            case 0 -> net.minecraft.entity.EquipmentSlot.FEET;
-            case 1 -> net.minecraft.entity.EquipmentSlot.LEGS;
-            case 2 -> net.minecraft.entity.EquipmentSlot.CHEST;
-            case 3 -> net.minecraft.entity.EquipmentSlot.HEAD;
+        return mc.player.getItemBySlot(switch (armorSlot) {
+            case 0 -> net.minecraft.world.entity.EquipmentSlot.FEET;
+            case 1 -> net.minecraft.world.entity.EquipmentSlot.LEGS;
+            case 2 -> net.minecraft.world.entity.EquipmentSlot.CHEST;
+            case 3 -> net.minecraft.world.entity.EquipmentSlot.HEAD;
             default -> throw new IllegalArgumentException("Invalid armor slot: " + armorSlot);
         });
     }

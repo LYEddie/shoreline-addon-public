@@ -10,13 +10,13 @@ import meteordevelopment.meteorclient.settings.*;
 import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.ArrowEntity;
-import net.minecraft.entity.projectile.thrown.EnderPearlEntity;
-import net.minecraft.entity.projectile.thrown.ExperienceBottleEntity;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.arrow.Arrow;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownEnderpearl;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownExperienceBottle;
+import net.minecraft.world.phys.Vec3;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -78,11 +78,11 @@ public class BreadcrumbsII extends AddonModule {
 
     @EventHandler
     public void onPlayerUpdate(PlayerTickEvent event) {
-        for (Entity entity : mc.world.getEntities()) {
+        for (Entity entity : mc.level.entitiesForRendering()) {
             if (!checkEntity(entity)) {
                 continue;
             }
-            final Vec3d pos = Interpolation.getInterpolatedPosition(entity, mc.getRenderTickCounter().getTickProgress(true));
+            final Vec3 pos = Interpolation.getInterpolatedPosition(entity, mc.getDeltaTracker().getGameTimeDeltaPartialTick(true));
             if (positions.containsKey(entity.getId())) {
                 positions.get(entity.getId()).add(new TimedPosition(pos, System.currentTimeMillis()));
             } else {
@@ -117,14 +117,14 @@ public class BreadcrumbsII extends AddonModule {
                 TimedPosition timedPosition = timedPositions.get(i);
                 SettingColor lineCol;
                 if (!infiniteConfig.get()) {
-                    float fade = 1.0f - MathHelper.clamp((System.currentTimeMillis() - timedPosition.time()) / (float) fadeTimeConfig.get(), 0.0f, 1.0f);
+                    float fade = 1.0f - Mth.clamp((System.currentTimeMillis() - timedPosition.time()) / (float) fadeTimeConfig.get(), 0.0f, 1.0f);
                     lineCol = TabConfigs.get().getClampColor((int) (fade * 255.0f));
                 } else {
                     lineCol = TabConfigs.get().colorConfig.get();
                 }
                 if (i > 1) {
-                    Vec3d vec3d = timedPositions.get(i - 1).pos();
-                    Vec3d vec3d2 = timedPosition.pos();
+                    Vec3 vec3d = timedPositions.get(i - 1).pos();
+                    Vec3 vec3d2 = timedPosition.pos();
                     event.renderer.line(vec3d.x, vec3d.y, vec3d.z, vec3d2.x, vec3d2.y, vec3d2.z, lineCol);
                 }
             }
@@ -132,15 +132,15 @@ public class BreadcrumbsII extends AddonModule {
     }
 
     public boolean checkEntity(Entity entity) {
-        if (entity instanceof PlayerEntity) {
+        if (entity instanceof Player) {
             return playersConfig.get() || entity == mc.player && selfConfig.get();
         }
-        return entity instanceof EnderPearlEntity && pearlsConfig.get()
-            || entity instanceof ArrowEntity && arrowsConfig.get()
-            || entity instanceof ExperienceBottleEntity && xpBottlesConfig.get();
+        return entity instanceof ThrownEnderpearl && pearlsConfig.get()
+            || entity instanceof Arrow && arrowsConfig.get()
+            || entity instanceof ThrownExperienceBottle && xpBottlesConfig.get();
     }
 
-    private record TimedPosition(Vec3d pos, long time) {
+    private record TimedPosition(Vec3 pos, long time) {
     }
 
     public static BreadcrumbsII getInstance() {

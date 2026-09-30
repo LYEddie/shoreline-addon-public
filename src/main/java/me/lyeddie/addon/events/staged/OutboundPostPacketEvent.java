@@ -2,7 +2,7 @@ package me.lyeddie.addon.events.staged;
 
 import me.lyeddie.addon.managers.Managers;
 import meteordevelopment.meteorclient.events.Cancellable;
-import net.minecraft.network.packet.Packet;
+import net.minecraft.network.protocol.Packet;
 
 public class OutboundPostPacketEvent extends Cancellable {
 

@@ -13,15 +13,15 @@ import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.util.Mth;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -113,7 +113,7 @@ public class ScaffoldII extends BlockPlacerModule {
 
     @EventHandler
     public void onPlayerTick(final PlayerTickEvent event) {
-        if ((!multitaskConfig.get() && checkMultitask()) || (stopMotionConfig.get() && !mc.player.isOnGround())) {
+        if ((!multitaskConfig.get() && checkMultitask()) || (stopMotionConfig.get() && !mc.player.onGround())) {
             blockData = null;
             renderData = null;
             return;
@@ -130,26 +130,26 @@ public class ScaffoldII extends BlockPlacerModule {
         blockData = getBlockData(rotateHoldConfig.get());
         if (blockData == null) {
             if (grimNewConfig.get() && rotateConfig.get()) {
-                float yaw = mc.player.getYaw();
-                if (mc.options.forwardKey.isPressed() && !mc.options.backKey.isPressed()) {
-                    if (mc.options.leftKey.isPressed() && !mc.options.rightKey.isPressed()) {
+                float yaw = mc.player.getYRot();
+                if (mc.options.keyUp.isDown() && !mc.options.keyDown.isDown()) {
+                    if (mc.options.keyLeft.isDown() && !mc.options.keyRight.isDown()) {
                         yaw -= 45.0f;
-                    } else if (mc.options.rightKey.isPressed() && !mc.options.leftKey.isPressed()) {
+                    } else if (mc.options.keyRight.isDown() && !mc.options.keyLeft.isDown()) {
                         yaw += 45.0f;
                     }
-                } else if (mc.options.backKey.isPressed() && !mc.options.forwardKey.isPressed()) {
+                } else if (mc.options.keyDown.isDown() && !mc.options.keyUp.isDown()) {
                     yaw += 180.0f;
-                    if (mc.options.leftKey.isPressed() && !mc.options.rightKey.isPressed()) {
+                    if (mc.options.keyLeft.isDown() && !mc.options.keyRight.isDown()) {
                         yaw += 45.0f;
-                    } else if (mc.options.rightKey.isPressed() && !mc.options.leftKey.isPressed()) {
+                    } else if (mc.options.keyRight.isDown() && !mc.options.keyLeft.isDown()) {
                         yaw -= 45.0f;
                     }
-                } else if (mc.options.leftKey.isPressed() && !mc.options.rightKey.isPressed()) {
+                } else if (mc.options.keyLeft.isDown() && !mc.options.keyRight.isDown()) {
                     yaw -= 90.0f;
-                } else if (mc.options.rightKey.isPressed() && !mc.options.leftKey.isPressed()) {
+                } else if (mc.options.keyRight.isDown() && !mc.options.keyLeft.isDown()) {
                     yaw += 90.0f;
                 }
-                setRotation(MathHelper.wrapDegrees(yaw), 90.0f);
+                setRotation(Mth.wrapDegrees(yaw), 90.0f);
             }
             return;
         }
@@ -166,9 +166,9 @@ public class ScaffoldII extends BlockPlacerModule {
             Managers.INVENTORY.setSlot(slot);
         }
 
-        Vec3d prevMotion = mc.player.getVelocity();
+        Vec3 prevMotion = mc.player.getDeltaMovement();
         if (stopMotionConfig.get()) {
-            mc.player.setVelocity(0.0, 0.0, 0.0);
+            mc.player.setDeltaMovement(0.0, 0.0, 0.0);
         }
 
         boolean result = Managers.INTERACT.placeBlock(blockData.getBlockPos(), blockItem.block(), slot, false, false, false, (state, angles) -> {
@@ -193,13 +193,13 @@ public class ScaffoldII extends BlockPlacerModule {
         });
         if (result) {
             if (stopMotionConfig.get()) {
-                mc.player.setVelocity(prevMotion);
+                mc.player.setDeltaMovement(prevMotion);
             }
-            if (!isGrim() && towerConfig.get() && mc.options.jumpKey.isPressed()) {
-                final Vec3d velocity = mc.player.getVelocity();
+            if (!isGrim() && towerConfig.get() && mc.options.keyJump.isDown()) {
+                final Vec3 velocity = mc.player.getDeltaMovement();
                 final double velocityY = velocity.y;
-                if ((mc.player.isOnGround() || velocityY < 0.1) || velocityY <= 0.16477328182606651) {
-                    mc.player.setVelocity(velocity.x, 0.42f, velocity.z);
+                if ((mc.player.onGround() || velocityY < 0.1) || velocityY <= 0.16477328182606651) {
+                    mc.player.setDeltaMovement(velocity.x, 0.42f, velocity.z);
                 }
             }
         }
@@ -232,38 +232,38 @@ public class ScaffoldII extends BlockPlacerModule {
 
     private void calcRotations(final BlockData blockData) {
         final BlockPos pos = blockData.getHitResult().getBlockPos();
-        final Direction side = blockData.getHitResult().getSide();
-        final Vec3d basicHitVec = pos.toCenterPos()
-            .add(side.getOffsetX() * 0.5f, side.getOffsetY() * 0.5f, side.getOffsetZ() * 0.5f);
-        blockData.setAngles(RotationUtil.getRotationsTo(mc.player.getEyePos(), basicHitVec));
+        final Direction side = blockData.getHitResult().getDirection();
+        final Vec3 basicHitVec = pos.getCenter()
+            .add(side.getStepX() * 0.5f, side.getStepY() * 0.5f, side.getStepZ() * 0.5f);
+        blockData.setAngles(RotationUtil.getRotationsTo(mc.player.getEyePosition(), basicHitVec));
         blockData.setHitResult(new BlockHitResult(basicHitVec, side, pos, false));
     }
 
     private BlockData getBlockData(boolean hold) {
         int posY = (int) Math.round(mc.player.getY()) - 1;
         if (keepYConfig.get() && MovementUtil.isInputtingMovement()) {
-            if (mc.player.isOnGround() || groundPosY == -1) {
+            if (mc.player.onGround() || groundPosY == -1) {
                 groundPosY = (int) Math.floor(mc.player.getY()) - 1;
             }
             posY = groundPosY;
         }
         final BlockPos pos = PositionUtil.getRoundedBlockPos(
             mc.player.getX(), posY, mc.player.getZ());
-        if (!hold && !mc.world.getBlockState(pos).isReplaceable()) {
+        if (!hold && !mc.level.getBlockState(pos).canBeReplaced()) {
             return null;
         }
         for (final Direction direction : Direction.values()) {
-            final BlockPos neighbor = pos.offset(direction);
-            if (!mc.world.getBlockState(neighbor).isReplaceable()) {
+            final BlockPos neighbor = pos.relative(direction);
+            if (!mc.level.getBlockState(neighbor).canBeReplaced()) {
                 return BlockData.basic(neighbor, direction.getOpposite());
             }
         }
         for (final Direction direction : Direction.values()) {
-            final BlockPos neighbor = pos.offset(direction);
-            if (mc.world.getBlockState(neighbor).isReplaceable()) {
+            final BlockPos neighbor = pos.relative(direction);
+            if (mc.level.getBlockState(neighbor).canBeReplaced()) {
                 for (final Direction direction1 : Direction.values()) {
-                    final BlockPos neighbor1 = neighbor.offset(direction1);
-                    if (!mc.world.getBlockState(neighbor1).isReplaceable()) {
+                    final BlockPos neighbor1 = neighbor.relative(direction1);
+                    if (!mc.level.getBlockState(neighbor1).canBeReplaced()) {
                         return BlockData.basic(neighbor1, direction1.getOpposite());
                     }
                 }
@@ -283,7 +283,7 @@ public class ScaffoldII extends BlockPlacerModule {
         int blockSlot = -1;
         int count = 0;
         for (int i = 0; i < 9; ++i) {
-            final ItemStack itemStack = mc.player.getInventory().getStack(i);
+            final ItemStack itemStack = mc.player.getInventory().getItem(i);
             if (!itemStack.isEmpty() && itemStack.getItem() instanceof BlockItem blockItem && validScaffoldBlock(blockItem.getBlock())) {
                 Block block1x = blockItem.getBlock();
                 if (pickerConfig.get() == BlockPicker.NORMAL) {
@@ -337,7 +337,7 @@ public class ScaffoldII extends BlockPlacerModule {
         }
 
         public static BlockData basic(final BlockPos pos, final Direction direction) {
-            return new BlockData(new BlockHitResult(pos.toCenterPos(), direction, pos, false), null);
+            return new BlockData(new BlockHitResult(pos.getCenter(), direction, pos, false), null);
         }
 
         public BlockHitResult getHitResult() {
@@ -349,7 +349,7 @@ public class ScaffoldII extends BlockPlacerModule {
         }
 
         public BlockPos getBlockPos() {
-            return hitResult.getBlockPos().offset(hitResult.getSide());
+            return hitResult.getBlockPos().relative(hitResult.getDirection());
         }
 
         public float[] getAngles() {

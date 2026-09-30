@@ -1,12 +1,12 @@
 package me.lyeddie.addon.mixin.impl.accessor;
 
-import net.minecraft.client.input.Input;
-import net.minecraft.util.math.Vec2f;
+import net.minecraft.client.player.ClientInput;
+import net.minecraft.world.phys.Vec2;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-@Mixin(Input.class)
+@Mixin(ClientInput.class)
 public interface AccessorInput {
-    @Accessor("movementVector")
-    void shoreline$setMovementVector(Vec2f movementVector);
+    @Accessor("moveVector")
+    void shoreline$setMovementVector(Vec2 movementVector);
 }

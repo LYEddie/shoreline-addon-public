@@ -10,8 +10,8 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.network.packet.s2c.play.GameStateChangeS2CPacket;
-import net.minecraft.particle.ParticleTypes;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
 import net.minecraft.world.attribute.AmbientParticle;
 
 import java.util.List;
@@ -40,10 +40,10 @@ public class NoWeather extends AddonModule {
 
     @Override
     public void onActivate() {
-        if (mc.world != null) {
-            if (mc.world.isThundering()) {
+        if (mc.level != null) {
+            if (mc.level.isThundering()) {
                 weather = Weather.THUNDER;
-            } else if (mc.world.isRaining()) {
+            } else if (mc.level.isRaining()) {
                 weather = Weather.RAIN;
             } else {
                 weather = Weather.CLEAR;
@@ -54,7 +54,7 @@ public class NoWeather extends AddonModule {
 
     @Override
     public void onDeactivate() {
-        if (mc.world != null && weather != null) {
+        if (mc.level != null && weather != null) {
             setWeather(weather);
         }
     }
@@ -75,30 +75,30 @@ public class NoWeather extends AddonModule {
     private void setWeather(Weather weather) {
         switch (weather) {
             case CLEAR, ASH -> {
-                mc.world.getLevelProperties().setRaining(false);
-                mc.world.setRainGradient(0.0f);
-                mc.world.setThunderGradient(0.0f);
+                mc.level.getLevelData().setRaining(false);
+                mc.level.setRainLevel(0.0f);
+                mc.level.setThunderLevel(0.0f);
             }
             case RAIN -> {
-                mc.world.getLevelProperties().setRaining(true);
-                mc.world.setRainGradient(1.0f);
-                mc.world.setThunderGradient(0.0f);
+                mc.level.getLevelData().setRaining(true);
+                mc.level.setRainLevel(1.0f);
+                mc.level.setThunderLevel(0.0f);
             }
             case THUNDER -> {
-                mc.world.getLevelProperties().setRaining(true);
-                mc.world.setRainGradient(2.0f);
-                mc.world.setThunderGradient(1.0f);
+                mc.level.getLevelData().setRaining(true);
+                mc.level.setRainLevel(2.0f);
+                mc.level.setThunderLevel(1.0f);
             }
         }
     }
 
     @EventHandler
     public void onPacketInbound(PacketEvent.Receive event) {
-        if (event.packet instanceof GameStateChangeS2CPacket packet) {
-            if (packet.getReason() == GameStateChangeS2CPacket.RAIN_STARTED
-                || packet.getReason() == GameStateChangeS2CPacket.RAIN_STOPPED
-                || packet.getReason() == GameStateChangeS2CPacket.RAIN_GRADIENT_CHANGED
-                || packet.getReason() == GameStateChangeS2CPacket.THUNDER_GRADIENT_CHANGED) {
+        if (event.packet instanceof ClientboundGameEventPacket packet) {
+            if (packet.getEvent() == ClientboundGameEventPacket.START_RAINING
+                || packet.getEvent() == ClientboundGameEventPacket.STOP_RAINING
+                || packet.getEvent() == ClientboundGameEventPacket.RAIN_LEVEL_CHANGE
+                || packet.getEvent() == ClientboundGameEventPacket.THUNDER_LEVEL_CHANGE) {
                 event.cancel();
             }
         }

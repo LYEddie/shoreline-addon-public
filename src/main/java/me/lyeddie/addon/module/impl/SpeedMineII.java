@@ -16,22 +16,26 @@ import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.BlockState;
-import net.minecraft.enchantment.Enchantments;
-import net.minecraft.entity.effect.StatusEffectUtil;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
-import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.BundleS2CPacket;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.*;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.BlockView;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundBundlePacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
+import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffectUtil;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -170,7 +174,7 @@ public class SpeedMineII extends CombatModule {
         }
 
         if (modeConfig.get() == SpeedmineMode.DAMAGE) {
-            AccessorClientPlayerInteractionManager interactionManager = (AccessorClientPlayerInteractionManager) mc.interactionManager;
+            AccessorClientPlayerInteractionManager interactionManager = (AccessorClientPlayerInteractionManager) mc.gameMode;
             if (interactionManager.hookGetCurrentBreakingProgress() >= speedConfig.get()) {
                 interactionManager.hookSetCurrentBreakingProgress(1.0f);
             }
@@ -194,7 +198,7 @@ public class SpeedMineII extends CombatModule {
                 miningQueue.remove(data);
                 continue;
             }
-            final float damageDelta = calcBlockBreakingDelta(data.getState(), mc.world, data.getPos());
+            final float damageDelta = calcBlockBreakingDelta(data.getState(), mc.level, data.getPos());
             data.damage(damageDelta);
             if (isDataPacketMine(data) && data.getBlockDamage() >= 1.0f && data.getSlot() != -1) {
                 if (mc.player.isUsingItem() && !multitaskConfig.get()) {
@@ -210,7 +214,7 @@ public class SpeedMineII extends CombatModule {
             }
         }
         MiningData miningData2 = miningQueue.getFirst();
-        final double distance = mc.player.getEyePos().squaredDistanceTo(miningData2.getPos().toCenterPos());
+        final double distance = mc.player.getEyePosition().distanceToSqr(miningData2.getPos().getCenter());
         if (distance > getValueSq(rangeConfig.get())) {
             miningQueue.remove(miningData2);
             return;
@@ -250,24 +254,24 @@ public class SpeedMineII extends CombatModule {
         }
         event.cancel();
 
-        if (event.getState().getBlock().getHardness() == -1.0f || event.getState().isAir()) {
+        if (event.getState().getBlock().defaultDestroyTime() == -1.0f || event.getState().isAir()) {
             return;
         }
 
         startManualMine(event.getPos(), event.getDirection());
-        mc.player.swingHand(Hand.MAIN_HAND);
+        mc.player.swing(InteractionHand.MAIN_HAND);
     }
 
     @EventHandler
     public void onPacketOutbound(PacketEvent.Send event) {
-        if (event.packet instanceof PlayerActionC2SPacket packet
-            && packet.getAction() == PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK
+        if (event.packet instanceof ServerboundPlayerActionPacket packet
+            && packet.getAction() == ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK
             && modeConfig.get() == SpeedmineMode.DAMAGE && grimConfig.get()) {
-            Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(
-                PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, packet.getPos().up(500), packet.getDirection()));
+            Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(
+                ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK, packet.getPos().above(500), packet.getDirection()));
         }
 
-        if (event.packet instanceof UpdateSelectedSlotC2SPacket && switchResetConfig.get()
+        if (event.packet instanceof ServerboundSetCarriedItemPacket && switchResetConfig.get()
             && modeConfig.get() == SpeedmineMode.PACKET) {
             for (MiningData data : miningQueue) {
                 data.resetDamage();
@@ -285,19 +289,19 @@ public class SpeedMineII extends CombatModule {
             return;
         }
 
-        if (event.packet instanceof BlockUpdateS2CPacket packet) {
+        if (event.packet instanceof ClientboundBlockUpdatePacket packet) {
             handleBlockUpdatePacket(packet);
-        } else if (event.packet instanceof BundleS2CPacket packet) {
-            for (Packet<?> packet1 : packet.getPackets()) {
-                if (packet1 instanceof BlockUpdateS2CPacket packet2) {
+        } else if (event.packet instanceof ClientboundBundlePacket packet) {
+            for (Packet<?> packet1 : packet.subPackets()) {
+                if (packet1 instanceof ClientboundBlockUpdatePacket packet2) {
                     handleBlockUpdatePacket(packet2);
                 }
             }
         }
     }
 
-    private void handleBlockUpdatePacket(BlockUpdateS2CPacket packet) {
-        if (!packet.getState().isAir()) {
+    private void handleBlockUpdatePacket(ClientboundBlockUpdatePacket packet) {
+        if (!packet.getBlockState().isAir()) {
             return;
         }
         for (MiningData data : miningQueue) {
@@ -336,19 +340,19 @@ public class SpeedMineII extends CombatModule {
             }
 
             BlockPos mining = data.getPos();
-            VoxelShape outlineShape = data.getState().getOutlineShape(mc.world, mining);
-            outlineShape = outlineShape.isEmpty() ? VoxelShapes.fullCube() : outlineShape;
-            Box render1 = outlineShape.getBoundingBox();
-            Box render = new Box(mining.getX() + render1.minX, mining.getY() + render1.minY,
+            VoxelShape outlineShape = data.getState().getShape(mc.level, mining);
+            outlineShape = outlineShape.isEmpty() ? Shapes.block() : outlineShape;
+            AABB render1 = outlineShape.bounds();
+            AABB render = new AABB(mining.getX() + render1.minX, mining.getY() + render1.minY,
                 mining.getZ() + render1.minZ, mining.getX() + render1.maxX,
                 mining.getY() + render1.maxY, mining.getZ() + render1.maxZ);
-            Vec3d center = render.getCenter();
+            Vec3 center = render.getCenter();
             float total = isDataPacketMine(data) ? 1.0f : toFloat(speedConfig.get());
-            float scale = data.getState().isAir() ? 1.0f : MathHelper.clamp((data.getBlockDamage() + (data.getBlockDamage() - data.getLastDamage()) * event.tickDelta) / total, 0.0f, 1.0f);
+            float scale = data.getState().isAir() ? 1.0f : Mth.clamp((data.getBlockDamage() + (data.getBlockDamage() - data.getLastDamage()) * event.tickDelta) / total, 0.0f, 1.0f);
             double dx = (render1.maxX - render1.minX) / 2.0;
             double dy = (render1.maxY - render1.minY) / 2.0;
             double dz = (render1.maxZ - render1.minZ) / 2.0;
-            final Box scaled = new Box(center, center).expand(dx * scale, dy * scale, dz * scale);
+            final AABB scaled = new AABB(center, center).inflate(dx * scale, dy * scale, dz * scale);
             event.renderer.box(scaled, boxColor, lineColor, ShapeMode.Both, 0);
         }
         for (MiningData data : miningQueue) {
@@ -393,28 +397,28 @@ public class SpeedMineII extends CombatModule {
         data.setStarted();
         if (grimNewConfig.get()) {
             if (!TabConfigs.get().getMiningFix()) {
-                Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-                Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-                Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK, data.getPos(), data.getDirection()));
             } else {
-                Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, data.getPos(), data.getDirection()));
             }
 
-            Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-            Managers.NETWORK.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-            Managers.NETWORK.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-            Managers.NETWORK.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+            Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+            Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+            Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+            Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
             return true;
         }
 
-        Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-        Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-        Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-        Managers.NETWORK.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-        Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-        Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-        Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-        Managers.NETWORK.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+        Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+        Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+        Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+        Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+        Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+        Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+        Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+        Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
         return true;
     }
 
@@ -422,7 +426,7 @@ public class SpeedMineII extends CombatModule {
         if (!data.isStarted() || data.getState().isAir()) {
             return;
         }
-        Managers.NETWORK.sendSequencedPacket(id -> new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, data.getPos(), data.getDirection(), id));
+        Managers.NETWORK.sendSequencedPacket(id -> new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK, data.getPos(), data.getDirection(), id));
         Managers.INVENTORY.syncToClient();
     }
 
@@ -431,7 +435,7 @@ public class SpeedMineII extends CombatModule {
             return;
         }
         if (rotateConfig.get()) {
-            float[] rotations = RotationUtil.getRotationsTo(mc.player.getEyePos(), data.getPos().toCenterPos());
+            float[] rotations = RotationUtil.getRotationsTo(mc.player.getEyePosition(), data.getPos().getCenter());
             if (grimConfig.get()) {
                 setRotationSilent(rotations[0], rotations[1]);
             } else {
@@ -469,19 +473,19 @@ public class SpeedMineII extends CombatModule {
     }
 
     private void stopMiningInternal(MiningData data) {
-        Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-        Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+        Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+        Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK, data.getPos(), data.getDirection()));
     }
 
     private boolean isDataPacketMine(MiningData data) {
         return miningQueue.size() == 2 && data == miningQueue.getLast();
     }
 
-    public float calcBlockBreakingDelta(BlockState state, BlockView world, BlockPos pos) {
+    public float calcBlockBreakingDelta(BlockState state, BlockGetter world, BlockPos pos) {
         if (swapConfig.get() == Swap.OFF) {
-            return state.calcBlockBreakingDelta(mc.player, mc.world, pos);
+            return state.getDestroyProgress(mc.player, mc.level, pos);
         }
-        float f = state.getHardness(world, pos);
+        float f = state.getDestroySpeed(world, pos);
         if (f == -1.0f) {
             return 0.0f;
         } else {
@@ -492,19 +496,19 @@ public class SpeedMineII extends CombatModule {
 
     private float getBlockBreakingSpeed(BlockState block) {
         int tool = AutoTool.getInstance().getBestTool(block);
-        float f = mc.player.getInventory().getStack(tool).getMiningSpeedMultiplier(block);
+        float f = mc.player.getInventory().getItem(tool).getDestroySpeed(block);
         if (f > 1.0F) {
-            ItemStack stack = mc.player.getInventory().getStack(tool);
+            ItemStack stack = mc.player.getInventory().getItem(tool);
             int i = EnchantmentUtil.getLevel(stack, Enchantments.EFFICIENCY);
             if (i > 0 && !stack.isEmpty()) {
                 f += (float) (i * i + 1);
             }
         }
-        if (StatusEffectUtil.hasHaste(mc.player)) {
-            f *= 1.0f + (float) (StatusEffectUtil.getHasteAmplifier(mc.player) + 1) * 0.2f;
+        if (MobEffectUtil.hasDigSpeed(mc.player)) {
+            f *= 1.0f + (float) (MobEffectUtil.getDigSpeedAmplification(mc.player) + 1) * 0.2f;
         }
-        if (mc.player.hasStatusEffect(StatusEffects.MINING_FATIGUE)) {
-            float g = switch (mc.player.getStatusEffect(StatusEffects.MINING_FATIGUE).getAmplifier()) {
+        if (mc.player.hasEffect(MobEffects.MINING_FATIGUE)) {
+            float g = switch (mc.player.getEffect(MobEffects.MINING_FATIGUE).getAmplifier()) {
                 case 0 -> 0.3f;
                 case 1 -> 0.09f;
                 case 2 -> 0.0027f;
@@ -512,16 +516,16 @@ public class SpeedMineII extends CombatModule {
             };
             f *= g;
         }
-        if (!mc.player.isOnGround()) {
+        if (!mc.player.onGround()) {
             f /= 5.0f;
         }
         return f;
     }
 
     private boolean canHarvest(BlockState state) {
-        if (state.isToolRequired()) {
+        if (state.requiresCorrectToolForDrops()) {
             int tool = AutoTool.getInstance().getBestTool(state);
-            return mc.player.getInventory().getStack(tool).isSuitableFor(state);
+            return mc.player.getInventory().getItem(tool).isCorrectToolForDrops(state);
         }
         return true;
     }
@@ -599,7 +603,7 @@ public class SpeedMineII extends CombatModule {
         }
 
         public BlockState getState() {
-            return mc.world.getBlockState(pos);
+            return mc.level.getBlockState(pos);
         }
 
         public float getBlockDamage() {

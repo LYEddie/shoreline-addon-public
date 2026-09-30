@@ -20,12 +20,12 @@ import meteordevelopment.meteorclient.systems.hud.Hud;
 import meteordevelopment.meteorclient.systems.hud.HudGroup;
 import meteordevelopment.meteorclient.systems.modules.Category;
 import meteordevelopment.meteorclient.systems.modules.Modules;
-import net.minecraft.item.Items;
+import net.minecraft.world.item.Items;
 import org.slf4j.Logger;
 
 public class Shoreline extends MeteorAddon {
     public static final Logger LOG = LogUtils.getLogger();
-    public static Category MAIN = new Category("Shoreline", Items.HEART_OF_THE_SEA.getDefaultStack());
+    public static Category MAIN = new Category("Shoreline", Items.HEART_OF_THE_SEA.getDefaultInstance());
     public static HudGroup HUD = new HudGroup("Shoreline");
 
     @Override

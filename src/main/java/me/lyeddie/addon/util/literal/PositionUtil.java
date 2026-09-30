@@ -1,27 +1,26 @@
 package me.lyeddie.addon.util.literal;
 
 import me.lyeddie.addon.util.BlastResistantBlocks;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.AABB;
 import java.util.ArrayList;
 import java.util.List;
 
 public class PositionUtil {
 
     public static BlockPos getRoundedBlockPos(final double x, final double y, final double z) {
-        final int flooredX = MathHelper.floor(x);
+        final int flooredX = Mth.floor(x);
         final int flooredY = (int) Math.round(y);
-        final int flooredZ = MathHelper.floor(z);
+        final int flooredZ = Mth.floor(z);
         return new BlockPos(flooredX, flooredY, flooredZ);
     }
 
-    public static boolean isBedrock(Box box, BlockPos pos) {
+    public static boolean isBedrock(AABB box, BlockPos pos) {
         return getAllInBox(box, pos).stream().anyMatch(BlastResistantBlocks::isUnbreakable);
     }
 
-    public static List<BlockPos> getAllInBox(Box box, BlockPos pos) {
+    public static List<BlockPos> getAllInBox(AABB box, BlockPos pos) {
         final List<BlockPos> intersections = new ArrayList<>();
         for (int x = (int) Math.floor(box.minX); x < Math.ceil(box.maxX); x++) {
             for (int z = (int) Math.floor(box.minZ); z < Math.ceil(box.maxZ); z++) {
@@ -31,7 +30,7 @@ public class PositionUtil {
         return intersections;
     }
 
-    public static List<BlockPos> getAllInBox(Box box) {
+    public static List<BlockPos> getAllInBox(AABB box) {
         final List<BlockPos> intersections = new ArrayList<>();
         for (int x = (int) Math.floor(box.minX); x < Math.ceil(box.maxX); x++) {
             for (int y = (int) Math.floor(box.minY); y < Math.ceil(box.maxY); y++) {

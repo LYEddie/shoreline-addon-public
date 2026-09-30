@@ -11,17 +11,17 @@ import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 
 public class AirPlaceII extends AddonModule {
     private static AirPlaceII INST;
@@ -64,36 +64,36 @@ public class AirPlaceII extends AddonModule {
             airPlaceTicks--;
         }
 
-        if (mc.player == null || mc.interactionManager == null || !manualConfig.get()) {
+        if (mc.player == null || mc.gameMode == null || !manualConfig.get()) {
             return;
         }
 
-        if (mc.crosshairTarget instanceof BlockHitResult result && !mc.world.isAir(result.getBlockPos())) {
+        if (mc.hitResult instanceof BlockHitResult result && !mc.level.isEmptyBlock(result.getBlockPos())) {
             return;
         }
 
-        final ItemStack stack = mc.player.getMainHandStack();
-        if ((stack.isEmpty() || !(stack.getItem() instanceof BlockItem)) || !mc.options.useKey.isPressed()) {
+        final ItemStack stack = mc.player.getMainHandItem();
+        if ((stack.isEmpty() || !(stack.getItem() instanceof BlockItem)) || !mc.options.keyUse.isDown()) {
             return;
         }
-        final HitResult result = mc.player.raycast(rangeConfig.get(), 1.0f, fluidsConfig.get());
+        final HitResult result = mc.player.pick(rangeConfig.get(), 1.0f, fluidsConfig.get());
         if (((AccessorMinecraftClient) mc).hookGetItemUseCooldown() == 0 && airPlaceTicks == 0 && !mc.player.isUsingItem()
             && result instanceof BlockHitResult blockHitResult) {
-            final BlockPos blockPos = BlockPos.ofFloored(blockHitResult.getPos());
-            if (!mc.world.isAir(blockPos) || isEntityInBlockPos(blockPos)) {
+            final BlockPos blockPos = BlockPos.containing(blockHitResult.getLocation());
+            if (!mc.level.isEmptyBlock(blockPos) || isEntityInBlockPos(blockPos)) {
                 return;
             }
             ((AccessorMinecraftClient) mc).hookSetItemUseCooldown(4);
             airPlaceTicks = 4;
             if (grimConfig.get()) {
-                Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ORIGIN, Direction.DOWN));
-                mc.interactionManager.interactBlock(mc.player, Hand.OFF_HAND, blockHitResult);
-                mc.player.swingHand(Hand.MAIN_HAND, false);
-                Managers.NETWORK.sendPacket(new HandSwingC2SPacket(Hand.OFF_HAND));
-                Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ORIGIN, Direction.DOWN));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ZERO, Direction.DOWN));
+                mc.gameMode.useItemOn(mc.player, InteractionHand.OFF_HAND, blockHitResult);
+                mc.player.swing(InteractionHand.MAIN_HAND, false);
+                Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.OFF_HAND));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ZERO, Direction.DOWN));
             } else {
-                mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, blockHitResult);
-                mc.player.swingHand(Hand.MAIN_HAND);
+                mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND, blockHitResult);
+                mc.player.swing(InteractionHand.MAIN_HAND);
             }
         }
     }
@@ -111,28 +111,28 @@ public class AirPlaceII extends AddonModule {
             return;
         }
 
-        if (mc.crosshairTarget instanceof BlockHitResult result && !mc.world.isAir(result.getBlockPos())) {
+        if (mc.hitResult instanceof BlockHitResult result && !mc.level.isEmptyBlock(result.getBlockPos())) {
             return;
         }
 
-        final ItemStack stack = mc.player.getMainHandStack();
+        final ItemStack stack = mc.player.getMainHandItem();
         if (stack.isEmpty() || !(stack.getItem() instanceof BlockItem)) {
             return;
         }
-        final HitResult result = mc.player.raycast(rangeConfig.get(), 1.0f, fluidsConfig.get());
+        final HitResult result = mc.player.pick(rangeConfig.get(), 1.0f, fluidsConfig.get());
         if (!(result instanceof BlockHitResult blockHitResult)) {
             return;
         }
-        final BlockPos blockPos = BlockPos.ofFloored(blockHitResult.getPos());
-        if (!mc.world.isAir(blockPos) || isEntityInBlockPos(blockPos)) {
+        final BlockPos blockPos = BlockPos.containing(blockHitResult.getLocation());
+        if (!mc.level.isEmptyBlock(blockPos) || isEntityInBlockPos(blockPos)) {
             return;
         }
         event.renderer.box(blockPos, TabConfigs.get().getClampColor(64), TabConfigs.get().getClampColor(145), ShapeMode.Both, 0);
     }
 
     private boolean isEntityInBlockPos(final BlockPos blockPos) {
-        for (Entity entity : mc.world.getEntities()) {
-            if (entity.getBoundingBox().intersects(new Box(blockPos))) {
+        for (Entity entity : mc.level.entitiesForRendering()) {
+            if (entity.getBoundingBox().intersects(new AABB(blockPos))) {
                 return true;
             }
         }

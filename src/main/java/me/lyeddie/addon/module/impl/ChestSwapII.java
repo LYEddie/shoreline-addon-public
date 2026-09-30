@@ -7,12 +7,13 @@ import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.item.*;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.util.Hand;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 public class ChestSwapII extends AddonModule {
     private static ChestSwapII INST;
@@ -34,18 +35,18 @@ public class ChestSwapII extends AddonModule {
 
     @Override
     public void onActivate() {
-        ItemStack armorStack = mc.player.getEquippedStack(EquipmentSlot.CHEST);
+        ItemStack armorStack = mc.player.getItemBySlot(EquipmentSlot.CHEST);
         if (isChestArmor(armorStack)) {
             int elytraSlot = getElytraSlot();
             if (elytraSlot != -1) {
                 Managers.INVENTORY.pickupSlot(elytraSlot < 9 ? elytraSlot + 36 : elytraSlot);
                 Managers.INVENTORY.pickupSlot(6);
                 Managers.INVENTORY.pickupSlot(elytraSlot < 9 ? elytraSlot + 36 : elytraSlot);
-                if (autoFireworkConfig.get() && !mc.player.isOnGround()) {
-                    Managers.NETWORK.sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                if (autoFireworkConfig.get() && !mc.player.onGround()) {
+                    Managers.NETWORK.sendPacket(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Action.START_FALL_FLYING));
                     int slot = -1;
                     for (int i = 0; i < 45; i++) {
-                        ItemStack stack = mc.player.getInventory().getStack(i);
+                        ItemStack stack = mc.player.getInventory().getItem(i);
                         if (stack.getItem() == Items.FIREWORK_ROCKET) {
                             slot = i;
                             break;
@@ -56,16 +57,16 @@ public class ChestSwapII extends AddonModule {
                     }
                     if (slot < 9) {
                         Managers.INVENTORY.setSlot(slot);
-                        mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
+                        mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
                         Managers.INVENTORY.syncToClient();
                     } else {
-                        mc.interactionManager.clickSlot(0, slot, 0, SlotActionType.PICKUP, mc.player);
-                        mc.interactionManager.clickSlot(0, mc.player.getInventory().getSelectedSlot() + 36, 0, SlotActionType.PICKUP, mc.player);
-                        mc.interactionManager.clickSlot(0, slot, 0, SlotActionType.PICKUP, mc.player);
-                        mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
-                        mc.interactionManager.clickSlot(0, slot, 0, SlotActionType.PICKUP, mc.player);
-                        mc.interactionManager.clickSlot(0, mc.player.getInventory().getSelectedSlot() + 36, 0, SlotActionType.PICKUP, mc.player);
-                        mc.interactionManager.clickSlot(0, slot, 0, SlotActionType.PICKUP, mc.player);
+                        mc.gameMode.handleInventoryMouseClick(0, slot, 0, ClickType.PICKUP, mc.player);
+                        mc.gameMode.handleInventoryMouseClick(0, mc.player.getInventory().getSelectedSlot() + 36, 0, ClickType.PICKUP, mc.player);
+                        mc.gameMode.handleInventoryMouseClick(0, slot, 0, ClickType.PICKUP, mc.player);
+                        mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
+                        mc.gameMode.handleInventoryMouseClick(0, slot, 0, ClickType.PICKUP, mc.player);
+                        mc.gameMode.handleInventoryMouseClick(0, mc.player.getInventory().getSelectedSlot() + 36, 0, ClickType.PICKUP, mc.player);
+                        mc.gameMode.handleInventoryMouseClick(0, slot, 0, ClickType.PICKUP, mc.player);
                     }
                 }
             }
@@ -83,12 +84,12 @@ public class ChestSwapII extends AddonModule {
     private int getChestplateSlot() {
         int slot = -1;
         for (int i = 0; i < 36; i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
+            ItemStack stack = mc.player.getInventory().getItem(i);
             if (isChestArmor(stack)) {
-                if (stack.isOf(Items.NETHERITE_CHESTPLATE) && priorityConfig.get() == Priority.NETHERITE) {
+                if (stack.is(Items.NETHERITE_CHESTPLATE) && priorityConfig.get() == Priority.NETHERITE) {
                     slot = i;
                     break;
-                } else if (stack.isOf(Items.DIAMOND_CHESTPLATE) && priorityConfig.get() == Priority.DIAMOND) {
+                } else if (stack.is(Items.DIAMOND_CHESTPLATE) && priorityConfig.get() == Priority.DIAMOND) {
                     slot = i;
                     break;
                 } else {
@@ -102,8 +103,8 @@ public class ChestSwapII extends AddonModule {
     private int getElytraSlot() {
         int slot = -1;
         for (int i = 0; i < 36; i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
-            if (stack.isOf(Items.ELYTRA)) {
+            ItemStack stack = mc.player.getInventory().getItem(i);
+            if (stack.is(Items.ELYTRA)) {
                 slot = i;
                 break;
             }
@@ -112,9 +113,9 @@ public class ChestSwapII extends AddonModule {
     }
 
     private boolean isChestArmor(ItemStack stack) {
-        var equippable = stack.get(DataComponentTypes.EQUIPPABLE);
+        var equippable = stack.get(DataComponents.EQUIPPABLE);
         return equippable != null && equippable.slot() == EquipmentSlot.CHEST
-            && stack.contains(DataComponentTypes.ATTRIBUTE_MODIFIERS) && !stack.isOf(Items.ELYTRA);
+            && stack.has(DataComponents.ATTRIBUTE_MODIFIERS) && !stack.is(Items.ELYTRA);
     }
 
     public static ChestSwapII getInstance() {

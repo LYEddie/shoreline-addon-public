@@ -11,9 +11,9 @@ import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.Blocks;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.shapes.Shapes;
 
 public class Avoid extends AddonModule {
     private static Avoid INST;
@@ -51,7 +51,7 @@ public class Avoid extends AddonModule {
 
     @EventHandler
     public void onTick(TickEvent.Pre event) {
-        if (voidConfig.get() && !mc.player.isSpectator() && mc.player.getY() < mc.world.getBottomY()) {
+        if (voidConfig.get() && !mc.player.isSpectator() && mc.player.getY() < mc.level.getMinY()) {
             Managers.MOVEMENT.setMotionY(0.0);
         }
     }
@@ -65,7 +65,7 @@ public class Avoid extends AddonModule {
             && event.getBlock() == Blocks.SWEET_BERRY_BUSH || unloadedConfig.get()
             && !BlockUtil.isBlockLoaded(pos.getX(), pos.getZ())) {
             event.cancel();
-            event.setVoxelShape(VoxelShapes.fullCube());
+            event.setVoxelShape(Shapes.block());
         }
     }
 

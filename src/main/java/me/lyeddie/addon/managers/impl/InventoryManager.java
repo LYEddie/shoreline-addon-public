@@ -13,16 +13,15 @@ import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
-import net.minecraft.network.packet.s2c.play.BundleS2CPacket;
-import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.UpdateSelectedSlotS2CPacket;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.slot.SlotActionType;
-
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundBundlePacket;
+import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
+import net.minecraft.network.protocol.game.ClientboundSetHeldSlotPacket;
+import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.item.ItemStack;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -37,9 +36,9 @@ public class InventoryManager implements Globals {
 
     @EventHandler
     public void onPacketOutBound(final PacketEvent.Send event) {
-        if (event.packet instanceof UpdateSelectedSlotC2SPacket packet) {
-            final int packetSlot = packet.getSelectedSlot();
-            if (!PlayerInventory.isValidHotbarIndex(packetSlot) || slot == packetSlot && TabConfigs.get().invalidSlotTweak.get()) {
+        if (event.packet instanceof ServerboundSetCarriedItemPacket packet) {
+            final int packetSlot = packet.getSlot();
+            if (!Inventory.isHotbarSlot(packetSlot) || slot == packetSlot && TabConfigs.get().invalidSlotTweak.get()) {
                 event.setCancelled(true);
                 return;
             }
@@ -49,7 +48,7 @@ public class InventoryManager implements Globals {
 
     @EventHandler
     public void onPacketInbound(final PacketEvent.Receive event) {
-        if (event.packet instanceof UpdateSelectedSlotS2CPacket packet) {
+        if (event.packet instanceof ClientboundSetHeldSlotPacket packet) {
             slot = packet.slot();
         }
 
@@ -57,10 +56,10 @@ public class InventoryManager implements Globals {
             return;
         }
 
-        if (event.packet instanceof BundleS2CPacket packet) {
+        if (event.packet instanceof ClientboundBundlePacket packet) {
             List<Packet<?>> allowedBundle = new ArrayList<>();
-            for (Packet<?> packet1 : packet.getPackets()) {
-                if (packet1 instanceof ScreenHandlerSlotUpdateS2CPacket) {
+            for (Packet<?> packet1 : packet.subPackets()) {
+                if (packet1 instanceof ClientboundContainerSetSlotPacket) {
                     continue;
                 }
                 allowedBundle.add(packet1);
@@ -68,13 +67,13 @@ public class InventoryManager implements Globals {
             ((AccessorBundlePacket) packet).setIterable(allowedBundle);
         }
 
-        if (event.packet instanceof ScreenHandlerSlotUpdateS2CPacket packet) {
+        if (event.packet instanceof ClientboundContainerSetSlotPacket packet) {
             int slot = packet.getSlot() - 36;
             if (slot < 0 || slot > 8) {
                 return;
             }
 
-            if (packet.getStack().isEmpty()) {
+            if (packet.getItem().isEmpty()) {
                 return;
             }
 
@@ -84,7 +83,7 @@ public class InventoryManager implements Globals {
                 }
 
                 ItemStack preStack = data.getPreHolding(slot);
-                if (!isEqual(preStack, packet.getStack())) {
+                if (!isEqual(preStack, packet.getItem())) {
                     event.cancel();
                     break;
                 }
@@ -113,34 +112,34 @@ public class InventoryManager implements Globals {
     }
 
     public void setSlot(final int barSlot) {
-        if (slot != barSlot && PlayerInventory.isValidHotbarIndex(barSlot)) {
+        if (slot != barSlot && Inventory.isHotbarSlot(barSlot)) {
             setSlotForced(barSlot);
 
             final ItemStack[] hotbarCopy = new ItemStack[9];
             for (int i = 0; i < 9; i++) {
-                hotbarCopy[i] = mc.player.getInventory().getStack(i);
+                hotbarCopy[i] = mc.player.getInventory().getItem(i);
             }
             swapData.add(new PreSwapData(hotbarCopy, slot, barSlot));
         }
     }
 
     public void setSlotAlt(final int barSlot) {
-        if (PlayerInventory.isValidHotbarIndex(barSlot)) {
-            mc.interactionManager.clickSlot(mc.player.playerScreenHandler.syncId,
-                barSlot + 36, slot, SlotActionType.SWAP, mc.player);
+        if (Inventory.isHotbarSlot(barSlot)) {
+            mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId,
+                barSlot + 36, slot, ClickType.SWAP, mc.player);
         }
     }
 
     public void setClientSlot(final int barSlot) {
         if (mc.player.getInventory().getSelectedSlot() != barSlot
-            && PlayerInventory.isValidHotbarIndex(barSlot)) {
+            && Inventory.isHotbarSlot(barSlot)) {
             mc.player.getInventory().setSelectedSlot(barSlot);
             setSlotForced(barSlot);
         }
     }
 
     public void setSlotForced(final int barSlot) {
-        Managers.NETWORK.sendPacket(new UpdateSelectedSlotC2SPacket(barSlot));
+        Managers.NETWORK.sendPacket(new ServerboundSetCarriedItemPacket(barSlot));
     }
 
     public void syncToClient() {
@@ -158,16 +157,16 @@ public class InventoryManager implements Globals {
     }
 
     public int pickupSlot(final int slot) {
-        return click(slot, 0, SlotActionType.PICKUP);
+        return click(slot, 0, ClickType.PICKUP);
     }
 
-    public int click(int slot, int button, SlotActionType type) {
+    public int click(int slot, int button, ClickType type) {
         if (slot < 0) {
             return -1;
         }
-        ScreenHandler screenHandler = mc.player.currentScreenHandler;
-        mc.interactionManager.clickSlot(screenHandler.syncId, slot, button, type, mc.player);
-        return screenHandler.getRevision();
+        AbstractContainerMenu screenHandler = mc.player.containerMenu;
+        mc.gameMode.handleInventoryMouseClick(screenHandler.containerId, slot, button, type, mc.player);
+        return screenHandler.getStateId();
     }
 
     public int getServerSlot() {
@@ -176,13 +175,13 @@ public class InventoryManager implements Globals {
 
     public ItemStack getServerItem() {
         if (mc.player != null && getServerSlot() != -1) {
-            return mc.player.getInventory().getStack(getServerSlot());
+            return mc.player.getInventory().getItem(getServerSlot());
         }
         return null;
     }
 
     private boolean isEqual(ItemStack stack1, ItemStack stack2) {
-        return stack1.getItem().equals(stack2.getItem()) && stack1.getName().equals(stack2.getName());
+        return stack1.getItem().equals(stack2.getItem()) && stack1.getHoverName().equals(stack2.getHoverName());
     }
 
     public static class PreSwapData {

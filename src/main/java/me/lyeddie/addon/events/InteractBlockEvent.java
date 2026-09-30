@@ -1,28 +1,28 @@
 package me.lyeddie.addon.events;
 
 import meteordevelopment.meteorclient.events.Cancellable;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.BlockHitResult;
 
 public class InteractBlockEvent extends Cancellable {
 
-    private final ClientPlayerEntity player;
-    private final Hand hand;
+    private final LocalPlayer player;
+    private final InteractionHand hand;
     private final BlockHitResult hitResult;
 
-    public InteractBlockEvent(ClientPlayerEntity player, Hand hand,
+    public InteractBlockEvent(LocalPlayer player, InteractionHand hand,
                               BlockHitResult hitResult) {
         this.player = player;
         this.hand = hand;
         this.hitResult = hitResult;
     }
 
-    public ClientPlayerEntity getPlayer() {
+    public LocalPlayer getPlayer() {
         return player;
     }
 
-    public Hand getHand() {
+    public InteractionHand getHand() {
         return hand;
     }
 

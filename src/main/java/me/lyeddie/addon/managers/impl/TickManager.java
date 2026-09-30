@@ -9,8 +9,7 @@ import me.lyeddie.addon.util.Globals;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.network.packet.s2c.play.WorldTimeUpdateS2CPacket;
-
+import net.minecraft.network.protocol.game.ClientboundSetTimePacket;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.NoSuchElementException;
@@ -32,10 +31,10 @@ public class TickManager implements Globals {
 
     @EventHandler
     public void onReceivePacket(PacketEvent.Receive event) {
-        if (mc.player == null || mc.world == null) {
+        if (mc.player == null || mc.level == null) {
             return;
         }
-        if (event.packet instanceof WorldTimeUpdateS2CPacket) {
+        if (event.packet instanceof ClientboundSetTimePacket) {
             float last = 20000.0f / (System.currentTimeMillis() - time);
             ticks.addFirst(last);
             time = System.currentTimeMillis();

@@ -6,9 +6,9 @@ import me.lyeddie.addon.util.Globals;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityStatuses;
-import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
+import net.minecraft.network.protocol.game.ClientboundEntityEventPacket;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityEvent;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -22,18 +22,18 @@ public class TotemManager implements Globals {
 
     @EventHandler
     public void onPacketInbound(PacketEvent.Receive event) {
-        if (mc.world == null) {
+        if (mc.level == null) {
             return;
         }
-        if (event.packet instanceof EntityStatusS2CPacket packet
-            && packet.getStatus() == EntityStatuses.USE_TOTEM_OF_UNDYING) {
-            Entity entity = packet.getEntity(mc.world);
+        if (event.packet instanceof ClientboundEntityEventPacket packet
+            && packet.getEventId() == EntityEvent.PROTECTED_FROM_DEATH) {
+            Entity entity = packet.getEntity(mc.level);
             if (entity != null && entity.isAlive()) {
-                if (totems.containsKey(entity.getUuid())) {
-                    totems.replace(entity.getUuid(), new TotemData(System.currentTimeMillis(),
-                        totems.get(entity.getUuid()).getPops() + 1));
+                if (totems.containsKey(entity.getUUID())) {
+                    totems.replace(entity.getUUID(), new TotemData(System.currentTimeMillis(),
+                        totems.get(entity.getUUID()).getPops() + 1));
                 } else {
-                    totems.put(entity.getUuid(), new TotemData(System.currentTimeMillis(), 1));
+                    totems.put(entity.getUUID(), new TotemData(System.currentTimeMillis(), 1));
                 }
             }
         }
@@ -41,7 +41,7 @@ public class TotemManager implements Globals {
 
     @EventHandler(priority = -200)
     public void onRemoveEntity(EntityDeathEvent event) {
-        totems.remove(event.getEntity().getUuid());
+        totems.remove(event.getEntity().getUUID());
     }
 
     @EventHandler
@@ -50,7 +50,7 @@ public class TotemManager implements Globals {
     }
 
     public long getLastPopTime(Entity entity) {
-        return totems.getOrDefault(entity.getUuid(), new TotemData(-1, 0)).getLastPopTime();
+        return totems.getOrDefault(entity.getUUID(), new TotemData(-1, 0)).getLastPopTime();
     }
 
     public static class TotemData {

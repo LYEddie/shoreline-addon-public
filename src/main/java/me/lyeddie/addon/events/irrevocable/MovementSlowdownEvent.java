@@ -1,16 +1,16 @@
 package me.lyeddie.addon.events.irrevocable;
 
-import net.minecraft.client.input.Input;
+import net.minecraft.client.player.ClientInput;
 
 public class MovementSlowdownEvent {
 
-    public final Input input;
+    public final ClientInput input;
 
-    public MovementSlowdownEvent(Input input) {
+    public MovementSlowdownEvent(ClientInput input) {
         this.input = input;
     }
 
-    public Input getInput() {
+    public ClientInput getInput() {
         return input;
     }
 }

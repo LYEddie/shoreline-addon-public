@@ -11,17 +11,16 @@ import meteordevelopment.meteorclient.settings.*;
 import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.meteorclient.utils.entity.fakeplayer.FakePlayerEntity;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.MovementType;
-import net.minecraft.entity.decoration.ArmorStandEntity;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.ExplosionS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
+import net.minecraft.util.Mth;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.phys.Vec2;
+import net.minecraft.world.phys.Vec3;
 
 public class SpeedII extends AddonModule {
     private static SpeedII INST;
@@ -138,36 +137,36 @@ public class SpeedII extends AddonModule {
         if (boostTicks > boostTicksConfig.get()) {
             boostSpeed = 0.0;
         }
-        double dx = mc.player.getX() - mc.player.lastX;
-        double dz = mc.player.getZ() - mc.player.lastZ;
+        double dx = mc.player.getX() - mc.player.xo;
+        double dz = mc.player.getZ() - mc.player.zo;
         distance = Math.sqrt(dx * dx + dz * dz);
         if (speedModeConfig.get() == SpeedMode.GRIM_COLLIDE && MovementUtil.isInputtingMovement()) {
             int collisions = 0;
-            for (Entity entity : mc.world.getEntities()) {
-                if (checkIsCollidingEntity(entity) && MathHelper.sqrt((float) mc.player.squaredDistanceTo(entity)) <= collisionDistanceConfig.get()) {
+            for (Entity entity : mc.level.entitiesForRendering()) {
+                if (checkIsCollidingEntity(entity) && Mth.sqrt((float) mc.player.distanceToSqr(entity)) <= collisionDistanceConfig.get()) {
                     collisions++;
                 }
             }
             if (collisions > 0) {
-                Vec3d velocity = mc.player.getVelocity();
+                Vec3 velocity = mc.player.getDeltaMovement();
                 double factor = 0.08 * collisions;
-                Vec2f strafe = handleStrafeMotion((float) factor);
-                mc.player.setVelocity(velocity.x + strafe.x, velocity.y, velocity.z + strafe.y);
+                Vec2 strafe = handleStrafeMotion((float) factor);
+                mc.player.setDeltaMovement(velocity.x + strafe.x, velocity.y, velocity.z + strafe.y);
             }
         }
     }
 
     @EventHandler
     public void onMove(PlayerMoveEvent event) {
-        if (mc.player != null && mc.world != null && event.getType() == MovementType.SELF) {
+        if (mc.player != null && mc.level != null && event.getType() == MoverType.SELF) {
             if (!MovementUtil.isInputtingMovement()
                 || Disabler.getInstance().grimFireworkCheck()
                 || mc.player.getAbilities().flying
-                || mc.player.isRiding()
-                || mc.player.isGliding()
-                || mc.player.isHoldingOntoLadder()
+                || mc.player.isHandsBusy()
+                || mc.player.isFallFlying()
+                || mc.player.isSuppressingSlidingDownLadder()
                 || mc.player.fallDistance > 2.0f
-                || (mc.player.isInLava() || mc.player.isTouchingWater())
+                || (mc.player.isInLava() || mc.player.isInWater())
                 && !speedWaterConfig.get()) {
                 resetStrafe();
                 TimerII.getInstance().setTimer(1.0f);
@@ -176,18 +175,18 @@ public class SpeedII extends AddonModule {
             event.cancel();
             double speedEffect = 1.0;
             double slowEffect = 1.0;
-            if (mc.player.hasStatusEffect(StatusEffects.SPEED)) {
-                double amplifier = mc.player.getStatusEffect(StatusEffects.SPEED).getAmplifier();
+            if (mc.player.hasEffect(MobEffects.SPEED)) {
+                double amplifier = mc.player.getEffect(MobEffects.SPEED).getAmplifier();
                 speedEffect = 1 + (0.2 * (amplifier + 1));
             }
-            if (mc.player.hasStatusEffect(StatusEffects.SLOWNESS)) {
-                double amplifier = mc.player.getStatusEffect(StatusEffects.SLOWNESS).getAmplifier();
+            if (mc.player.hasEffect(MobEffects.SLOWNESS)) {
+                double amplifier = mc.player.getEffect(MobEffects.SLOWNESS).getAmplifier();
                 slowEffect = 1 + (0.2 * (amplifier + 1));
             }
             final double base = 0.2873f * speedEffect / slowEffect;
             float jumpEffect = 0.0f;
-            if (mc.player.hasStatusEffect(StatusEffects.JUMP_BOOST)) {
-                jumpEffect += (mc.player.getStatusEffect(StatusEffects.JUMP_BOOST).getAmplifier() + 1) * 0.1f;
+            if (mc.player.hasEffect(MobEffects.JUMP_BOOST)) {
+                jumpEffect += (mc.player.getEffect(MobEffects.JUMP_BOOST).getAmplifier() + 1) * 0.1f;
             }
             if (speedModeConfig.get() == SpeedMode.STRAFE || speedModeConfig.get() == SpeedMode.STRAFE_B_HOP) {
                 if (!Managers.ANTICHEAT.hasPassed(100)) {
@@ -199,7 +198,7 @@ public class SpeedII extends AddonModule {
                 if (strafe == 1) {
                     speed = 1.35f * base - 0.01f;
                 } else if (strafe == 2) {
-                    if (mc.player.input.playerInput.jump() || !mc.player.isOnGround()) {
+                    if (mc.player.input.keyPresses.jump() || !mc.player.onGround()) {
                         return;
                     }
                     float jump = (speedModeConfig.get() == SpeedMode.STRAFE_B_HOP ? 0.4000000059604645f : 0.3999999463558197f) + jumpEffect;
@@ -211,8 +210,8 @@ public class SpeedII extends AddonModule {
                     speed = distance - moveSpeed;
                     accel = !accel;
                 } else {
-                    if ((!mc.world.isSpaceEmpty(mc.player, mc.player.getBoundingBox().offset(0,
-                        mc.player.getVelocity().getY(), 0)) || mc.player.verticalCollision) && strafe > 0) {
+                    if ((!mc.level.noCollision(mc.player, mc.player.getBoundingBox().move(0,
+                        mc.player.getDeltaMovement().y(), 0)) || mc.player.verticalCollision) && strafe > 0) {
                         strafe = MovementUtil.isInputtingMovement() ? 1 : 0;
                     }
                     speed = distance - distance / FRICTION;
@@ -221,7 +220,7 @@ public class SpeedII extends AddonModule {
                 if (strafeBoostConfig.get()) {
                     speed += boostSpeed;
                 }
-                final Vec2f motion = handleStrafeMotion((float) speed);
+                final Vec2 motion = handleStrafeMotion((float) speed);
                 event.setX(motion.x);
                 event.setZ(motion.y);
                 strafe++;
@@ -245,7 +244,7 @@ public class SpeedII extends AddonModule {
                 if (strafe == 1) {
                     speed = 1.35f * base - 0.01f;
                 } else if (strafe == 2) {
-                    if (mc.player.input.playerInput.jump() || !mc.player.isOnGround()) {
+                    if (mc.player.input.keyPresses.jump() || !mc.player.onGround()) {
                         return;
                     }
                     float jump = 0.3999999463558197f + jumpEffect;
@@ -256,8 +255,8 @@ public class SpeedII extends AddonModule {
                     double moveSpeed = 0.66 * (distance - base);
                     speed = distance - moveSpeed;
                 } else {
-                    if ((!mc.world.isSpaceEmpty(mc.player, mc.player.getBoundingBox().offset(0,
-                        mc.player.getVelocity().getY(), 0)) || mc.player.verticalCollision) && strafe > 0) {
+                    if ((!mc.level.noCollision(mc.player, mc.player.getBoundingBox().move(0,
+                        mc.player.getDeltaMovement().y(), 0)) || mc.player.verticalCollision) && strafe > 0) {
                         strafe = MovementUtil.isInputtingMovement() ? 1 : 0;
                     }
                     speed = distance - distance / FRICTION;
@@ -276,7 +275,7 @@ public class SpeedII extends AddonModule {
                 if (strictTicks > 50) {
                     strictTicks = 0;
                 }
-                final Vec2f motion = handleStrafeMotion((float) speed);
+                final Vec2 motion = handleStrafeMotion((float) speed);
                 event.setX(motion.x);
                 event.setZ(motion.y);
                 strafe++;
@@ -317,13 +316,13 @@ public class SpeedII extends AddonModule {
                     speed = distance - moveSpeed;
                     accel = !accel;
                 } else {
-                    if (mc.player.isOnGround() && strafe > 0) {
+                    if (mc.player.onGround() && strafe > 0) {
                         strafe = MovementUtil.isInputtingMovement() ? 1 : 0;
                     }
                     speed = distance - distance / FRICTION;
                 }
                 speed = Math.max(speed, base);
-                Vec2f motion = handleVanillaMotion((float) speed);
+                Vec2 motion = handleVanillaMotion((float) speed);
                 event.setX(motion.x);
                 event.setZ(motion.y);
                 strafe++;
@@ -345,7 +344,7 @@ public class SpeedII extends AddonModule {
                     double moveSpeed = 0.66 * (distance - base);
                     speed = distance - moveSpeed;
                 } else {
-                    if (mc.player.isOnGround() && strafe > 0) {
+                    if (mc.player.onGround() && strafe > 0) {
                         if (1.35 * base - 0.01 > speed) {
                             strafe = 0;
                         } else {
@@ -356,7 +355,7 @@ public class SpeedII extends AddonModule {
                 }
                 speed = Math.max(speed, base);
                 if (strafe > 0) {
-                    Vec2f motion = handleStrafeMotion((float) speed);
+                    Vec2 motion = handleStrafeMotion((float) speed);
                     event.setX(motion.x);
                     event.setZ(motion.y);
                 }
@@ -376,20 +375,20 @@ public class SpeedII extends AddonModule {
                     Managers.MOVEMENT.setMotionY(-0.2 - jumpEffect);
                     event.setY(-0.2 - jumpEffect);
                 }
-                if (!mc.world.isSpaceEmpty(null, mc.player.getBoundingBox().offset(0.0, -0.56, 0.0))
+                if (!mc.level.noCollision(null, mc.player.getBoundingBox().move(0.0, -0.56, 0.0))
                     && round(mc.player.getY() - (double) (int) mc.player.getY(), 3) == round(0.55, 3)) {
                     Managers.MOVEMENT.setMotionY(-0.14 + jumpEffect);
                     event.setY(-0.14 + jumpEffect);
                 }
                 if (strafe != 1 || !mc.player.verticalCollision
-                    || mc.player.forwardSpeed == 0.0f && mc.player.sidewaysSpeed == 0.0f) {
+                    || mc.player.zza == 0.0f && mc.player.xxa == 0.0f) {
                     if (strafe != 2 || !mc.player.verticalCollision
-                        || mc.player.forwardSpeed == 0.0f && mc.player.sidewaysSpeed == 0.0f) {
+                        || mc.player.zza == 0.0f && mc.player.xxa == 0.0f) {
                         if (strafe == 3) {
                             double moveSpeed = 0.66 * (distance - base);
                             speed = distance - moveSpeed;
                         } else {
-                            if (mc.player.isOnGround() && strafe > 0) {
+                            if (mc.player.onGround() && strafe > 0) {
                                 if (1.35 * base - 0.01 > speed) {
                                     strafe = 0;
                                 } else {
@@ -411,7 +410,7 @@ public class SpeedII extends AddonModule {
                     speed = base;
                 }
                 speed = Math.max(speed, base);
-                Vec2f motion = handleStrafeMotion((float) speed);
+                Vec2 motion = handleStrafeMotion((float) speed);
                 event.setX(motion.x);
                 event.setZ(motion.y);
                 strafe++;
@@ -421,16 +420,16 @@ public class SpeedII extends AddonModule {
                     return;
                 }
                 if (round(mc.player.getY() - ((int) mc.player.getY()), 3) == round(0.138, 3)) {
-                    Managers.MOVEMENT.setMotionY(mc.player.getVelocity().y - (0.08 + jumpEffect));
+                    Managers.MOVEMENT.setMotionY(mc.player.getDeltaMovement().y - (0.08 + jumpEffect));
                     event.setY(event.getY() - (0.0931 + jumpEffect));
                     Managers.POSITION.setPositionY(mc.player.getY() - (0.0931 + jumpEffect));
                 }
-                if (strafe != 2 || mc.player.forwardSpeed == 0.0f && mc.player.sidewaysSpeed == 0.0f) {
+                if (strafe != 2 || mc.player.zza == 0.0f && mc.player.xxa == 0.0f) {
                     if (strafe == 3) {
                         double moveSpeed = 0.66 * (distance - base);
                         speed = distance - moveSpeed;
                     } else {
-                        if (mc.player.isOnGround()) {
+                        if (mc.player.onGround()) {
                             strafe = 1;
                         }
                         speed = distance - distance / FRICTION;
@@ -442,12 +441,12 @@ public class SpeedII extends AddonModule {
                     speed *= 2.149;
                 }
                 speed = Math.max(speed, base);
-                Vec2f motion = handleStrafeMotion((float) speed);
+                Vec2 motion = handleStrafeMotion((float) speed);
                 event.setX(motion.x);
                 event.setZ(motion.y);
                 strafe++;
             } else if (speedModeConfig.get() == SpeedMode.VANILLA) {
-                Vec2f motion = handleStrafeMotion((float) (speedConfig.get() / 10.0f));
+                Vec2 motion = handleStrafeMotion((float) (speedConfig.get() / 10.0f));
                 event.setX(motion.x);
                 event.setZ(motion.y);
             }
@@ -457,24 +456,24 @@ public class SpeedII extends AddonModule {
 
     @EventHandler
     public void onPacketIn(PacketEvent.Receive event) {
-        if (mc.player == null || mc.world == null) {
+        if (mc.player == null || mc.level == null) {
             return;
         }
-        if (event.packet instanceof EntityVelocityUpdateS2CPacket packet
-            && packet.getEntityId() == mc.player.getId()) {
-            double x = packet.getVelocity().x;
-            double z = packet.getVelocity().z;
-        } else if (event.packet instanceof PlayerPositionLookS2CPacket) {
+        if (event.packet instanceof ClientboundSetEntityMotionPacket packet
+            && packet.getId() == mc.player.getId()) {
+            double x = packet.getMovement().x;
+            double z = packet.getMovement().z;
+        } else if (event.packet instanceof ClientboundPlayerPositionPacket) {
             resetStrafe();
         }
     }
 
-    public Vec2f handleStrafeMotion(final float speed) {
+    public Vec2 handleStrafeMotion(final float speed) {
         float forward = MovementUtil.getForward(mc.player.input);
         float strafe = MovementUtil.getSideways(mc.player.input);
-        float yaw = mc.player.lastYaw + (mc.player.getYaw() - mc.player.lastYaw) * mc.getRenderTickCounter().getTickProgress(true);
+        float yaw = mc.player.yRotO + (mc.player.getYRot() - mc.player.yRotO) * mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
         if (forward == 0.0f && strafe == 0.0f) {
-            return Vec2f.ZERO;
+            return Vec2.ZERO;
         } else if (forward != 0.0f) {
             if (strafe >= 1.0f) {
                 yaw += forward > 0.0f ? -45 : 45;
@@ -491,30 +490,30 @@ public class SpeedII extends AddonModule {
         }
         float rx = (float) Math.cos(Math.toRadians(yaw));
         float rz = (float) -Math.sin(Math.toRadians(yaw));
-        return new Vec2f((forward * speed * rz) + (strafe * speed * rx),
+        return new Vec2((forward * speed * rz) + (strafe * speed * rx),
             (forward * speed * rx) - (strafe * speed * rz));
     }
 
-    public Vec2f handleVanillaMotion(final float speed) {
+    public Vec2 handleVanillaMotion(final float speed) {
         float forward = MovementUtil.getForward(mc.player.input);
         float strafe = MovementUtil.getSideways(mc.player.input);
         if (forward == 0.0f && strafe == 0.0f) {
-            return Vec2f.ZERO;
+            return Vec2.ZERO;
         } else if (forward != 0.0f && strafe != 0.0f) {
             forward *= (float) Math.sin(0.7853981633974483);
             strafe *= (float) Math.cos(0.7853981633974483);
         }
-        return new Vec2f((float) (forward * speed * -Math.sin(Math.toRadians(mc.player.getYaw())) + strafe * speed * Math.cos(Math.toRadians(mc.player.getYaw()))),
-            (float) (forward * speed * Math.cos(Math.toRadians(mc.player.getYaw())) - strafe * speed * -Math.sin(Math.toRadians(mc.player.getYaw()))));
+        return new Vec2((float) (forward * speed * -Math.sin(Math.toRadians(mc.player.getYRot())) + strafe * speed * Math.cos(Math.toRadians(mc.player.getYRot()))),
+            (float) (forward * speed * Math.cos(Math.toRadians(mc.player.getYRot())) - strafe * speed * -Math.sin(Math.toRadians(mc.player.getYRot()))));
     }
 
 
     public boolean isBoxColliding() {
-        return !mc.world.isSpaceEmpty(mc.player, mc.player.getBoundingBox().offset(0.0, 0.21, 0.0));
+        return !mc.level.noCollision(mc.player, mc.player.getBoundingBox().move(0.0, 0.21, 0.0));
     }
 
     public boolean checkIsCollidingEntity(Entity entity) {
-        return entity != null && entity != mc.player && entity instanceof LivingEntity && !(entity instanceof FakePlayerEntity) && !(entity instanceof ArmorStandEntity);
+        return entity != null && entity != mc.player && entity instanceof LivingEntity && !(entity instanceof FakePlayerEntity) && !(entity instanceof ArmorStand);
     }
 
     public void setPrevTimer() {

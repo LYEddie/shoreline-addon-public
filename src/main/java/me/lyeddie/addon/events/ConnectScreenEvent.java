@@ -1,14 +1,14 @@
 package me.lyeddie.addon.events;
 
-import net.minecraft.client.network.ServerAddress;
-import net.minecraft.client.network.ServerInfo;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.multiplayer.resolver.ServerAddress;
 
 public class ConnectScreenEvent {
 
     private final ServerAddress address;
-    private final ServerInfo info;
+    private final ServerData info;
 
-    public ConnectScreenEvent(ServerAddress address, ServerInfo info) {
+    public ConnectScreenEvent(ServerAddress address, ServerData info) {
         this.address = address;
         this.info = info;
     }
@@ -17,7 +17,7 @@ public class ConnectScreenEvent {
         return address;
     }
 
-    public ServerInfo getInfo() {
+    public ServerData getInfo() {
         return info;
     }
 }

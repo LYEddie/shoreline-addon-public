@@ -4,21 +4,21 @@ import me.lyeddie.addon.events.*;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.util.Globals;
 import meteordevelopment.meteorclient.MeteorClient;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.network.ClientPlayerInteractionManager;
-import net.minecraft.client.network.SequencedPacketCreator;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.border.WorldBorder;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.multiplayer.MultiPlayerGameMode;
+import net.minecraft.client.multiplayer.prediction.PredictiveAction;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.border.WorldBorder;
+import net.minecraft.world.phys.BlockHitResult;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -27,21 +27,21 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(ClientPlayerInteractionManager.class)
+@Mixin(MultiPlayerGameMode.class)
 public abstract class MixinClientPlayerInteractionManager implements Globals {
 
     @Shadow
-    private GameMode gameMode;
+    private GameType localPlayerMode;
 
     @Shadow
-    protected abstract void syncSelectedSlot();
+    protected abstract void ensureHasSentCarriedItem();
 
     @Shadow
-    protected abstract void sendSequencedPacket(ClientWorld world, SequencedPacketCreator packetCreator);
+    protected abstract void startPrediction(ClientLevel world, PredictiveAction packetCreator);
 
-    @Inject(method = "attackBlock", at = @At(value = "HEAD"), cancellable = true)
+    @Inject(method = "startDestroyBlock", at = @At(value = "HEAD"), cancellable = true)
     private void hookAttackBlock(BlockPos pos, Direction direction, CallbackInfoReturnable<Boolean> cir) {
-        BlockState state = mc.world.getBlockState(pos);
+        BlockState state = mc.level.getBlockState(pos);
         final AttackBlockEvent attackBlockEvent = new AttackBlockEvent(pos, state, direction);
         MeteorClient.EVENT_BUS.post(attackBlockEvent);
         if (attackBlockEvent.isCancelled()) {
@@ -50,52 +50,52 @@ public abstract class MixinClientPlayerInteractionManager implements Globals {
         }
     }
 
-    @Inject(method = "interactBlock", at = @At(value = "HEAD"), cancellable = true)
-    private void hookInteractBlock(ClientPlayerEntity player, Hand hand, BlockHitResult hitResult, CallbackInfoReturnable<ActionResult> cir) {
+    @Inject(method = "useItemOn", at = @At(value = "HEAD"), cancellable = true)
+    private void hookInteractBlock(LocalPlayer player, InteractionHand hand, BlockHitResult hitResult, CallbackInfoReturnable<InteractionResult> cir) {
         InteractBlockEvent interactBlockEvent = new InteractBlockEvent(player, hand, hitResult);
         MeteorClient.EVENT_BUS.post(interactBlockEvent);
         if (interactBlockEvent.isCancelled()) {
-            cir.setReturnValue(ActionResult.SUCCESS);
+            cir.setReturnValue(InteractionResult.SUCCESS);
             cir.cancel();
         }
     }
 
-    @Redirect(method = "interactBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/border/WorldBorder;contains(Lnet/minecraft/util/math/BlockPos;)Z"))
+    @Redirect(method = "useItemOn", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/border/WorldBorder;isWithinBounds(Lnet/minecraft/core/BlockPos;)Z"))
     private boolean hookInteractBlock$2(WorldBorder worldBorder, BlockPos pos) {
         InteractBorderEvent interactBorderEvent = new InteractBorderEvent();
         MeteorClient.EVENT_BUS.post(interactBorderEvent);
         if (interactBorderEvent.isCancelled()) {
             return true;
         }
-        return worldBorder.contains(pos);
+        return worldBorder.isWithinBounds(pos);
     }
 
-    @Inject(method = "interactItem", at = @At(value = "HEAD"), cancellable = true)
-    public void hookInteractItem(PlayerEntity player, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
+    @Inject(method = "useItem", at = @At(value = "HEAD"), cancellable = true)
+    public void hookInteractItem(Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
         StrafeFixEvent strafeFixEvent = new StrafeFixEvent();
         MeteorClient.EVENT_BUS.post(strafeFixEvent);
         if (strafeFixEvent.isCancelled()) {
             cir.cancel();
-            if (this.gameMode == GameMode.SPECTATOR) {
-                cir.setReturnValue(ActionResult.PASS);
+            if (this.localPlayerMode == GameType.SPECTATOR) {
+                cir.setReturnValue(InteractionResult.PASS);
                 return;
             }
-            syncSelectedSlot();
-            MutableObject<ActionResult> mutableObject = new MutableObject<>();
-            this.sendSequencedPacket(mc.world, (sequence) -> {
-                PlayerInteractItemC2SPacket playerInteractItemC2SPacket = new PlayerInteractItemC2SPacket(
-                    hand, sequence, Managers.ROTATION.isRotating() ? Managers.ROTATION.getRotationYaw() : player.getYaw(),
-                    Managers.ROTATION.isRotating() ? Managers.ROTATION.getRotationPitch() : player.getPitch());
-                ItemStack itemStack = player.getStackInHand(hand);
-                if (player.getItemCooldownManager().isCoolingDown(itemStack)) {
-                    mutableObject.setValue(ActionResult.PASS);
+            ensureHasSentCarriedItem();
+            MutableObject<InteractionResult> mutableObject = new MutableObject<>();
+            this.startPrediction(mc.level, (sequence) -> {
+                ServerboundUseItemPacket playerInteractItemC2SPacket = new ServerboundUseItemPacket(
+                    hand, sequence, Managers.ROTATION.isRotating() ? Managers.ROTATION.getRotationYaw() : player.getYRot(),
+                    Managers.ROTATION.isRotating() ? Managers.ROTATION.getRotationPitch() : player.getXRot());
+                ItemStack itemStack = player.getItemInHand(hand);
+                if (player.getCooldowns().isOnCooldown(itemStack)) {
+                    mutableObject.setValue(InteractionResult.PASS);
                     return playerInteractItemC2SPacket;
                 } else {
-                    ActionResult actionResult = itemStack.use(mc.world, player, hand);
-                    if (actionResult instanceof ActionResult.Success success) {
-                        ItemStack newStack = success.getNewHandStack();
+                    InteractionResult actionResult = itemStack.use(mc.level, player, hand);
+                    if (actionResult instanceof InteractionResult.Success success) {
+                        ItemStack newStack = success.heldItemTransformedTo();
                         if (newStack != null) {
-                            player.setStackInHand(hand, newStack);
+                            player.setItemInHand(hand, newStack);
                         }
                     }
 
@@ -107,24 +107,24 @@ public abstract class MixinClientPlayerInteractionManager implements Globals {
         }
     }
 
-    @Redirect(method = "interactBlockInternal", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;shouldCancelInteraction()Z"))
-    private boolean hookRedirectInteractBlockInternal$shouldCancelInteraction(ClientPlayerEntity player) {
+    @Redirect(method = "performUseItemOn", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;isSecondaryUseActive()Z"))
+    private boolean hookRedirectInteractBlockInternal$shouldCancelInteraction(LocalPlayer player) {
         PacketSneakingEvent packetSneakingEvent = new PacketSneakingEvent();
         MeteorClient.EVENT_BUS.post(packetSneakingEvent);
-        return player.isSneaking() || packetSneakingEvent.isCancelled();
+        return player.isShiftKeyDown() || packetSneakingEvent.isCancelled();
     }
 
-    @Redirect(method = "interactBlockInternal", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;getStackInHand(Lnet/minecraft/util/Hand;)Lnet/minecraft/item/ItemStack;"))
-    private ItemStack hookRedirectInteractBlockInternal$getStackInHand(ClientPlayerEntity entity, Hand hand) {
-        if (hand.equals(Hand.OFF_HAND)) {
-            return entity.getStackInHand(hand);
+    @Redirect(method = "performUseItemOn", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;getItemInHand(Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/item/ItemStack;"))
+    private ItemStack hookRedirectInteractBlockInternal$getStackInHand(LocalPlayer entity, InteractionHand hand) {
+        if (hand.equals(InteractionHand.OFF_HAND)) {
+            return entity.getItemInHand(hand);
         }
         ItemDesyncEvent itemDesyncEvent = new ItemDesyncEvent();
         MeteorClient.EVENT_BUS.post(itemDesyncEvent);
-        return itemDesyncEvent.isCancelled() ? itemDesyncEvent.getServerItem() : entity.getStackInHand(Hand.MAIN_HAND);
+        return itemDesyncEvent.isCancelled() ? itemDesyncEvent.getServerItem() : entity.getItemInHand(InteractionHand.MAIN_HAND);
     }
 
-    @Redirect(method = "interactBlockInternal", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;isEmpty()Z", ordinal = 0))
+    @Redirect(method = "performUseItemOn", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;isEmpty()Z", ordinal = 0))
     private boolean hookRedirectInteractBlockInternal$getMainHandStack(ItemStack instance) {
         ItemDesyncEvent itemDesyncEvent = new ItemDesyncEvent();
         MeteorClient.EVENT_BUS.post(itemDesyncEvent);

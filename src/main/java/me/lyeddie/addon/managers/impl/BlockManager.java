@@ -6,8 +6,8 @@ import me.lyeddie.addon.util.Globals;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.network.packet.s2c.play.BlockBreakingProgressS2CPacket;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.protocol.game.ClientboundBlockDestructionPacket;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -23,7 +23,7 @@ public class BlockManager implements Globals {
 
     @EventHandler // check for pre/pos
     public void onTick(PrePlayerUpdateEvent event) {
-        if (mc.player == null || mc.world == null) {
+        if (mc.player == null || mc.level == null) {
             breakPositions.clear();
             return;
         }
@@ -35,15 +35,15 @@ public class BlockManager implements Globals {
 
     @EventHandler
     public void onPacketInbound(PacketEvent.Receive event) {
-        if (mc.player == null || mc.world == null) {
+        if (mc.player == null || mc.level == null) {
             return;
         }
 
-        if (event.packet instanceof BlockBreakingProgressS2CPacket packet) {
-            if (countBreaks(packet.getEntityId()) >= 2) {
-                breakPositions.stream().filter(d -> d.getEntityId() == packet.getEntityId()).min(Comparator.comparingLong(BreakEntry::getStartTime)).ifPresent(breakPositions::remove);
+        if (event.packet instanceof ClientboundBlockDestructionPacket packet) {
+            if (countBreaks(packet.getId()) >= 2) {
+                breakPositions.stream().filter(d -> d.getEntityId() == packet.getId()).min(Comparator.comparingLong(BreakEntry::getStartTime)).ifPresent(breakPositions::remove);
             }
-            BreakEntry data = new BreakEntry(packet.getEntityId(), packet.getPos());
+            BreakEntry data = new BreakEntry(packet.getId(), packet.getPos());
             data.startMining();
             breakPositions.add(data);
         }
@@ -83,7 +83,7 @@ public class BlockManager implements Globals {
 
         public void updateDamage() {
             if (started) {
-                blockDamage += SpeedMineII.getInstance().calcBlockBreakingDelta(mc.world.getBlockState(pos), mc.world, pos);
+                blockDamage += SpeedMineII.getInstance().calcBlockBreakingDelta(mc.level.getBlockState(pos), mc.level, pos);
             }
         }
 

@@ -15,13 +15,12 @@ import meteordevelopment.meteorclient.settings.DoubleSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -96,7 +95,7 @@ public class BasePlace extends ObsidianPlacerModule {
 
     @EventHandler(priority = -100)
     public void onTick(PlayerTickEvent event) { // seems bad¿
-        if ((!multitaskConfig.get() && checkMultitask()) || (stopMotionConfig.get() && !mc.player.isOnGround())) {
+        if ((!multitaskConfig.get() && checkMultitask()) || (stopMotionConfig.get() && !mc.player.onGround())) {
             crystalBase = null;
             return;
         }
@@ -112,7 +111,7 @@ public class BasePlace extends ObsidianPlacerModule {
             return;
         }
 
-        PlayerEntity target = getClosestPlayer(enemyRangeConfig.get());
+        Player target = getClosestPlayer(enemyRangeConfig.get());
         if (target == null) {
             return;
         }
@@ -122,22 +121,22 @@ public class BasePlace extends ObsidianPlacerModule {
             return;
         }
 
-        BlockState state = mc.world.getBlockState(crystalBase);
+        BlockState state = mc.level.getBlockState(crystalBase);
         BlockSlot blockItem = this.getResistantBlockItem();
 
-        if (blockItem == null || !state.isReplaceable()) {
+        if (blockItem == null || !state.canBeReplaced()) {
             return;
         }
 
-        Vec3d prevMotion = mc.player.getVelocity();
+        Vec3 prevMotion = mc.player.getDeltaMovement();
         if (stopMotionConfig.get()) {
-            mc.player.setVelocity(0.0, 0.0, 0.0);
+            mc.player.setDeltaMovement(0.0, 0.0, 0.0);
         }
 
         placeBlock(crystalBase, blockItem);
 
         if (stopMotionConfig.get()) {
-            mc.player.setVelocity(prevMotion);
+            mc.player.setDeltaMovement(prevMotion);
         }
     }
 
@@ -151,7 +150,7 @@ public class BasePlace extends ObsidianPlacerModule {
                 event.renderer.box(set.getKey(), TabConfigs.get().getClampColor(boxAlpha), TabConfigs.get().getClampColor(lineAlpha), ShapeMode.Both, 0);
             }
 
-            if (crystalBase != null && mc.world.isAir(crystalBase)) {
+            if (crystalBase != null && mc.level.isEmptyBlock(crystalBase)) {
                 Animation animation = new Animation(true, toFloat(fadeTimeConfig.get()));
                 fadeList.put(crystalBase, animation);
             }
@@ -174,19 +173,19 @@ public class BasePlace extends ObsidianPlacerModule {
         packets.put(pos, System.currentTimeMillis());
     }
 
-    private BlockPos getCrystalBase(PlayerEntity player) {
-        List<BlockPos> targetBlocks = getSphere(placeRangeConfig.get(), mc.player.getEyePos());
+    private BlockPos getCrystalBase(Player player) {
+        List<BlockPos> targetBlocks = getSphere(placeRangeConfig.get(), mc.player.getEyePosition());
         double damage = 0.0f;
         BlockPos crystalBase = null;
         for (BlockPos pos : targetBlocks) {
-            final BlockPos basePos = pos.down();
-            BlockState state = mc.world.getBlockState(basePos);
+            final BlockPos basePos = pos.below();
+            BlockState state = mc.level.getBlockState(basePos);
 
             if (basePos.getY() >= EntityUtil.getRoundedBlockPos(player).getY() + 1.0F) {
                 continue;
             }
 
-            if (AutoCrystal.getInstance().isActive() && !AutoCrystal.getInstance().isPlacing() && !state.isReplaceable()) {
+            if (AutoCrystal.getInstance().isActive() && !AutoCrystal.getInstance().isPlacing() && !state.canBeReplaced()) {
                 continue;
             }
 
@@ -199,12 +198,12 @@ public class BasePlace extends ObsidianPlacerModule {
                 continue;
             }
 
-            double dist = mc.player.squaredDistanceTo(basePos.toCenterPos());
+            double dist = mc.player.distanceToSqr(basePos.getCenter());
             if (dist > getValueSq(placeRangeConfig.get())) {
                 continue;
             }
 
-            double dmg1 = ExplosionUtil.getDamageTo(player, pos.toCenterPos(), assumeArmorConfig.get());
+            double dmg1 = ExplosionUtil.getDamageTo(player, pos.getCenter(), assumeArmorConfig.get());
             if (dmg1 < minDamageConfig.get()) {
                 continue;
             }
@@ -228,13 +227,13 @@ public class BasePlace extends ObsidianPlacerModule {
         return crystalBase;
     }
 
-    private List<BlockPos> getSphere(double rad, Vec3d origin) {
+    private List<BlockPos> getSphere(double rad, Vec3 origin) {
         List<BlockPos> sphere = new ArrayList<>();
         for (double x = -rad; x <= rad; ++x) {
             for (double y = -rad; y <= rad; ++y) {
                 for (double z = -rad; z <= rad; ++z) {
-                    Vec3i pos = new Vec3i((int) (origin.getX() + x),
-                        (int) (origin.getY() + y), (int) (origin.getZ() + z));
+                    Vec3i pos = new Vec3i((int) (origin.x() + x),
+                        (int) (origin.y() + y), (int) (origin.z() + z));
                     final BlockPos p = new BlockPos(pos);
                     sphere.add(p);
                 }

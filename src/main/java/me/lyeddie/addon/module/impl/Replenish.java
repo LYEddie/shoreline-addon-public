@@ -13,15 +13,14 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
-import net.minecraft.client.gui.screen.ingame.InventoryScreen;
-import net.minecraft.client.gui.screen.ingame.ShulkerBoxScreen;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.screen.slot.SlotActionType;
-
+import net.minecraft.client.gui.screens.inventory.ContainerScreen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.gui.screens.inventory.ShulkerBoxScreen;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -60,14 +59,14 @@ public class Replenish extends AddonModule {
 
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
-        if (event.getEntity() instanceof ClientPlayerEntity) {
+        if (event.getEntity() instanceof LocalPlayer) {
             hotbarCache.clear();
         }
     }
 
     @EventHandler
     public void onTick(PlayerTickEvent event) {
-        if (mc.options.dropKey.isPressed()) {
+        if (mc.options.keyDrop.isDown()) {
             lastDroppedTimer.reset();
         }
 
@@ -75,7 +74,7 @@ public class Replenish extends AddonModule {
 
         if (!pauseReplenish) {
             for (int i = 0; i < 9; i++) {
-                ItemStack stack = mc.player.getInventory().getStack(i);
+                ItemStack stack = mc.player.getInventory().getItem(i);
                 if (stack.isEmpty()) {
                     ItemStack cachedStack = hotbarCache.getOrDefault(i, null);
                     if (cachedStack != null && !cachedStack.isEmpty()) {
@@ -89,7 +88,7 @@ public class Replenish extends AddonModule {
                     continue;
                 }
 
-                double percentage = ((double) stack.getCount() / stack.getMaxCount()) * 100.0;
+                double percentage = ((double) stack.getCount() / stack.getMaxStackSize()) * 100.0;
                 if (percentage <= percentConfig.get()) {
                     replenishStack(i, stack);
                     break;
@@ -98,7 +97,7 @@ public class Replenish extends AddonModule {
         }
 
         for (int i = 0; i < 9; i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
+            ItemStack stack = mc.player.getInventory().getItem(i);
             if (stack.isEmpty() && !pauseReplenish) {
                 continue;
             }
@@ -112,14 +111,14 @@ public class Replenish extends AddonModule {
     }
 
     public boolean isInInventoryScreen() {
-        return mc.currentScreen instanceof GenericContainerScreen || mc.currentScreen instanceof ShulkerBoxScreen || mc.currentScreen instanceof InventoryScreen;
+        return mc.screen instanceof ContainerScreen || mc.screen instanceof ShulkerBoxScreen || mc.screen instanceof InventoryScreen;
     }
 
     private void replenishStack(int slot, ItemStack stack) {
         int slot1 = -1;
         boolean outOfObsidian = stack.getItem() == Items.OBSIDIAN && InventoryUtil.count(Items.OBSIDIAN) <= 1;
         for (int i = 9; i < 36; ++i) {
-            ItemStack itemStack = mc.player.getInventory().getStack(i);
+            ItemStack itemStack = mc.player.getInventory().getItem(i);
 
             if (itemStack.isEmpty()) {
                 continue;
@@ -133,10 +132,10 @@ public class Replenish extends AddonModule {
         }
 
         if (slot1 != -1) {
-            mc.interactionManager.clickSlot(0, slot1, 0, SlotActionType.PICKUP, mc.player);
-            mc.interactionManager.clickSlot(0, slot + 36, 0, SlotActionType.PICKUP, mc.player);
-            if (!mc.player.currentScreenHandler.getCursorStack().isEmpty()) {
-                mc.interactionManager.clickSlot(0, slot1, 0, SlotActionType.PICKUP, mc.player);
+            mc.gameMode.handleInventoryMouseClick(0, slot1, 0, ClickType.PICKUP, mc.player);
+            mc.gameMode.handleInventoryMouseClick(0, slot + 36, 0, ClickType.PICKUP, mc.player);
+            if (!mc.player.containerMenu.getCarried().isEmpty()) {
+                mc.gameMode.handleInventoryMouseClick(0, slot1, 0, ClickType.PICKUP, mc.player);
             }
         }
     }
@@ -147,7 +146,7 @@ public class Replenish extends AddonModule {
         } else if (stack1.getItem() instanceof BlockItem blockItem
             && (!(stack2.getItem() instanceof BlockItem blockItem1) || blockItem.getBlock() != blockItem1.getBlock())) {
             return false;
-        } else if (!stack1.getName().getString().equals(stack2.getName().getString())) {
+        } else if (!stack1.getHoverName().getString().equals(stack2.getHoverName().getString())) {
             return false;
         }
 

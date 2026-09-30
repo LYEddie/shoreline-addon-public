@@ -1,17 +1,17 @@
 package me.lyeddie.addon.mixin.impl.accessor;
 
-import net.minecraft.network.packet.s2c.play.ExplosionS2CPacket;
-import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 import java.util.Optional;
+import net.minecraft.network.protocol.game.ClientboundExplodePacket;
+import net.minecraft.world.phys.Vec3;
 
-@Mixin(ExplosionS2CPacket.class)
+@Mixin(ClientboundExplodePacket.class)
 public interface AccessorExplosionS2CPacket {
 
     @Accessor("playerKnockback")
     @Mutable
-    void setPlayerKnockback(Optional<Vec3d> playerKnockback);
+    void setPlayerKnockback(Optional<Vec3> playerKnockback);
 }

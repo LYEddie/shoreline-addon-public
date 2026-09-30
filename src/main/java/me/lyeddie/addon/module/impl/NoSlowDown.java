@@ -17,24 +17,31 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.*;
-import net.minecraft.client.gui.screen.ChatScreen;
-import net.minecraft.client.gui.screen.DeathScreen;
-import net.minecraft.client.gui.screen.ingame.SignEditScreen;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.network.packet.c2s.play.*;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.screens.DeathScreen;
+import net.minecraft.client.gui.screens.inventory.SignEditScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SweetBerryBushBlock;
+import net.minecraft.world.level.block.WebBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import org.lwjgl.glfw.GLFW;
-
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -150,11 +157,11 @@ public class NoSlowDown extends AddonModule {
 
     @EventHandler
     public void onPlayerUpdate(PrePlayerUpdateEvent event) {
-        if (grimConfig.get() && mc.player.isUsingItem() && !mc.player.isSneaking() && itemsConfig.get()) {
-            if (mc.player.getActiveHand() == Hand.OFF_HAND && checkStack(mc.player.getMainHandStack())) {
-                Managers.NETWORK.sendSequencedPacket(id -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, id, mc.player.getYaw(), mc.player.getPitch()));
-            } else if (checkStack(mc.player.getOffHandStack())) {
-                Managers.NETWORK.sendSequencedPacket(id -> new PlayerInteractItemC2SPacket(Hand.OFF_HAND, id, mc.player.getYaw(), mc.player.getPitch()));
+        if (grimConfig.get() && mc.player.isUsingItem() && !mc.player.isShiftKeyDown() && itemsConfig.get()) {
+            if (mc.player.getUsedItemHand() == InteractionHand.OFF_HAND && checkStack(mc.player.getMainHandItem())) {
+                Managers.NETWORK.sendSequencedPacket(id -> new ServerboundUseItemPacket(InteractionHand.MAIN_HAND, id, mc.player.getYRot(), mc.player.getXRot()));
+            } else if (checkStack(mc.player.getOffhandItem())) {
+                Managers.NETWORK.sendSequencedPacket(id -> new ServerboundUseItemPacket(InteractionHand.OFF_HAND, id, mc.player.getYRot(), mc.player.getXRot()));
             }
         }
     }
@@ -169,32 +176,32 @@ public class NoSlowDown extends AddonModule {
         }
         if (inventoryMoveConfig.get() && checkScreen()) {
             final var window = mc.getWindow();
-            KeyBinding[] keys = new KeyBinding[]{mc.options.jumpKey, mc.options.forwardKey, mc.options.backKey, mc.options.rightKey, mc.options.leftKey};
-            for (KeyBinding binding : keys) {
-                binding.setPressed(InputUtil.isKeyPressed(window, ((AccessorKeyBinding) binding).getBoundKey().getCode()));
+            KeyMapping[] keys = new KeyMapping[]{mc.options.keyJump, mc.options.keyUp, mc.options.keyDown, mc.options.keyRight, mc.options.keyLeft};
+            for (KeyMapping binding : keys) {
+                binding.setDown(InputConstants.isKeyDown(window, ((AccessorKeyBinding) binding).getBoundKey().getValue()));
             }
             if (arrowMoveConfig.get()) {
-                float yaw = mc.player.getYaw();
-                float pitch = mc.player.getPitch();
-                if (InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_UP)) {
+                float yaw = mc.player.getYRot();
+                float pitch = mc.player.getXRot();
+                if (InputConstants.isKeyDown(window, GLFW.GLFW_KEY_UP)) {
                     pitch -= 3.0f;
-                } else if (InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_DOWN)) {
+                } else if (InputConstants.isKeyDown(window, GLFW.GLFW_KEY_DOWN)) {
                     pitch += 3.0f;
-                } else if (InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_LEFT)) {
+                } else if (InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT)) {
                     yaw -= 3.0f;
-                } else if (InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_RIGHT)) {
+                } else if (InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT)) {
                     yaw += 3.0f;
                 }
-                mc.player.setYaw(yaw);
-                mc.player.setPitch(MathHelper.clamp(pitch, -90.0f, 90.0f));
+                mc.player.setYRot(yaw);
+                mc.player.setXRot(Mth.clamp(pitch, -90.0f, 90.0f));
             }
         }
 
         if ((grimConfig.get() || grimNewConfig.get()) && websConfig.get()) {
-            Box bb = grimConfig.get() ? mc.player.getBoundingBox().expand(1.0) : mc.player.getBoundingBox();
+            AABB bb = grimConfig.get() ? mc.player.getBoundingBox().inflate(1.0) : mc.player.getBoundingBox();
             for (BlockPos pos : getIntersectingWebs(bb)) {
-                Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(
-                    PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, Direction.DOWN));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(
+                    ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, pos, Direction.DOWN));
             }
         }
     }
@@ -225,7 +232,7 @@ public class NoSlowDown extends AddonModule {
     @EventHandler
     public void onSlowMovement(SlowMovementEvent event) {
         Block block = event.getState().getBlock();
-        if (block instanceof CobwebBlock && websConfig.get() || block instanceof SweetBerryBushBlock && berryBushConfig.get()) {
+        if (block instanceof WebBlock && websConfig.get() || block instanceof SweetBerryBushBlock && berryBushConfig.get()) {
             float multiplier = toFloat(webSpeedConfig.get());
             if (webSpeedConfig.get() == 1.0f) {
                 multiplier = 0.0f;
@@ -237,8 +244,8 @@ public class NoSlowDown extends AddonModule {
 
     @EventHandler
     public void onMovementSlowdown(MovementSlowdownEvent event) {
-        if (sneakConfig.get() && mc.player.isSneaking() || crawlConfig.get() && mc.player.isCrawling()) {
-            float f = 1.0f / (float) mc.player.getAttributeValue(EntityAttributes.SNEAKING_SPEED);
+        if (sneakConfig.get() && mc.player.isShiftKeyDown() || crawlConfig.get() && mc.player.isVisuallyCrawling()) {
+            float f = 1.0f / (float) mc.player.getAttributeValue(Attributes.SNEAKING_SPEED);
             MovementUtil.scale(event.input, f);
         }
 
@@ -273,32 +280,32 @@ public class NoSlowDown extends AddonModule {
 
     @EventHandler
     public void onPacketOutbound(PacketEvent.Send event) {
-        if (mc.player == null || mc.world == null || mc.isInSingleplayer()) {
+        if (mc.player == null || mc.level == null || mc.isLocalServer()) {
             return;
-        } else if (event.packet instanceof PlayerMoveC2SPacket packet && packet.changesPosition()
+        } else if (event.packet instanceof ServerboundMovePlayerPacket packet && packet.hasPosition()
             && strictConfig.get() && checkSlowed()) {
             Managers.INVENTORY.setSlotForced(mc.player.getInventory().getSelectedSlot());
-        } else if (event.packet instanceof ClickSlotC2SPacket && strictConfig.get()) {
+        } else if (event.packet instanceof ServerboundContainerClickPacket && strictConfig.get()) {
             if (mc.player.isUsingItem()) {
-                mc.player.stopUsingItem();
+                mc.player.releaseUsingItem();
             }
             if (sneaking || Managers.POSITION.isSneaking()) {
                 Managers.MOVEMENT.sendSneaking(false);
             }
             if (Managers.POSITION.isSprinting()) {
-                Managers.NETWORK.sendPacket(new ClientCommandC2SPacket(mc.player,
-                    ClientCommandC2SPacket.Mode.STOP_SPRINTING));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerCommandPacket(mc.player,
+                    ServerboundPlayerCommandPacket.Action.STOP_SPRINTING));
             }
         }
     }
 
     private boolean checkStack(ItemStack stack) {
-        return !stack.getComponents().contains(DataComponentTypes.FOOD) && stack.getItem() != Items.BOW && stack.getItem() != Items.CROSSBOW && stack.getItem() != Items.SHIELD;
+        return !stack.getComponents().has(DataComponents.FOOD) && stack.getItem() != Items.BOW && stack.getItem() != Items.CROSSBOW && stack.getItem() != Items.SHIELD;
     }
 
     private boolean checkGrimNew() {
-        return !mc.player.isSneaking() && !mc.player.isCrawling() && !mc.player.isRiding() &&
-            mc.player.getItemUseTimeLeft() < 5 || ((mc.player.getItemUseTime() > 1) && mc.player.getItemUseTime() % 2 != 0);
+        return !mc.player.isShiftKeyDown() && !mc.player.isVisuallyCrawling() && !mc.player.isHandsBusy() &&
+            mc.player.getUseItemRemainingTicks() < 5 || ((mc.player.getTicksUsingItem() > 1) && mc.player.getTicksUsingItem() % 2 != 0);
     }
 
     public boolean checkSlowed() {
@@ -306,22 +313,22 @@ public class NoSlowDown extends AddonModule {
             return true;
         }
         if (!grimNewConfig.get() || checkGrimNew()) {
-            return !mc.player.isRiding() && !mc.player.isSneaking() && (mc.player.isUsingItem() && itemsConfig.get()
+            return !mc.player.isHandsBusy() && !mc.player.isShiftKeyDown() && (mc.player.isUsingItem() && itemsConfig.get()
                 || mc.player.isBlocking() && shieldsConfig.get() && !grimNewConfig.get() && !grimConfig.get());
         }
         return false;
     }
 
     public boolean checkScreen() {
-        return mc.currentScreen != null && !(mc.currentScreen instanceof ChatScreen
-            || mc.currentScreen instanceof SignEditScreen || mc.currentScreen instanceof DeathScreen);
+        return mc.screen != null && !(mc.screen instanceof ChatScreen
+            || mc.screen instanceof SignEditScreen || mc.screen instanceof DeathScreen);
     }
 
-    public List<BlockPos> getIntersectingWebs(Box boundingBox) {
+    public List<BlockPos> getIntersectingWebs(AABB boundingBox) {
         final List<BlockPos> blocks = new ArrayList<>();
         for (BlockPos blockPos : PositionUtil.getAllInBox(boundingBox)) {
-            BlockState state = mc.world.getBlockState(blockPos);
-            if (state.getBlock() instanceof CobwebBlock) {
+            BlockState state = mc.level.getBlockState(blockPos);
+            if (state.getBlock() instanceof WebBlock) {
                 blocks.add(blockPos);
             }
         }

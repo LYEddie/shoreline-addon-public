@@ -1,17 +1,17 @@
 package me.lyeddie.addon.events.staged;
 
 import meteordevelopment.meteorclient.events.Cancellable;
-import net.minecraft.client.input.Input;
+import net.minecraft.client.player.ClientInput;
 
 public class PostKeyboardTickEvent extends Cancellable {
 
-    private final Input input;
+    private final ClientInput input;
 
-    public PostKeyboardTickEvent(Input input) {
+    public PostKeyboardTickEvent(ClientInput input) {
         this.input = input;
     }
 
-    public Input getInput() {
+    public ClientInput getInput() {
         return input;
     }
 }

@@ -5,9 +5,9 @@ import me.lyeddie.addon.util.PlayerArgumentType;
 import me.lyeddie.addon.util.Helpers;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.commands.Command;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.command.CommandSource;
-import net.minecraft.util.AssetInfo;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.core.ClientAsset;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,14 +21,14 @@ public class SkinGrab extends Command implements Helpers {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<CommandSource> builder) {
+    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
         builder.then(argument("player", PlayerArgumentType.player()).executes(c -> {
             String player = PlayerArgumentType.getPlayer(c, "player");
             String skinTexture = null;
-            for (PlayerListEntry playerListEntry : mc.player.networkHandler.getPlayerList()) {
+            for (PlayerInfo playerListEntry : mc.player.connection.getOnlinePlayers()) {
                 String playerName = playerListEntry.getProfile().name();
                 if (player.equals(playerName)) {
-                    if (playerListEntry.getSkinTextures().body() instanceof AssetInfo.SkinAssetInfo skin) {
+                    if (playerListEntry.getSkin().body() instanceof ClientAsset.DownloadedTexture skin) {
                         skinTexture = skin.url();
                     }
                     break;

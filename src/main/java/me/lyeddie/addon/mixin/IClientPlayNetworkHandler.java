@@ -1,6 +1,6 @@
 package me.lyeddie.addon.mixin;
 
-import net.minecraft.network.packet.Packet;
+import net.minecraft.network.protocol.Packet;
 
 public interface IClientPlayNetworkHandler {
 

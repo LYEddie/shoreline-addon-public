@@ -1,7 +1,7 @@
 package me.lyeddie.addon.mixin;
 
-import net.minecraft.entity.Entity;
 import me.lyeddie.addon.util.InteractType;
+import net.minecraft.world.entity.Entity;
 
 public interface IPlayerInteractEntityC2SPacket {
 

@@ -1,19 +1,19 @@
 package me.lyeddie.addon.events;
 
 import meteordevelopment.meteorclient.events.Cancellable;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
+import net.minecraft.client.player.AbstractClientPlayer;
 
 public class RenderPlayerEvent extends Cancellable {
 
-    private final AbstractClientPlayerEntity entity;
+    private final AbstractClientPlayer entity;
     private float yaw;
     private float pitch;
 
-    public RenderPlayerEvent(AbstractClientPlayerEntity entity) {
+    public RenderPlayerEvent(AbstractClientPlayer entity) {
         this.entity = entity;
     }
 
-    public AbstractClientPlayerEntity getEntity() {
+    public AbstractClientPlayer getEntity() {
         return entity;
     }
 

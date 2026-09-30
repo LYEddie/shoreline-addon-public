@@ -4,28 +4,28 @@ import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.managers.impl.util.RotationCallback;
 import me.lyeddie.addon.module.impl.AirPlaceII;
 import me.lyeddie.addon.util.tabs.TabConfigs;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.BooleanOp;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import me.lyeddie.addon.util.Globals;
 import me.lyeddie.addon.util.literal.MovementUtil;
 import me.lyeddie.addon.util.literal.RotationUtil;
 import me.lyeddie.addon.util.SneakBlocks;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.ShapeContext;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.decoration.EndCrystalEntity;
-import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.function.BooleanBiFunction;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -35,10 +35,10 @@ public final class InteractionManager implements Globals {
     private final Map<Integer, Integer> placedOnEntities = new ConcurrentHashMap<>();
 
     public boolean canPlace(BlockPos pos, Block block) {
-        VoxelShape shape = block.getDefaultState().getCollisionShape(mc.world, pos, ShapeContext.absent()).offset(pos.getX(), pos.getY(), pos.getZ());
+        VoxelShape shape = block.defaultBlockState().getCollisionShape(mc.level, pos, CollisionContext.empty()).move(pos.getX(), pos.getY(), pos.getZ());
         if (!shape.isEmpty()) {
-            for (Entity entity : mc.world.getOtherEntities(null, shape.getBoundingBox())) {
-                if (entity.isRemoved() || !entity.intersectionChecked || !VoxelShapes.matchesAnywhere(shape, VoxelShapes.cuboid(entity.getBoundingBox()), BooleanBiFunction.AND) || entity instanceof EndCrystalEntity && (!placedOnEntities.containsKey(entity.getId()) || placedOnEntities.get(entity.getId()) <= TabConfigs.get().getEntityPlaceThreshold())) continue;
+            for (Entity entity : mc.level.getEntities(null, shape.bounds())) {
+                if (entity.isRemoved() || !entity.blocksBuilding || !Shapes.joinIsNotEmpty(shape, Shapes.create(entity.getBoundingBox()), BooleanOp.AND) || entity instanceof EndCrystal && (!placedOnEntities.containsKey(entity.getId()) || placedOnEntities.get(entity.getId()) <= TabConfigs.get().getEntityPlaceThreshold())) continue;
                 return false;
             }
         }
@@ -50,12 +50,12 @@ public final class InteractionManager implements Globals {
     }
 
     public boolean placeBlock(BlockPos pos, Block block, int slot, boolean strictDirection, boolean clientSwing, RotationCallback rotationCallback, boolean airPlace) {
-        VoxelShape shape = block.getDefaultState().getCollisionShape(mc.world, pos, ShapeContext.absent()).offset(pos.getX(), pos.getY(), pos.getZ());
+        VoxelShape shape = block.defaultBlockState().getCollisionShape(mc.level, pos, CollisionContext.empty()).move(pos.getX(), pos.getY(), pos.getZ());
         boolean isEntityBlockingPlacement = false;
         if (!shape.isEmpty()) {
-            for (Entity entity : InteractionManager.mc.world.getOtherEntities(null, shape.getBoundingBox())) {
-                if (entity.isRemoved() || !entity.intersectionChecked || !VoxelShapes.matchesAnywhere(shape, VoxelShapes.cuboid(entity.getBoundingBox()), BooleanBiFunction.AND)) continue;
-                if (entity instanceof EndCrystalEntity) {
+            for (Entity entity : InteractionManager.mc.level.getEntities(null, shape.bounds())) {
+                if (entity.isRemoved() || !entity.blocksBuilding || !Shapes.joinIsNotEmpty(shape, Shapes.create(entity.getBoundingBox()), BooleanOp.AND)) continue;
+                if (entity instanceof EndCrystal) {
                     placedOnEntities.compute(entity.getId(), (k, attempts) -> attempts != null ? attempts + 1 : 1);
                     if (!placedOnEntities.containsKey(entity.getId()) || placedOnEntities.get(entity.getId()) <= TabConfigs.get().getEntityPlaceThreshold()) continue;
                 }
@@ -74,7 +74,7 @@ public final class InteractionManager implements Globals {
         if (direction == null) {
             return false;
         }
-        BlockPos neighbor = pos.offset(direction.getOpposite());
+        BlockPos neighbor = pos.relative(direction.getOpposite());
         return placeBlock(neighbor, direction, slot, clientSwing, false, rotationCallback);
     }
 
@@ -83,12 +83,12 @@ public final class InteractionManager implements Globals {
     }
 
     public boolean placeBlock(BlockPos pos, Block block, int slot, boolean strictDirection, boolean clientSwing, boolean packet, boolean airPlace, RotationCallback rotationCallback) {
-        VoxelShape shape = block.getDefaultState().getCollisionShape(InteractionManager.mc.world, pos, ShapeContext.absent()).offset(pos.getX(), pos.getY(), pos.getZ());
+        VoxelShape shape = block.defaultBlockState().getCollisionShape(InteractionManager.mc.level, pos, CollisionContext.empty()).move(pos.getX(), pos.getY(), pos.getZ());
         boolean isEntityBlockingPlacement = false;
         if (!shape.isEmpty()) {
-            for (Entity entity : mc.world.getOtherEntities(null, shape.getBoundingBox())) {
-                if (entity.isRemoved() || !entity.intersectionChecked || !VoxelShapes.matchesAnywhere(shape, VoxelShapes.cuboid(entity.getBoundingBox()), BooleanBiFunction.AND)) continue;
-                if (entity instanceof EndCrystalEntity) {
+            for (Entity entity : mc.level.getEntities(null, shape.bounds())) {
+                if (entity.isRemoved() || !entity.blocksBuilding || !Shapes.joinIsNotEmpty(shape, Shapes.create(entity.getBoundingBox()), BooleanOp.AND)) continue;
+                if (entity instanceof EndCrystal) {
                     placedOnEntities.compute(entity.getId(), (k, attempts) -> attempts != null ? attempts + 1 : 1);
                     if (!placedOnEntities.containsKey(entity.getId()) || placedOnEntities.get(entity.getId()) <= TabConfigs.get().getEntityPlaceThreshold()) continue;
                 }
@@ -107,18 +107,18 @@ public final class InteractionManager implements Globals {
         if (direction == null) {
             return false;
         }
-        BlockPos neighbor = pos.offset(direction.getOpposite());
+        BlockPos neighbor = pos.relative(direction.getOpposite());
         return placeBlock(neighbor, direction, slot, clientSwing, false, packet, rotationCallback);
     }
 
     public boolean placeBlock(final BlockPos pos, final Direction direction, final int slot, final boolean clientSwing, final boolean grimAirPlace, final boolean packet, final RotationCallback rotationCallback) {
-        Vec3d hitVec = pos.toCenterPos().add(new Vec3d(direction.getUnitVector()).multiply(0.5));
+        Vec3 hitVec = pos.getCenter().add(new Vec3(direction.step()).scale(0.5));
         return placeBlock(new BlockHitResult(hitVec, direction, pos, false),
             slot, clientSwing, grimAirPlace, packet, rotationCallback);
     }
 
     public boolean placeBlock(final BlockPos pos, final Direction direction, final int slot, final boolean clientSwing, final boolean grimAirPlace, final RotationCallback rotationCallback) {
-        Vec3d hitVec = pos.toCenterPos().add(new Vec3d(direction.getUnitVector()).multiply(0.5));
+        Vec3 hitVec = pos.getCenter().add(new Vec3(direction.step()).scale(0.5));
         return placeBlock(new BlockHitResult(hitVec, direction, pos, false),
             slot, clientSwing, grimAirPlace, rotationCallback);
     }
@@ -130,23 +130,23 @@ public final class InteractionManager implements Globals {
         }
 
         if (grimAirPlace) {
-            Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ORIGIN, Direction.DOWN));
+            Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ZERO, Direction.DOWN));
         }
 
         final boolean isRotating = rotationCallback != null;
         if (isRotating) {
-            float[] angles = RotationUtil.getRotationsTo(mc.player.getEyePos(), hitResult.getPos());
+            float[] angles = RotationUtil.getRotationsTo(mc.player.getEyePosition(), hitResult.getLocation());
             rotationCallback.handleRotation(true, angles);
         }
 
-        final boolean result = placeBlockImmediately(hitResult, grimAirPlace ? Hand.OFF_HAND : Hand.MAIN_HAND, clientSwing, packet);
+        final boolean result = placeBlockImmediately(hitResult, grimAirPlace ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND, clientSwing, packet);
         if (isRotating) {
-            float[] angles = RotationUtil.getRotationsTo(mc.player.getEyePos(), hitResult.getPos());
+            float[] angles = RotationUtil.getRotationsTo(mc.player.getEyePosition(), hitResult.getLocation());
             rotationCallback.handleRotation(false, angles);
         }
 
         if (grimAirPlace) {
-            Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ORIGIN, Direction.DOWN));
+            Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ZERO, Direction.DOWN));
         }
 
         if (isSpoofing) {
@@ -163,23 +163,23 @@ public final class InteractionManager implements Globals {
         }
 
         if (grimAirPlace) {
-            Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ORIGIN, Direction.DOWN));
+            Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ZERO, Direction.DOWN));
         }
 
         final boolean isRotating = rotationCallback != null;
         if (isRotating) {
-            float[] angles = RotationUtil.getRotationsTo(mc.player.getEyePos(), hitResult.getPos());
+            float[] angles = RotationUtil.getRotationsTo(mc.player.getEyePosition(), hitResult.getLocation());
             rotationCallback.handleRotation(true, angles);
         }
 
-        final boolean result = placeBlockImmediately(hitResult, grimAirPlace ? Hand.OFF_HAND : Hand.MAIN_HAND, clientSwing, true);
+        final boolean result = placeBlockImmediately(hitResult, grimAirPlace ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND, clientSwing, true);
         if (isRotating) {
-            float[] angles = RotationUtil.getRotationsTo(mc.player.getEyePos(), hitResult.getPos());
+            float[] angles = RotationUtil.getRotationsTo(mc.player.getEyePosition(), hitResult.getLocation());
             rotationCallback.handleRotation(false, angles);
         }
 
         if (grimAirPlace) {
-            Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ORIGIN, Direction.DOWN));
+            Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ZERO, Direction.DOWN));
         }
 
         if (isSpoofing) {
@@ -189,35 +189,35 @@ public final class InteractionManager implements Globals {
         return result;
     }
 
-    public boolean placeBlockImmediately(final BlockHitResult result, final Hand hand, final boolean clientSwing, final boolean packet) {
-        final BlockState state = mc.world.getBlockState(result.getBlockPos());
-        final boolean shouldSneak = SneakBlocks.isSneakBlock(state) && !mc.player.isSneaking();
+    public boolean placeBlockImmediately(final BlockHitResult result, final InteractionHand hand, final boolean clientSwing, final boolean packet) {
+        final BlockState state = mc.level.getBlockState(result.getBlockPos());
+        final boolean shouldSneak = SneakBlocks.isSneakBlock(state) && !mc.player.isShiftKeyDown();
         if (shouldSneak) {
             Managers.MOVEMENT.setPacketSneaking(true);
             MovementUtil.applySneak();
         }
-        final ActionResult actionResult = packet ? placeBlockPacket(result, hand) : placeBlockInternally(result, hand);
-        if (actionResult instanceof ActionResult.Success success
-            && success.swingSource() == ActionResult.SwingSource.CLIENT) {
+        final InteractionResult actionResult = packet ? placeBlockPacket(result, hand) : placeBlockInternally(result, hand);
+        if (actionResult instanceof InteractionResult.Success success
+            && success.swingSource() == InteractionResult.SwingSource.CLIENT) {
             if (clientSwing) {
-                mc.player.swingHand(Hand.MAIN_HAND);
+                mc.player.swing(InteractionHand.MAIN_HAND);
             } else {
-                Managers.NETWORK.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
             }
         }
         if (shouldSneak) {
             Managers.MOVEMENT.setPacketSneaking(false);
         }
-        return actionResult.isAccepted();
+        return actionResult.consumesAction();
     }
 
-    private ActionResult placeBlockInternally(final BlockHitResult hitResult, final Hand hand) {
-        return mc.interactionManager.interactBlock(mc.player, hand, hitResult);
+    private InteractionResult placeBlockInternally(final BlockHitResult hitResult, final InteractionHand hand) {
+        return mc.gameMode.useItemOn(mc.player, hand, hitResult);
     }
 
-    public ActionResult placeBlockPacket(final BlockHitResult hitResult, final Hand hand) {
-        Managers.NETWORK.sendSequencedPacket(id -> new PlayerInteractBlockC2SPacket(hand, hitResult, id));
-        return ActionResult.SUCCESS;
+    public InteractionResult placeBlockPacket(final BlockHitResult hitResult, final InteractionHand hand) {
+        Managers.NETWORK.sendSequencedPacket(id -> new ServerboundUseItemOnPacket(hand, hitResult, id));
+        return InteractionResult.SUCCESS;
     }
 
     public Direction getInteractDirection(final BlockPos blockPos, final boolean strictDirection) {
@@ -226,10 +226,10 @@ public final class InteractionManager implements Globals {
     }
 
     public Direction getInteractDirectionInternal(final BlockPos blockPos, final boolean strictDirection) {
-        Set<Direction> validDirections = getPlaceDirectionsNCP(mc.player.getEyePos(), blockPos.toCenterPos());
+        Set<Direction> validDirections = getPlaceDirectionsNCP(mc.player.getEyePosition(), blockPos.getCenter());
         Direction interactDirection = null;
         for (final Direction direction : Direction.values()) {
-            final BlockState state = mc.world.getBlockState(blockPos.offset(direction));
+            final BlockState state = mc.level.getBlockState(blockPos.relative(direction));
             if (state.isAir() || !state.getFluidState().isEmpty()) {
                 continue;
             }
@@ -251,7 +251,7 @@ public final class InteractionManager implements Globals {
         return interactDirection.getOpposite();
     }
 
-    public Set<Direction> getPlaceDirectionsNCP(Vec3d eyePos, Vec3d blockPos) {
+    public Set<Direction> getPlaceDirectionsNCP(Vec3 eyePos, Vec3 blockPos) {
         return getPlaceDirectionsNCP(eyePos.x, eyePos.y, eyePos.z, blockPos.x, blockPos.y, blockPos.z);
     }
 

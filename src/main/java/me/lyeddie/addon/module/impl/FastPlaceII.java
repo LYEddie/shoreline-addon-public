@@ -10,13 +10,12 @@ import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.*;
 import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.BlockState;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
-
+import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
+import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.state.BlockState;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -65,14 +64,14 @@ public class FastPlaceII extends AddonModule {
 
     @EventHandler
     public void onTick(TickEvent.Pre event) {
-        if (!mc.options.useKey.isPressed()) {
+        if (!mc.options.keyUse.isDown()) {
             startTimer.reset();
         } else if (startTimer.passed(startDelayConfig.get(), TimeUnit.SECONDS)
             && ((AccessorMinecraftClient) mc).hookGetItemUseCooldown() > delayConfig.get()
-            && placeCheck(mc.player.getMainHandStack())) {
+            && placeCheck(mc.player.getMainHandItem())) {
             if (ghostFixConfig.get()) {
                 Managers.NETWORK.sendSequencedPacket(id ->
-                    new PlayerInteractItemC2SPacket(mc.player.getActiveHand(), id, mc.player.getYaw(), mc.player.getPitch()));
+                    new ServerboundUseItemPacket(mc.player.getUsedItemHand(), id, mc.player.getYRot(), mc.player.getXRot()));
             }
             ((AccessorMinecraftClient) mc).hookSetItemUseCooldown(delayConfig.get());
         }
@@ -80,13 +79,13 @@ public class FastPlaceII extends AddonModule {
 
     @EventHandler
     public void onPacketOutbound(PacketEvent.Send event) {
-        if (mc.player == null || mc.world == null) {
+        if (mc.player == null || mc.level == null) {
             return;
         }
-        if (event.packet instanceof PlayerInteractBlockC2SPacket packet
+        if (event.packet instanceof ServerboundUseItemOnPacket packet
             && ghostFixConfig.get() && !Managers.NETWORK.isCached(event.packet)
-            && placeCheck(mc.player.getStackInHand(packet.getHand()))) {
-            BlockState state = mc.world.getBlockState(packet.getBlockHitResult().getBlockPos());
+            && placeCheck(mc.player.getItemInHand(packet.getHand()))) {
+            BlockState state = mc.level.getBlockState(packet.getHitResult().getBlockPos());
             if (!SneakBlocks.isSneakBlock(state)) {
                 event.cancel();
             }

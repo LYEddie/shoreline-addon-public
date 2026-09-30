@@ -3,25 +3,25 @@ package me.lyeddie.addon.mixin.impl;
 import me.lyeddie.addon.events.TridentWaterEvent;
 import me.lyeddie.addon.util.Globals;
 import meteordevelopment.meteorclient.MeteorClient;
-import net.minecraft.component.EnchantmentEffectComponentTypes;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.MovementType;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.PersistentProjectileEntity;
-import net.minecraft.entity.projectile.TridentEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.TridentItem;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.stat.Stats;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.core.Holder;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.stats.Stats;
+import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
+import net.minecraft.world.entity.projectile.arrow.ThrownTrident;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TridentItem;
+import net.minecraft.world.item.enchantment.EnchantmentEffectComponents;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -31,73 +31,73 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class MixinTridentItem implements Globals {
 
     @Inject(method = "use", at = @At(value = "HEAD"), cancellable = true)
-    private void hookUse(World world, PlayerEntity user, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
+    private void hookUse(Level world, Player user, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
         TridentWaterEvent tridentWaterEvent = new TridentWaterEvent();
         MeteorClient.EVENT_BUS.post(tridentWaterEvent);
         if (tridentWaterEvent.isCancelled()) {
             cir.cancel();
-            ItemStack itemStack = user.getStackInHand(hand);
-            if (itemStack.getDamage() >= itemStack.getMaxDamage() - 1) {
-                cir.setReturnValue(ActionResult.FAIL);
+            ItemStack itemStack = user.getItemInHand(hand);
+            if (itemStack.getDamageValue() >= itemStack.getMaxDamage() - 1) {
+                cir.setReturnValue(InteractionResult.FAIL);
                 return;
             }
-            user.setCurrentHand(hand);
-            cir.setReturnValue(ActionResult.CONSUME);
+            user.startUsingItem(hand);
+            cir.setReturnValue(InteractionResult.CONSUME);
         }
     }
 
-    @Inject(method = "onStoppedUsing", at = @At(value = "HEAD"), cancellable = true)
-    private void hookOnStoppedUsing(ItemStack stack, World world, LivingEntity user, int remainingUseTicks, CallbackInfoReturnable<Boolean> cir) {
-        if (!(user instanceof PlayerEntity playerEntity)) {
+    @Inject(method = "releaseUsing", at = @At(value = "HEAD"), cancellable = true)
+    private void hookOnStoppedUsing(ItemStack stack, Level world, LivingEntity user, int remainingUseTicks, CallbackInfoReturnable<Boolean> cir) {
+        if (!(user instanceof Player playerEntity)) {
             return;
         }
-        int var6 = stack.getMaxUseTime(user) - remainingUseTicks;
+        int var6 = stack.getUseDuration(user) - remainingUseTicks;
         TridentWaterEvent tridentWaterEvent = new TridentWaterEvent();
         MeteorClient.EVENT_BUS.post(tridentWaterEvent);
         if (tridentWaterEvent.isCancelled()) {
             boolean used = false;
             if (var6 >= 10) {
                 float f = EnchantmentHelper.getTridentSpinAttackStrength(stack, playerEntity);
-                if (!(f > 0.0F) || playerEntity.isTouchingWaterOrRain()) {
-                    if (!stack.willBreakNextUse()) {
+                if (!(f > 0.0F) || playerEntity.isInWaterOrRain()) {
+                    if (!stack.nextDamageWillBreak()) {
                         used = true;
-                        RegistryEntry<SoundEvent> registryEntry = EnchantmentHelper.getEffect(stack, EnchantmentEffectComponentTypes.TRIDENT_SOUND).orElse(SoundEvents.ITEM_TRIDENT_THROW);
-                        if (!world.isClient()) {
-                            stack.damage(1, playerEntity, user.getActiveHand().getEquipmentSlot());
+                        Holder<SoundEvent> registryEntry = EnchantmentHelper.pickHighestLevel(stack, EnchantmentEffectComponents.TRIDENT_SOUND).orElse(SoundEvents.TRIDENT_THROW);
+                        if (!world.isClientSide()) {
+                            stack.hurtAndBreak(1, playerEntity, user.getUsedItemHand().asEquipmentSlot());
                             if (f == 0.0F) {
-                                TridentEntity tridentEntity = new TridentEntity(world, playerEntity, stack);
-                                tridentEntity.setVelocity(playerEntity, playerEntity.getPitch(), playerEntity.getYaw(), 0.0F, 2.5F, 1.0F);
-                                if (playerEntity.isInCreativeMode()) {
-                                    tridentEntity.pickupType = PersistentProjectileEntity.PickupPermission.CREATIVE_ONLY;
+                                ThrownTrident tridentEntity = new ThrownTrident(world, playerEntity, stack);
+                                tridentEntity.shootFromRotation(playerEntity, playerEntity.getXRot(), playerEntity.getYRot(), 0.0F, 2.5F, 1.0F);
+                                if (playerEntity.hasInfiniteMaterials()) {
+                                    tridentEntity.pickup = AbstractArrow.Pickup.CREATIVE_ONLY;
                                 }
 
-                                world.spawnEntity(tridentEntity);
-                                world.playSoundFromEntity((PlayerEntity) null, tridentEntity, (SoundEvent) registryEntry.value(), SoundCategory.PLAYERS, 1.0F, 1.0F);
-                                if (!playerEntity.isInCreativeMode()) {
-                                    playerEntity.getInventory().removeOne(stack);
+                                world.addFreshEntity(tridentEntity);
+                                world.playSound((Player) null, tridentEntity, (SoundEvent) registryEntry.value(), SoundSource.PLAYERS, 1.0F, 1.0F);
+                                if (!playerEntity.hasInfiniteMaterials()) {
+                                    playerEntity.getInventory().removeItem(stack);
                                 }
                             }
                         }
 
-                        playerEntity.incrementStat(Stats.USED.getOrCreateStat((TridentItem) (Object) this));
+                        playerEntity.awardStat(Stats.ITEM_USED.get((TridentItem) (Object) this));
                         if (f > 0.0F) {
-                            float g = playerEntity.getYaw();
-                            float h = playerEntity.getPitch();
-                            float j = -MathHelper.sin(g * 0.017453292F) * MathHelper.cos(h * 0.017453292F);
-                            float k = -MathHelper.sin(h * 0.017453292F);
-                            float l = MathHelper.cos(g * 0.017453292F) * MathHelper.cos(h * 0.017453292F);
-                            float m = MathHelper.sqrt(j * j + k * k + l * l);
+                            float g = playerEntity.getYRot();
+                            float h = playerEntity.getXRot();
+                            float j = -Mth.sin(g * 0.017453292F) * Mth.cos(h * 0.017453292F);
+                            float k = -Mth.sin(h * 0.017453292F);
+                            float l = Mth.cos(g * 0.017453292F) * Mth.cos(h * 0.017453292F);
+                            float m = Mth.sqrt(j * j + k * k + l * l);
                             j *= f / m;
                             k *= f / m;
                             l *= f / m;
-                            playerEntity.addVelocity((double) j, (double) k, (double) l);
-                            playerEntity.useRiptide(20, 8.0F, stack);
-                            if (playerEntity.isOnGround()) {
+                            playerEntity.push((double) j, (double) k, (double) l);
+                            playerEntity.startAutoSpinAttack(20, 8.0F, stack);
+                            if (playerEntity.onGround()) {
                                 float n = 1.1999999F;
-                                playerEntity.move(MovementType.SELF, new Vec3d(0.0, 1.1999999284744263, 0.0));
+                                playerEntity.move(MoverType.SELF, new Vec3(0.0, 1.1999999284744263, 0.0));
                             }
 
-                            world.playSoundFromEntity((PlayerEntity) null, playerEntity, (SoundEvent) registryEntry.value(), SoundCategory.PLAYERS, 1.0F, 1.0F);
+                            world.playSound((Player) null, playerEntity, (SoundEvent) registryEntry.value(), SoundSource.PLAYERS, 1.0F, 1.0F);
                         }
                     }
                 }

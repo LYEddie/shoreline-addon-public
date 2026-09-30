@@ -1,8 +1,8 @@
 package me.lyeddie.addon.module;
 
 import meteordevelopment.meteorclient.systems.modules.Category;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;

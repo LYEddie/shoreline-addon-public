@@ -6,15 +6,15 @@ import me.lyeddie.addon.util.literal.RayCastUtil;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
-import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.Box;
+import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
+import net.minecraft.network.protocol.game.ServerboundAcceptTeleportationPacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
 
 public class PearlManager implements Globals {
     private float[] lastThrownAngles;
-    private Box pearlBB;
+    private AABB pearlBB;
 
     public PearlManager() {
         MeteorClient.EVENT_BUS.subscribe(this);
@@ -26,20 +26,20 @@ public class PearlManager implements Globals {
             return;
         }
 
-        if (event.packet instanceof PlayerPositionLookS2CPacket packet && lastThrownAngles != null) {
+        if (event.packet instanceof ClientboundPlayerPositionPacket packet && lastThrownAngles != null) {
             BlockHitResult hitResult = (BlockHitResult) RayCastUtil.rayCast(3.0, lastThrownAngles);
-            pearlBB = new Box(hitResult.getPos().subtract(0.4, 0.4, 0.4),
-                hitResult.getPos().add(0.4, 0.4, 0.4));
+            pearlBB = new AABB(hitResult.getLocation().subtract(0.4, 0.4, 0.4),
+                hitResult.getLocation().add(0.4, 0.4, 0.4));
 
-            if (mc.world.getBlockState(hitResult.getBlockPos()).isAir()) {
+            if (mc.level.getBlockState(hitResult.getBlockPos()).isAir()) {
                 return;
             }
 
             if (!pearlBB.contains(packet.change().position())) {
                 event.cancel();
-                mc.getNetworkHandler().getConnection().send(new TeleportConfirmC2SPacket(packet.teleportId()));
-                mc.getNetworkHandler().getConnection().send(new PlayerMoveC2SPacket.Full(mc.player.getX(), mc.player.getY(),
-                    mc.player.getZ(), mc.player.getYaw(), mc.player.getPitch(), false, mc.player.horizontalCollision));
+                mc.getConnection().getConnection().send(new ServerboundAcceptTeleportationPacket(packet.id()));
+                mc.getConnection().getConnection().send(new ServerboundMovePlayerPacket.PosRot(mc.player.getX(), mc.player.getY(),
+                    mc.player.getZ(), mc.player.getYRot(), mc.player.getXRot(), false, mc.player.horizontalCollision));
             }
             lastThrownAngles = null;
         }

@@ -7,11 +7,11 @@ import meteordevelopment.meteorclient.systems.modules.Category;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.ChatUtils;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.util.Mth;
 import java.awt.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -25,25 +25,25 @@ public class AddonModule extends Module {
     }
 
     public void sendToggledMsg() {
-        if (Config.get().chatFeedback.get() && chatFeedback && mc.world != null) {
+        if (Config.get().chatFeedback.get() && chatFeedback && mc.level != null) {
             ChatUtils.forceNextPrefixClass(getClass());
             String msg = prefix + " §f" + name + (isActive() ? " §aon" : " §coff");
-            sendMessage(Text.of(msg), hashCode());
+            sendMessage(Component.nullToEmpty(msg), hashCode());
         }
     }
 
     @Override
     public void info(String message, Object... args) {
         ChatUtils.forceNextPrefixClass(getClass());
-        MutableText mutVal = formatMsg(String.format(message, args), Formatting.GRAY);
-        MutableText last = Text.empty();
+        MutableComponent mutVal = formatMsg(String.format(message, args), ChatFormatting.GRAY);
+        MutableComponent last = Component.empty();
         last.append(prefix + " §7[§d" + title + "§7] ");
         last.append(mutVal);
-        ((IChatHud) mc.inGameHud.getChatHud()).meteor$add(last, (Config.get().deleteChatFeedback.get() ? 0 : 1));
+        ((IChatHud) mc.gui.getChat()).meteor$add(last, (Config.get().deleteChatFeedback.get() ? 0 : 1));
     }
 
-    public void sendMessage(Text text, int id) {
-        ((IChatHud) mc.inGameHud.getChatHud()).meteor$add(text, id);
+    public void sendMessage(Component text, int id) {
+        ((IChatHud) mc.gui.getChat()).meteor$add(text, id);
     }
 
 /*    public Color getClampColor(SettingColor set, int alpha) {
@@ -51,7 +51,7 @@ public class AddonModule extends Module {
     }*/
 
     public SettingColor getClampColor(SettingColor set, int alpha) {
-        return new SettingColor(set.r, set.g, set.b, MathHelper.clamp(alpha, 0, 255));
+        return new SettingColor(set.r, set.g, set.b, Mth.clamp(alpha, 0, 255));
     }
 
     public Color getSettingColor(SettingColor set) {
@@ -91,16 +91,16 @@ public class AddonModule extends Module {
                 sa * value + ea * (1.0f - value));
     }
 
-    private MutableText formatMsg(String message, Formatting defaultColor) {
+    private MutableComponent formatMsg(String message, ChatFormatting defaultColor) {
         StringReader reader = new StringReader(message);
-        MutableText text = Text.empty();
-        Style style = Style.EMPTY.withFormatting(defaultColor);
+        MutableComponent text = Component.empty();
+        Style style = Style.EMPTY.applyFormat(defaultColor);
         StringBuilder result = new StringBuilder();
         boolean formatting = false;
         while (reader.canRead()) {
             char c = reader.read();
             if (c == '(') {
-                text.append(Text.literal(result.toString()).setStyle(style));
+                text.append(Component.literal(result.toString()).setStyle(style));
                 result.setLength(0);
                 result.append(c);
                 formatting = true;
@@ -109,19 +109,19 @@ public class AddonModule extends Module {
                 if (formatting && c == ')') {
                     switch (result.toString()) {
                         case "(default)" -> {
-                            style = style.withFormatting(defaultColor);
+                            style = style.applyFormat(defaultColor);
                             result.setLength(0);
                         }
                         case "(highlight)" -> {
-                            style = style.withFormatting(Formatting.WHITE);
+                            style = style.applyFormat(ChatFormatting.WHITE);
                             result.setLength(0);
                         }
                         case "(underline)" -> {
-                            style = style.withFormatting(Formatting.UNDERLINE);
+                            style = style.applyFormat(ChatFormatting.UNDERLINE);
                             result.setLength(0);
                         }
                         case "(bold)" -> {
-                            style = style.withFormatting(Formatting.BOLD);
+                            style = style.applyFormat(ChatFormatting.BOLD);
                             result.setLength(0);
                         }
                     }
@@ -129,7 +129,7 @@ public class AddonModule extends Module {
                 }
             }
         }
-        if (!result.isEmpty()) text.append(Text.literal(result.toString()).setStyle(style));
+        if (!result.isEmpty()) text.append(Component.literal(result.toString()).setStyle(style));
         return text;
     }
 }

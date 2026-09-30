@@ -5,13 +5,13 @@ import me.lyeddie.addon.util.Globals;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.entity.Entity;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerInputPacket;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.Vec3;
 
 public class PositionManager implements Globals {
     private double x, y, z;
@@ -25,60 +25,60 @@ public class PositionManager implements Globals {
 
     @EventHandler
     public void onPacketOutbound(PacketEvent.Send event) {
-        if (mc.player != null && mc.world != null) {
-            if (event.packet instanceof PlayerMoveC2SPacket packet) {
+        if (mc.player != null && mc.level != null) {
+            if (event.packet instanceof ServerboundMovePlayerPacket packet) {
                 onGround = packet.isOnGround();
-                if (packet.changesPosition()) {
+                if (packet.hasPosition()) {
                     x = packet.getX(x);
                     y = packet.getY(y);
                     z = packet.getZ(z);
-                    blockPos = BlockPos.ofFloored(x, y, z);
+                    blockPos = BlockPos.containing(x, y, z);
                 }
-            } else if (event.packet instanceof ClientCommandC2SPacket packet) {
-                switch (packet.getMode()) {
+            } else if (event.packet instanceof ServerboundPlayerCommandPacket packet) {
+                switch (packet.getAction()) {
                     case START_SPRINTING -> sprinting = true;
                     case STOP_SPRINTING -> sprinting = false;
                 }
-            } else if (event.packet instanceof PlayerInputC2SPacket packet) {
-                sneaking = packet.input().sneak();
+            } else if (event.packet instanceof ServerboundPlayerInputPacket packet) {
+                sneaking = packet.input().shift();
             }
         }
     }
 
-    public void setPosition(Vec3d vec3d) {
-        setPosition(vec3d.getX(), vec3d.getY(), vec3d.getZ());
+    public void setPosition(Vec3 vec3d) {
+        setPosition(vec3d.x(), vec3d.y(), vec3d.z());
     }
 
     public void setPosition(double x, double y, double z) {
         setPositionClient(x, y, z);
-        Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y, z, isOnGround(), mc.player.horizontalCollision));
+        Managers.NETWORK.sendPacket(new ServerboundMovePlayerPacket.Pos(x, y, z, isOnGround(), mc.player.horizontalCollision));
     }
 
     public void setPositionClient(double x, double y, double z) {
-        if (mc.player.isRiding()) {
-            mc.player.getVehicle().setPosition(x, y, z);
+        if (mc.player.isHandsBusy()) {
+            mc.player.getVehicle().setPos(x, y, z);
             return;
         }
-        mc.player.setPosition(x, y, z);
+        mc.player.setPos(x, y, z);
     }
 
     public void setPositionY(double y) {
         setPosition(x, y, z);
     }
 
-    public Vec3d getPos() {
-        return new Vec3d(getX(), getY(), getZ());
+    public Vec3 getPos() {
+        return new Vec3(getX(), getY(), getZ());
     }
 
-    public Vec3d getEyePos() {
-        return getPos().add(0.0, mc.player.getStandingEyeHeight(), 0.0);
+    public Vec3 getEyePos() {
+        return getPos().add(0.0, mc.player.getEyeHeight(), 0.0);
     }
 
     public double squaredDistanceTo(Entity entity) {
         float f = (float) (getX() - entity.getX());
         float g = (float) (getY() - entity.getY());
         float h = (float) (getZ() - entity.getZ());
-        return MathHelper.squaredMagnitude(f, g, h);
+        return Mth.lengthSquared(f, g, h);
     }
 
     public double getX() {

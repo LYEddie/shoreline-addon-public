@@ -1,7 +1,7 @@
 package me.lyeddie.addon.events;
 
 import meteordevelopment.meteorclient.events.Cancellable;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 public class ItemDesyncEvent extends Cancellable {
 

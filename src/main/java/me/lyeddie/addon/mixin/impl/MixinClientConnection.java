@@ -7,9 +7,9 @@ import me.lyeddie.addon.events.irrevocable.DisconnectEvent;
 import me.lyeddie.addon.events.staged.OutboundPostPacketEvent;
 import me.lyeddie.addon.util.Globals;
 import meteordevelopment.meteorclient.MeteorClient;
-import net.minecraft.network.ClientConnection;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.text.Text;
+import net.minecraft.network.Connection;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.Packet;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(ClientConnection.class)
+@Mixin(Connection.class)
 public class MixinClientConnection implements Globals {
 
     @Shadow
@@ -36,10 +36,10 @@ public class MixinClientConnection implements Globals {
         }
     }
 
-    @Inject(method = "sendImmediately", at = @At(value = "TAIL"), cancellable = true)
+    @Inject(method = "sendPacket", at = @At(value = "TAIL"), cancellable = true)
     private void hookSendImmediately$2(Packet<?> packet, @Nullable ChannelFutureListener callbacks,
                                        boolean flush, CallbackInfo ci) {
-        if ((mc.world != null || mc.player != null)) {
+        if ((mc.level != null || mc.player != null)) {
             OutboundPostPacketEvent packetOutboundEvent = new OutboundPostPacketEvent(packet);
             MeteorClient.EVENT_BUS.post(packetOutboundEvent);
             if (packetOutboundEvent.isCancelled()) {
@@ -49,7 +49,7 @@ public class MixinClientConnection implements Globals {
     }
 
     @Inject(method = "disconnect", at = @At(value = "HEAD"))
-    private void hookDisconnect(Text disconnectReason, CallbackInfo ci) {
+    private void hookDisconnect(Component disconnectReason, CallbackInfo ci) {
         DisconnectEvent disconnectEvent = new DisconnectEvent();
         MeteorClient.EVENT_BUS.post(disconnectEvent);
     }

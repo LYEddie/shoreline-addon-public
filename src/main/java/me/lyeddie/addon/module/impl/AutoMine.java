@@ -4,9 +4,9 @@ import me.lyeddie.addon.Shoreline;
 import me.lyeddie.addon.events.AttackBlockEvent;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.module.CombatModule;
+import me.lyeddie.addon.util.Timer;
 import me.lyeddie.addon.util.tabs.TabConfigs;
 import me.lyeddie.addon.util.*;
-import me.lyeddie.addon.util.Timer;
 import me.lyeddie.addon.util.literal.EntityUtil;
 import me.lyeddie.addon.util.literal.PositionUtil;
 import me.lyeddie.addon.util.literal.RotationUtil;
@@ -17,22 +17,25 @@ import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.ShapeContext;
-import net.minecraft.entity.EntityPose;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
-import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.*;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
+import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
-
 import java.awt.*;
 import java.util.*;
 import java.util.List;
@@ -177,7 +180,7 @@ public class AutoMine extends CombatModule {
 
     private final Timer remineTimer = new CacheTimer();
     private final Queue<MineData> autoMineQueue = new ArrayDeque<>();
-    private PlayerEntity playerTarget;
+    private Player playerTarget;
     private MineData packetMine, instantMine;
     private boolean packetSwapBack;
     private boolean manualOverride;
@@ -232,7 +235,7 @@ public class AutoMine extends CombatModule {
             return;
         }
 
-        PlayerEntity currentTarget = getClosestPlayer(enemyRangeConfig.get());
+        Player currentTarget = getClosestPlayer(enemyRangeConfig.get());
         boolean targetChanged = playerTarget != null && playerTarget != currentTarget;
         playerTarget = currentTarget;
 
@@ -263,7 +266,7 @@ public class AutoMine extends CombatModule {
 
         if (packetMine != null) {
             final float damageDelta = SpeedMineII.getInstance().calcBlockBreakingDelta(
-                packetMine.getState(), mc.world, packetMine.getPos());
+                packetMine.getState(), mc.level, packetMine.getPos());
             packetMine.addBlockDamage(damageDelta);
 
             int slot = packetMine.getBestSlot();
@@ -293,7 +296,7 @@ public class AutoMine extends CombatModule {
         }
 
         if (instantMine != null) {
-            final double distance = mc.player.getEyePos().squaredDistanceTo(instantMine.getPos().toCenterPos());
+            final double distance = mc.player.getEyePosition().distanceToSqr(instantMine.getPos().getCenter());
             if (distance > getValueSq(rangeConfig.get()) || instantMine.getTicksMining() > mineTicksConfig.get()) {
                 abortMining(instantMine);
                 instantMineAnim.animation.setState(false);
@@ -303,12 +306,12 @@ public class AutoMine extends CombatModule {
 
         if (instantMine != null) {
             final float damageDelta = SpeedMineII.getInstance().calcBlockBreakingDelta(
-                instantMine.getState(), mc.world, instantMine.getPos());
+                instantMine.getState(), mc.level, instantMine.getPos());
             instantMine.addBlockDamage(damageDelta);
 
             if (instantMine.getBlockDamage() >= speedConfig.get()) {
                 boolean canMine = canMine(instantMine.getState());
-                boolean canPlace = mc.world.canPlace(instantMine.getState(), instantMine.getPos(), ShapeContext.absent());
+                boolean canPlace = mc.level.isUnobstructed(instantMine.getState(), instantMine.getPos(), CollisionContext.empty());
                 if (canMine) {
                     instantMine.markAttemptedMine();
                 } else {
@@ -334,7 +337,7 @@ public class AutoMine extends CombatModule {
 
                     if (AutoCrystal.getInstance().isActive()
                         && AutoCrystal.getInstance().shouldPreForcePlace()) {
-                        AutoCrystal.getInstance().placeCrystalForTarget(playerTarget, instantMine.getPos().down());
+                        AutoCrystal.getInstance().placeCrystalForTarget(playerTarget, instantMine.getPos().below());
                     }
 
                     if (remineConfig.get() == RemineMode.FAST) {
@@ -363,7 +366,7 @@ public class AutoMine extends CombatModule {
 
             BlockPos antiCrawlPos = getAntiCrawlPos(playerTarget);
             if (antiCrawlOverride) {
-                if (mc.player.getPose().equals(EntityPose.SWIMMING)) {
+                if (mc.player.getPose().equals(Pose.SWIMMING)) {
                     antiCrawlTicks = 10;
                 }
 
@@ -374,7 +377,7 @@ public class AutoMine extends CombatModule {
             }
 
             if (autoMineQueue.isEmpty() && !manualOverride && !antiCrawlOverride) {
-                if (antiCrawlConfig.get() && mc.player.getPose().equals(EntityPose.SWIMMING) && antiCrawlPos != null) {
+                if (antiCrawlConfig.get() && mc.player.getPose().equals(Pose.SWIMMING) && antiCrawlPos != null) {
                     MineData data = new MineData(antiCrawlPos, strictDirectionConfig.get() ?
                         Managers.INTERACT.getInteractDirection(antiCrawlPos, false) : Direction.UP, MiningGoal.PREVENT_CRAWL);
                     if (isInstantMineComplete() || !instantMine.equals(data)) {
@@ -383,7 +386,7 @@ public class AutoMine extends CombatModule {
                     }
                 } else if (playerTarget != null && !targetChanged) {
                     BlockPos targetPos = EntityUtil.getRoundedBlockPos(playerTarget);
-                    boolean bedrockPhased = PositionUtil.isBedrock(playerTarget.getBoundingBox(), targetPos) && !playerTarget.isCrawling();
+                    boolean bedrockPhased = PositionUtil.isBedrock(playerTarget.getBoundingBox(), targetPos) && !playerTarget.isVisuallyCrawling();
 
                     if (!isInstantMineComplete() && checkDataY(instantMine, targetPos, bedrockPhased)) {
                         abortMining(instantMine);
@@ -446,7 +449,7 @@ public class AutoMine extends CombatModule {
             return;
         }
         event.cancel();
-        if (event.getState().getBlock().getHardness() == -1.0f || !canMine(event.getState()) || isMining(event.getPos())) {
+        if (event.getState().getBlock().defaultDestroyTime() == -1.0f || !canMine(event.getState()) || isMining(event.getPos())) {
             return;
         }
 
@@ -460,7 +463,7 @@ public class AutoMine extends CombatModule {
         if (!doubleBreakConfig.get()) {
             instantMine = data;
             startMining(instantMine);
-            mc.player.swingHand(Hand.MAIN_HAND, false);
+            mc.player.swing(InteractionHand.MAIN_HAND, false);
             return;
         }
 
@@ -477,7 +480,7 @@ public class AutoMine extends CombatModule {
 
         instantMine = data;
         startMining(instantMine);
-        mc.player.swingHand(Hand.MAIN_HAND, false);
+        mc.player.swing(InteractionHand.MAIN_HAND, false);
         if (updateChanged) {
             changedInstantMine = true;
         }
@@ -485,14 +488,14 @@ public class AutoMine extends CombatModule {
 
     @EventHandler(priority = 200)
     public void onPacketOutbound(PacketEvent.Send event) {
-        if (event.packet instanceof UpdateSelectedSlotC2SPacket && switchResetConfig.get() && instantMine != null) {
+        if (event.packet instanceof ServerboundSetCarriedItemPacket && switchResetConfig.get() && instantMine != null) {
             instantMine.setTotalBlockDamage(0.0f, 0.0f);
         }
     }
 
     @EventHandler(priority = 200)
     public void onPacketInbound(PacketEvent.Receive event) {
-        if (event.packet instanceof BlockUpdateS2CPacket packet && canMine(packet.getState())) {
+        if (event.packet instanceof ClientboundBlockUpdatePacket packet && canMine(packet.getBlockState())) {
             if (antiCrawlOverride && packet.getPos().equals(getAntiCrawlPos(playerTarget))) {
                 antiCrawlTicks = 10;
             }
@@ -536,18 +539,18 @@ public class AutoMine extends CombatModule {
     public MineData getInstantMine(List<BlockPos> miningBlocks, boolean bedrockPhased) {
         PriorityQueue<MineData> validInstantMines = new PriorityQueue<>();
         for (BlockPos blockPos : miningBlocks) {
-            BlockState state1 = mc.world.getBlockState(blockPos);
+            BlockState state1 = mc.level.getBlockState(blockPos);
             if (!isAutoMineBlock(state1.getBlock())) {
                 continue;
             }
 
-            double dist = mc.player.getEyePos().squaredDistanceTo(blockPos.toCenterPos());
+            double dist = mc.player.getEyePosition().distanceToSqr(blockPos.getCenter());
             if (dist > getValueSq(rangeConfig.get())) {
                 continue;
             }
 
-            BlockState state2 = mc.world.getBlockState(blockPos.down());
-            if (bedrockPhased || state2.isOf(Blocks.OBSIDIAN) || state2.isOf(Blocks.BEDROCK)) {
+            BlockState state2 = mc.level.getBlockState(blockPos.below());
+            if (bedrockPhased || state2.is(Blocks.OBSIDIAN) || state2.is(Blocks.BEDROCK)) {
                 Direction direction = strictDirectionConfig.get() ?
                     Managers.INTERACT.getInteractDirection(blockPos, false) : Direction.UP;
 
@@ -562,17 +565,17 @@ public class AutoMine extends CombatModule {
         return validInstantMines.peek();
     }
 
-    public List<BlockPos> getPhaseBlocks(PlayerEntity player, BlockPos playerPos, boolean targetBedrockPhased) {
+    public List<BlockPos> getPhaseBlocks(Player player, BlockPos playerPos, boolean targetBedrockPhased) {
         List<BlockPos> phaseBlocks = PositionUtil.getAllInBox(player.getBoundingBox(),
-            targetBedrockPhased && headConfig.get() ? playerPos.up() : playerPos);
+            targetBedrockPhased && headConfig.get() ? playerPos.above() : playerPos);
 
         phaseBlocks.removeIf(p -> {
-            BlockState state = mc.world.getBlockState(p);
+            BlockState state = mc.level.getBlockState(p);
             if (!isAutoMineBlock(state.getBlock()) || !canMine(state) || isMining(p)) {
                 return true;
             }
 
-            double dist = mc.player.getEyePos().squaredDistanceTo(p.toCenterPos());
+            double dist = mc.player.getEyePosition().distanceToSqr(p.getCenter());
             if (dist > getValueSq(rangeConfig.get())) {
                 return true;
             }
@@ -581,24 +584,24 @@ public class AutoMine extends CombatModule {
         });
 
         if (targetBedrockPhased && aboveHeadConfig.get()) {
-            phaseBlocks.add(playerPos.up(2));
+            phaseBlocks.add(playerPos.above(2));
         }
 
         return phaseBlocks;
     }
 
-    public List<BlockPos> getMiningBlocks(PlayerEntity player, BlockPos playerPos, boolean bedrockPhased) {
+    public List<BlockPos> getMiningBlocks(Player player, BlockPos playerPos, boolean bedrockPhased) {
         List<BlockPos> surroundingBlocks = SurroundII.getInstance().getSurroundNoDown(player, toFloat(rangeConfig.get()));
         List<BlockPos> miningBlocks;
         if (bedrockPhased) {
             List<BlockPos> facePlaceBlocks = new ArrayList<>();
             if (headConfig.get()) {
-                facePlaceBlocks.addAll(surroundingBlocks.stream().map(BlockPos::up).toList());
+                facePlaceBlocks.addAll(surroundingBlocks.stream().map(BlockPos::above).toList());
             }
 
-            BlockState belowFeet = mc.world.getBlockState(playerPos.down());
+            BlockState belowFeet = mc.level.getBlockState(playerPos.below());
             if (canMine(belowFeet)) {
-                facePlaceBlocks.add(playerPos.down());
+                facePlaceBlocks.add(playerPos.below());
             }
             miningBlocks = facePlaceBlocks;
         } else {
@@ -609,21 +612,21 @@ public class AutoMine extends CombatModule {
         return miningBlocks;
     }
 
-    private BlockPos getAntiCrawlPos(PlayerEntity playerTarget) {
-        if (!mc.player.isOnGround()) {
+    private BlockPos getAntiCrawlPos(Player playerTarget) {
+        if (!mc.player.onGround()) {
             return null;
         }
         BlockPos crawlingPos = EntityUtil.getRoundedBlockPos(mc.player);
         boolean playerBelow = playerTarget != null && EntityUtil.getRoundedBlockPos(playerTarget).getY() < crawlingPos.getY();
         if (playerBelow) {
-            BlockState state = mc.world.getBlockState(crawlingPos.down());
+            BlockState state = mc.level.getBlockState(crawlingPos.below());
             if (isAutoMineBlock(state.getBlock()) && canMine(state)) {
-                return crawlingPos.down();
+                return crawlingPos.below();
             }
         } else {
-            BlockState state = mc.world.getBlockState(crawlingPos.up());
+            BlockState state = mc.level.getBlockState(crawlingPos.above());
             if (isAutoMineBlock(state.getBlock()) && canMine(state)) {
-                return crawlingPos.up();
+                return crawlingPos.above();
             }
         }
         return null;
@@ -675,26 +678,26 @@ public class AutoMine extends CombatModule {
         }
 
         BlockPos mining = data.getPos();
-        VoxelShape outlineShape = VoxelShapes.fullCube();
+        VoxelShape outlineShape = Shapes.block();
         if (!instantMine || data.getBlockDamage() < speedConfig.get()) {
-            outlineShape = data.getState().getOutlineShape(mc.world, mining);
-            outlineShape = outlineShape.isEmpty() ? VoxelShapes.fullCube() : outlineShape;
+            outlineShape = data.getState().getShape(mc.level, mining);
+            outlineShape = outlineShape.isEmpty() ? Shapes.block() : outlineShape;
         }
-        Box render1 = outlineShape.getBoundingBox();
-        Vec3d center = render1.offset(mining).getCenter();
+        AABB render1 = outlineShape.bounds();
+        Vec3 center = render1.move(mining).getCenter();
         float total = instantMine ? toFloat(speedConfig.get()) : 1.0f;
         float scale = (instantMine && data.getBlockDamage() >= speedConfig.get()) || !canMine(data.getState()) ? 1.0f :
-            MathHelper.clamp((data.getBlockDamage() + (data.getBlockDamage() - data.getLastDamage()) * event.tickDelta) / total, 0.0f, 1.0f);
+            Mth.clamp((data.getBlockDamage() + (data.getBlockDamage() - data.getLastDamage()) * event.tickDelta) / total, 0.0f, 1.0f);
         double dx = (render1.maxX - render1.minX) / 2.0;
         double dy = (render1.maxY - render1.minY) / 2.0;
         double dz = (render1.maxZ - render1.minZ) / 2.0;
-        final Box scaled = new Box(center, center).expand(dx * scale, dy * scale, dz * scale);
+        final AABB scaled = new AABB(center, center).inflate(dx * scale, dy * scale, dz * scale);
         event.renderer.box(scaled, boxColor, lineColor, ShapeMode.Both, 0);
     }
 
     public void startMining(MineData data) {
         if (rotateConfig.get()) {
-            float[] rotations = RotationUtil.getRotationsTo(mc.player.getEyePos(), data.getPos().toCenterPos());
+            float[] rotations = RotationUtil.getRotationsTo(mc.player.getEyePosition(), data.getPos().getCenter());
             if (grimConfig.get()) {
                 setRotationSilent(rotations[0], rotations[1]);
             } else {
@@ -705,29 +708,29 @@ public class AutoMine extends CombatModule {
         if (doubleBreakConfig.get()) {
             if (grimNewConfig.get()) {
                 if (!TabConfigs.get().getMiningFix()) {
-                    Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-                    Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-                    Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+                    Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+                    Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+                    Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK, data.getPos(), data.getDirection()));
                 } else {
-                    Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+                    Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, data.getPos(), data.getDirection()));
                 }
 
-                Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-                Managers.NETWORK.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-                Managers.NETWORK.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-                Managers.NETWORK.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+                Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+                Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+                Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
             } else {
-                Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-                Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-                Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-                Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-                Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-                Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-                Managers.NETWORK.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+                Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
             }
         } else {
-            Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(
-                PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+            Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(
+                ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, data.getPos(), data.getDirection()));
         }
 
         if (rotateConfig.get() && grimConfig.get()) {
@@ -738,13 +741,13 @@ public class AutoMine extends CombatModule {
     }
 
     public void abortMining(MineData data) {
-        Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(
-            PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+        Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(
+            ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK, data.getPos(), data.getDirection()));
     }
 
     public void stopMining(MineData data) {
         if (rotateConfig.get()) {
-            float[] rotations = RotationUtil.getRotationsTo(mc.player.getEyePos(), data.getPos().toCenterPos());
+            float[] rotations = RotationUtil.getRotationsTo(mc.player.getEyePosition(), data.getPos().getCenter());
             if (grimConfig.get()) {
                 setRotationSilent(rotations[0], rotations[1]);
             } else {
@@ -769,10 +772,10 @@ public class AutoMine extends CombatModule {
     }
 
     private void stopMiningInternal(MineData data) {
-        Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(
-            PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-        Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(
-            PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+        Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(
+            ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
+        Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(
+            ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK, data.getPos(), data.getDirection()));
     }
 
     public boolean isInstantMineComplete() {
@@ -877,11 +880,11 @@ public class AutoMine extends CombatModule {
         }
 
         public static MineData empty() {
-            return new MineData(BlockPos.ORIGIN, Direction.UP);
+            return new MineData(BlockPos.ZERO, Direction.UP);
         }
 
         private double getPriority() {
-            double dist = mc.player.getEyePos().squaredDistanceTo(pos.down().toCenterPos());
+            double dist = mc.player.getEyePosition().distanceToSqr(pos.below().getCenter());
             if (dist <= AutoCrystal.getInstance().getPlaceRange()) {
                 return 10.0f;
             }
@@ -948,7 +951,7 @@ public class AutoMine extends CombatModule {
         }
 
         public BlockState getState() {
-            return mc.world.getBlockState(pos);
+            return mc.level.getBlockState(pos);
         }
 
         public int getBestSlot() {

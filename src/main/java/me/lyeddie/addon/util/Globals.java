@@ -1,14 +1,14 @@
 package me.lyeddie.addon.util;
 
-import net.minecraft.client.MinecraftClient;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
+import net.minecraft.client.Minecraft;
 
 /**
  * tech?
  */
 public interface Globals {
-    MinecraftClient mc = MinecraftClient.getInstance();
+    Minecraft mc = Minecraft.getInstance();
     Random RANDOM = ThreadLocalRandom.current();
 }
 

@@ -17,19 +17,22 @@ import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.enchantment.Enchantments;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.projectile.FireworkRocketEntity;
-import net.minecraft.item.*;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.projectile.FireworkRocketEntity;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.item.FireworkRocketItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.TridentItem;
+import net.minecraft.world.item.enchantment.Enchantments;
 
 public class Disabler extends AddonModule {
     private static Disabler INST;
@@ -66,7 +69,7 @@ public class Disabler extends AddonModule {
 
             int tridentSlot = -1;
             for (int i = 0; i < 9; ++i) {
-                final ItemStack stack = mc.player.getInventory().getStack(i);
+                final ItemStack stack = mc.player.getInventory().getItem(i);
                 if (!stack.isEmpty() && stack.getItem() instanceof TridentItem) {
                     if (EnchantmentUtil.getLevel(stack, Enchantments.RIPTIDE) > 0) {
                         tridentSlot = i;
@@ -80,43 +83,43 @@ public class Disabler extends AddonModule {
             }
 
             Managers.INVENTORY.setSlot(tridentSlot);
-            Managers.NETWORK.sendSequencedPacket(id -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, id, mc.player.getYaw(), mc.player.getPitch()));
-            Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, Direction.DOWN));
+            Managers.NETWORK.sendSequencedPacket(id -> new ServerboundUseItemPacket(InteractionHand.MAIN_HAND, id, mc.player.getYRot(), mc.player.getXRot()));
+            Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.RELEASE_USE_ITEM, BlockPos.ZERO, Direction.DOWN));
             Managers.INVENTORY.syncToClient();
         } else if (modeConfig.get() == Mode.GRIM_FIREWORK) {
             int elytraSlot = -1;
             int fireworkSlot = -1;
             for (int i = 0; i < 36; i++) {
-                ItemStack stack = mc.player.getInventory().getStack(i);
+                ItemStack stack = mc.player.getInventory().getItem(i);
                 if (stack.getItem() instanceof FireworkRocketItem && i < 9) {
                     fireworkSlot = i;
                 }
-                if (stack.isOf(Items.ELYTRA)) {
+                if (stack.is(Items.ELYTRA)) {
                     elytraSlot = i;
                 }
             }
-            if (!isBoostedByRocket() && !mc.player.isInFluid() && fireworkSlot != -1) {
-                if (mc.player.isOnGround()) {
-                    mc.player.jump();
+            if (!isBoostedByRocket() && !mc.player.isInLiquid() && fireworkSlot != -1) {
+                if (mc.player.onGround()) {
+                    mc.player.jumpFromGround();
                 } else {
                     Managers.MOVEMENT.setMotionY(-0.05);
                 }
-                if (fireworkTimer.passed(1700) && !mc.player.isOnGround() && mc.player.getVelocity().y < 0.0) {
-                    if (mc.player.getEquippedStack(EquipmentSlot.CHEST).getItem() != Items.ELYTRA && elytraSlot != -1) {
-                        mc.interactionManager.clickSlot(0, elytraSlot < 9 ? elytraSlot + 36 : elytraSlot, 0, SlotActionType.PICKUP, mc.player);
-                        mc.interactionManager.clickSlot(0, 6, 0, SlotActionType.PICKUP, mc.player);
-                        mc.interactionManager.clickSlot(0, elytraSlot < 9 ? elytraSlot + 36 : elytraSlot, 0, SlotActionType.PICKUP, mc.player);
+                if (fireworkTimer.passed(1700) && !mc.player.onGround() && mc.player.getDeltaMovement().y < 0.0) {
+                    if (mc.player.getItemBySlot(EquipmentSlot.CHEST).getItem() != Items.ELYTRA && elytraSlot != -1) {
+                        mc.gameMode.handleInventoryMouseClick(0, elytraSlot < 9 ? elytraSlot + 36 : elytraSlot, 0, ClickType.PICKUP, mc.player);
+                        mc.gameMode.handleInventoryMouseClick(0, 6, 0, ClickType.PICKUP, mc.player);
+                        mc.gameMode.handleInventoryMouseClick(0, elytraSlot < 9 ? elytraSlot + 36 : elytraSlot, 0, ClickType.PICKUP, mc.player);
                     }
-                    Managers.NETWORK.sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                    Managers.NETWORK.sendPacket(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Action.START_FALL_FLYING));
                     Managers.INVENTORY.setSlot(fireworkSlot);
-                    Managers.NETWORK.sendSequencedPacket(id -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, id, mc.player.getYaw(), mc.player.getPitch()));
-                    Managers.NETWORK.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                    Managers.NETWORK.sendSequencedPacket(id -> new ServerboundUseItemPacket(InteractionHand.MAIN_HAND, id, mc.player.getYRot(), mc.player.getXRot()));
+                    Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
                     Managers.INVENTORY.syncToClient();
                     fireworkTimer.reset();
-                    if (mc.player.getEquippedStack(EquipmentSlot.CHEST).getItem() == Items.ELYTRA && elytraSlot != -1) {
-                        mc.interactionManager.clickSlot(0, 6, 0, SlotActionType.PICKUP, mc.player);
-                        mc.interactionManager.clickSlot(0, elytraSlot < 9 ? elytraSlot + 36 : elytraSlot, 0, SlotActionType.PICKUP, mc.player);
-                        mc.interactionManager.clickSlot(0, 6, 0, SlotActionType.PICKUP, mc.player);
+                    if (mc.player.getItemBySlot(EquipmentSlot.CHEST).getItem() == Items.ELYTRA && elytraSlot != -1) {
+                        mc.gameMode.handleInventoryMouseClick(0, 6, 0, ClickType.PICKUP, mc.player);
+                        mc.gameMode.handleInventoryMouseClick(0, elytraSlot < 9 ? elytraSlot + 36 : elytraSlot, 0, ClickType.PICKUP, mc.player);
+                        mc.gameMode.handleInventoryMouseClick(0, 6, 0, ClickType.PICKUP, mc.player);
                     }
                 }
             }
@@ -145,7 +148,7 @@ public class Disabler extends AddonModule {
     }
 
     public boolean isBoostedByRocket() {
-        for (Entity entity : mc.world.getEntities()) {
+        for (Entity entity : mc.level.entitiesForRendering()) {
             if (entity instanceof FireworkRocketEntity rocket
                 && ((AccessorFireworkRocketEntity) rocket).hookWasShotByEntity()
                 && ((AccessorFireworkRocketEntity) rocket).hookGetShooter() == mc.player) {
@@ -164,7 +167,7 @@ public class Disabler extends AddonModule {
     }
 
     public boolean isYawOverflow() {
-        return !mc.player.isGliding() && modeConfig.get() == Mode.GRIM_OVERFLOW;
+        return !mc.player.isFallFlying() && modeConfig.get() == Mode.GRIM_OVERFLOW;
     }
 
     public boolean grimFireworkCheck() {

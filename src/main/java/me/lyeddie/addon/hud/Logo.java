@@ -6,7 +6,7 @@ import meteordevelopment.meteorclient.systems.hud.HudElement;
 import meteordevelopment.meteorclient.systems.hud.HudElementInfo;
 import meteordevelopment.meteorclient.systems.hud.HudRenderer;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 
 public class Logo extends HudElement {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -38,7 +38,7 @@ public class Logo extends HudElement {
         .defaultValue(new SettingColor(255, 255, 255, 255))
         .build());
 
-    private final Identifier logoFile = Identifier.of("shoreline", "icon.png");
+    private final Identifier logoFile = Identifier.fromNamespaceAndPath("shoreline", "icon.png");
 
     public static final HudElementInfo<Logo> INFO = new HudElementInfo<>(
         Shoreline.HUD, "logo", ".", Logo::new);

@@ -1,7 +1,7 @@
 package me.lyeddie.addon.events.irrevocable;
 
 import me.lyeddie.addon.util.Globals;
-import net.minecraft.entity.Entity;
+import net.minecraft.world.entity.Entity;
 
 public class RemoveEntityEvent implements Globals {
     private final Entity entity;

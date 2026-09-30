@@ -5,7 +5,7 @@ import me.lyeddie.addon.util.PlayerArgumentType;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.util.Helpers;
 import meteordevelopment.meteorclient.commands.Command;
-import net.minecraft.command.CommandSource;
+import net.minecraft.commands.SharedSuggestionProvider;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
@@ -16,7 +16,7 @@ public class Stats extends Command implements Helpers {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<CommandSource> builder) {
+    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
         builder.then(argument("player", PlayerArgumentType.player()).executes(c -> {
             String playerName = PlayerArgumentType.getPlayer(c, "player");
 

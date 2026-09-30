@@ -1,37 +1,37 @@
 package me.lyeddie.addon.mixin.impl.accessor;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.session.Session;
-import net.minecraft.client.world.ClientWorld;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.User;
+import net.minecraft.client.multiplayer.ClientLevel;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
-@Mixin(MinecraftClient.class)
+@Mixin(Minecraft.class)
 public interface AccessorMinecraftClient {
 
-    @Accessor("itemUseCooldown")
+    @Accessor("rightClickDelay")
     void hookSetItemUseCooldown(int itemUseCooldown);
 
-    @Accessor("itemUseCooldown")
+    @Accessor("rightClickDelay")
     int hookGetItemUseCooldown();
 
-    @Accessor("attackCooldown")
+    @Accessor("missTime")
     void hookSetAttackCooldown(int attackCooldown);
 
-    @Invoker("doItemUse")
+    @Invoker("startUseItem")
     void hookDoItemUse();
 
-    @Accessor("session")
+    @Accessor("user")
     @Final
     @Mutable
-    void setSession(Session session);
+    void setSession(User session);
 
-    @Accessor("world")
-    void hookSetWorld(ClientWorld world);
+    @Accessor("level")
+    void hookSetWorld(ClientLevel world);
 
-    @Accessor("disconnecting")
+    @Accessor("clientLevelTeardownInProgress")
     void hookSetDisconnecting(boolean disconnecting);
 }

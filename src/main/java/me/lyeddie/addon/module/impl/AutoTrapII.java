@@ -15,20 +15,22 @@ import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.decoration.EndCrystalEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
-import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.BundleS2CPacket;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.*;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Vec3i;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundBundlePacket;
+import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import java.util.*;
-import java.util.List;
 
 public class AutoTrapII extends ObsidianPlacerModule {
     private static AutoTrapII INST;
@@ -124,7 +126,7 @@ public class AutoTrapII extends ObsidianPlacerModule {
     public void onPlayerTick(PlayerTickEvent event) {
         blocksPlaced = 0;
 
-        if ((!multitaskConfig.get() && checkMultitask()) || (stopMotionConfig.get() && !mc.player.isOnGround())) {
+        if ((!multitaskConfig.get() && checkMultitask()) || (stopMotionConfig.get() && !mc.player.onGround())) {
             surround.clear();
             placements.clear();
             return;
@@ -136,7 +138,7 @@ public class AutoTrapII extends ObsidianPlacerModule {
             placements.clear();
             return;
         }
-        PlayerEntity trapTarget = getTrapTarget();
+        Player trapTarget = getTrapTarget();
         if (trapTarget == null) {
             surround.clear();
             placements.clear();
@@ -162,14 +164,14 @@ public class AutoTrapII extends ObsidianPlacerModule {
             for (BlockPos block : new ArrayList<>(placements)) {
                 if (block.getY() <= targetBlockPos.getY()) {
                     Direction direction = Managers.INTERACT.getInteractDirectionInternal(block, strictDirectionConfig.get());
-                    if (direction == null) placements.add(block.down());
+                    if (direction == null) placements.add(block.below());
                 }
             }
         }
         placements.sort(Comparator.comparingInt(Vec3i::getY));
 
-        Vec3d prevMotion = mc.player.getVelocity();
-        if (stopMotionConfig.get()) mc.player.setVelocity(0.0, 0.0, 0.0);
+        Vec3 prevMotion = mc.player.getDeltaMovement();
+        if (stopMotionConfig.get()) mc.player.setDeltaMovement(0.0, 0.0, 0.0);
 
         while (blocksPlaced < shiftTicksConfig.get()) {
             if (blocksPlaced >= placements.size()) {
@@ -183,16 +185,16 @@ public class AutoTrapII extends ObsidianPlacerModule {
         if (rotateConfig.get()) {
             Managers.ROTATION.setRotationSilentSync();
         }
-        if (stopMotionConfig.get()) mc.player.setVelocity(prevMotion);
+        if (stopMotionConfig.get()) mc.player.setDeltaMovement(prevMotion);
     }
 
     @EventHandler
     public void onPacketInbound(PacketEvent.Receive event) {
-        if (mc.player == null || mc.world == null) {
+        if (mc.player == null || mc.level == null) {
             return;
         }
-        if (event.packet instanceof BundleS2CPacket packet) {
-            for (Packet<?> packet1 : packet.getPackets()) {
+        if (event.packet instanceof ClientboundBundlePacket packet) {
+            for (Packet<?> packet1 : packet.subPackets()) {
                 handlePackets(packet1);
             }
         } else {
@@ -201,11 +203,11 @@ public class AutoTrapII extends ObsidianPlacerModule {
     }
 
     private void handlePackets(Packet<?> serverPacket) {
-        if (serverPacket instanceof BlockUpdateS2CPacket packet) {
-            final BlockState blockState = packet.getState();
+        if (serverPacket instanceof ClientboundBlockUpdatePacket packet) {
+            final BlockState blockState = packet.getBlockState();
             final BlockPos targetPos = packet.getPos();
             if (surround.contains(targetPos)) {
-                if (blockState.isReplaceable()) {
+                if (blockState.canBeReplaced()) {
                     BlockSlot blockItem = getResistantBlockItem();
                     if (blockItem == null) return;
                     placeBlock(targetPos, blockItem);
@@ -225,24 +227,24 @@ public class AutoTrapII extends ObsidianPlacerModule {
         packets.put(pos, System.currentTimeMillis());
     }
 
-    private PlayerEntity getTrapTarget() {
-        final List<Entity> entities = Lists.newArrayList(mc.world.getEntities());
-        return (PlayerEntity) entities.stream()
-            .filter(e -> e instanceof PlayerEntity pent && e.isAlive() && mc.player != e && !(Friends.get().isFriend(pent)))
-            .filter(e -> mc.player.squaredDistanceTo(e) <= getValueSq(placeRangeConfig.get()))
-            .min(Comparator.comparingDouble(e -> mc.player.squaredDistanceTo(e)))
+    private Player getTrapTarget() {
+        final List<Entity> entities = Lists.newArrayList(mc.level.entitiesForRendering());
+        return (Player) entities.stream()
+            .filter(e -> e instanceof Player pent && e.isAlive() && mc.player != e && !(Friends.get().isFriend(pent)))
+            .filter(e -> mc.player.distanceToSqr(e) <= getValueSq(placeRangeConfig.get()))
+            .min(Comparator.comparingDouble(e -> mc.player.distanceToSqr(e)))
             .orElse(null);
     }
 
     public void attackBlockingCrystals(List<BlockPos> posList) {
         for (BlockPos pos : posList) {
-            Entity crystalEntity = mc.world.getOtherEntities(null, new Box(pos)).stream()
-                .filter(e -> e instanceof EndCrystalEntity).findFirst().orElse(null);
+            Entity crystalEntity = mc.level.getEntities(null, new AABB(pos)).stream()
+                .filter(e -> e instanceof EndCrystal).findFirst().orElse(null);
             if (crystalEntity == null) {
                 continue;
             }
-            Managers.NETWORK.sendPacket(PlayerInteractEntityC2SPacket.attack(crystalEntity, mc.player.isSneaking()));
-            Managers.NETWORK.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+            Managers.NETWORK.sendPacket(ServerboundInteractPacket.createAttackPacket(crystalEntity, mc.player.isShiftKeyDown()));
+            Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
             return;
         }
     }
@@ -254,10 +256,10 @@ public class AutoTrapII extends ObsidianPlacerModule {
             if (shiftDelayConfig.get() > 0.0f && placed != null && System.currentTimeMillis() - placed < shiftDelayConfig.get() * 50.0f) {
                 continue;
             }
-            if (!mc.world.getBlockState(surroundPos).isReplaceable()) {
+            if (!mc.level.getBlockState(surroundPos).canBeReplaced()) {
                 continue;
             }
-            double dist = mc.player.squaredDistanceTo(surroundPos.toCenterPos());
+            double dist = mc.player.distanceToSqr(surroundPos.getCenter());
             if (dist > getValueSq(placeRangeConfig.get())) {
                 continue;
             }
@@ -269,7 +271,7 @@ public class AutoTrapII extends ObsidianPlacerModule {
         return placements;
     }
 
-    public List<BlockPos> getSurround(BlockPos playerPos, PlayerEntity player) {
+    public List<BlockPos> getSurround(BlockPos playerPos, Player player) {
         List<BlockPos> surroundBlocks = new ArrayList<>();
         List<BlockPos> playerBlocks = getPlayerBlocks(playerPos, player);
         for (BlockPos pos : playerBlocks) {
@@ -277,26 +279,26 @@ public class AutoTrapII extends ObsidianPlacerModule {
                 if (!dir.getAxis().isHorizontal()) {
                     continue;
                 }
-                BlockPos pos1 = pos.offset(dir);
+                BlockPos pos1 = pos.relative(dir);
                 if (surroundBlocks.contains(pos1) || playerBlocks.contains(pos1)) {
                     continue;
                 }
 
                 surroundBlocks.add(pos1);
-                surroundBlocks.add(pos1.up());
+                surroundBlocks.add(pos1.above());
             }
         }
         if (headConfig.get()) {
             boolean support = false;
             final List<BlockPos> headBlocks = new ArrayList<>();
             for (BlockPos pos : playerBlocks) {
-                BlockPos headPos = pos.offset(Direction.UP, 2);
-                if (!mc.world.getBlockState(headPos).isReplaceable()) {
+                BlockPos headPos = pos.relative(Direction.UP, 2);
+                if (!mc.level.getBlockState(headPos).canBeReplaced()) {
                     support = true;
                 }
                 headBlocks.add(headPos);
                 if (antiStepConfig.get()) {
-                    BlockPos antiStepPos = pos.offset(Direction.UP, 3);
+                    BlockPos antiStepPos = pos.relative(Direction.UP, 3);
                     headBlocks.add(antiStepPos);
                 }
             }
@@ -304,12 +306,12 @@ public class AutoTrapII extends ObsidianPlacerModule {
                 BlockPos supportingPos = null;
                 double min = Double.MAX_VALUE;
                 for (BlockPos pos : surroundBlocks) {
-                    BlockPos pos1 = pos.offset(Direction.UP, 2);
-                    if (!mc.world.getBlockState(pos1).isReplaceable()) {
+                    BlockPos pos1 = pos.relative(Direction.UP, 2);
+                    if (!mc.level.getBlockState(pos1).canBeReplaced()) {
                         support = true;
                         break;
                     }
-                    double dist = mc.player.squaredDistanceTo(pos1.toCenterPos());
+                    double dist = mc.player.distanceToSqr(pos1.getCenter());
                     if (dist < min) {
                         supportingPos = pos1;
                         min = dist;
@@ -324,7 +326,7 @@ public class AutoTrapII extends ObsidianPlacerModule {
         return surroundBlocks;
     }
 
-    public List<BlockPos> getPlayerBlocks(BlockPos playerPos, PlayerEntity entity) {
+    public List<BlockPos> getPlayerBlocks(BlockPos playerPos, Player entity) {
         final List<BlockPos> playerBlocks = new ArrayList<>();
         if (extendConfig.get()) {
             playerBlocks.addAll(PositionUtil.getAllInBox(entity.getBoundingBox(), playerPos));

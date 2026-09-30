@@ -13,23 +13,21 @@ import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.ExperienceOrbEntity;
-import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.ArrowEntity;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.BundleS2CPacket;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundBundlePacket;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.arrow.Arrow;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import java.util.*;
-import java.util.List;
 
 public class CrawlTrap extends ObsidianPlacerModule {
     private static CrawlTrap INST;
@@ -100,7 +98,7 @@ public class CrawlTrap extends ObsidianPlacerModule {
     private final Map<BlockPos, Animation> fadeList = new HashMap<>();
     private List<BlockPos> surround = new ArrayList<>();
     private List<BlockPos> placements = new ArrayList<>();
-    private PlayerEntity target;
+    private Player target;
     private int blocksPlaced;
 
     public CrawlTrap() {
@@ -120,7 +118,7 @@ public class CrawlTrap extends ObsidianPlacerModule {
     public void onPlayerTick(PlayerTickEvent event) {
         blocksPlaced = 0;
 
-        if ((!multitaskConfig.get() && checkMultitask()) || (stopMotionConfig.get() && !mc.player.isOnGround())) {
+        if ((!multitaskConfig.get() && checkMultitask()) || (stopMotionConfig.get() && !mc.player.onGround())) {
             surround.clear();
             placements.clear();
             return;
@@ -153,8 +151,8 @@ public class CrawlTrap extends ObsidianPlacerModule {
 
         placements.sort(Comparator.comparingInt(Vec3i::getY));
 
-        Vec3d prevMotion = mc.player.getVelocity();
-        if (stopMotionConfig.get()) mc.player.setVelocity(0.0, 0.0, 0.0);
+        Vec3 prevMotion = mc.player.getDeltaMovement();
+        if (stopMotionConfig.get()) mc.player.setDeltaMovement(0.0, 0.0, 0.0);
 
         while (blocksPlaced < shiftTicksConfig.get()) {
             if (blocksPlaced >= placements.size()) {
@@ -169,16 +167,16 @@ public class CrawlTrap extends ObsidianPlacerModule {
             Managers.ROTATION.setRotationSilentSync();
         }
 
-        if (stopMotionConfig.get()) mc.player.setVelocity(prevMotion);
+        if (stopMotionConfig.get()) mc.player.setDeltaMovement(prevMotion);
     }
 
     @EventHandler
     public void onPacketInbound(PacketEvent.Receive event) {
-        if (mc.player == null || mc.world == null) {
+        if (mc.player == null || mc.level == null) {
             return;
         }
-        if (event.packet instanceof BundleS2CPacket packet) {
-            for (Packet<?> packet1 : packet.getPackets()) {
+        if (event.packet instanceof ClientboundBundlePacket packet) {
+            for (Packet<?> packet1 : packet.subPackets()) {
                 handlePackets(packet1);
             }
         } else {
@@ -187,11 +185,11 @@ public class CrawlTrap extends ObsidianPlacerModule {
     }
 
     private void handlePackets(Packet<?> serverPacket) {
-        if (serverPacket instanceof BlockUpdateS2CPacket packet) {
-            final BlockState blockState = packet.getState();
+        if (serverPacket instanceof ClientboundBlockUpdatePacket packet) {
+            final BlockState blockState = packet.getBlockState();
             final BlockPos targetPos = packet.getPos();
             if (surround.contains(targetPos)) {
-                if (blockState.isReplaceable()) {
+                if (blockState.canBeReplaced()) {
                     BlockSlot blockItem = getResistantBlockItem();
                     if (blockItem == null) return;
                     placeBlock(targetPos, blockItem);
@@ -219,17 +217,17 @@ public class CrawlTrap extends ObsidianPlacerModule {
                 continue;
             }
 
-            final Box surroundBox = new Box(surroundPos);
-            List<Entity> invalid = mc.world.getOtherEntities(null, surroundBox).stream().filter(this::invalidEntity).toList();
+            final AABB surroundBox = new AABB(surroundPos);
+            List<Entity> invalid = mc.level.getEntities(null, surroundBox).stream().filter(this::invalidEntity).toList();
             boolean serverCrawling = invalid.stream().allMatch(e -> Managers.HITBOX.isServerCrawling(e)
                 && Managers.HITBOX.getCrawlingBoundingBox(e).intersects(surroundBox));
 
-            if (!mc.world.getBlockState(surroundPos).isReplaceable()
+            if (!mc.level.getBlockState(surroundPos).canBeReplaced()
                 && !(serverCrawling && serverHitboxConfig.get())
                 && !(Managers.BLOCK.isPassed(surroundPos, 0.7f) && mineIgnoreConfig.get())) {
                 continue;
             }
-            double dist = mc.player.squaredDistanceTo(surroundPos.toCenterPos());
+            double dist = mc.player.distanceToSqr(surroundPos.getCenter());
             if (dist > getValueSq(rangeConfig.get())) {
                 continue;
             }
@@ -242,11 +240,11 @@ public class CrawlTrap extends ObsidianPlacerModule {
         return placements;
     }
 
-    public List<BlockPos> getCrawlTrap(PlayerEntity entity, BlockPos playerPos) {
+    public List<BlockPos> getCrawlTrap(Player entity, BlockPos playerPos) {
         final List<BlockPos> crawlTrap = new ArrayList<>();
-        crawlTrap.add(playerPos.up());
+        crawlTrap.add(playerPos.above());
         if (downConfig.get()) {
-            crawlTrap.add(playerPos.down());
+            crawlTrap.add(playerPos.below());
         }
 
         double x = entity.getX();
@@ -255,14 +253,14 @@ public class CrawlTrap extends ObsidianPlacerModule {
 
         int ticks = 0;
         while (ticks <= extrapolateTicksConfig.get()) {
-            double ox = (x - entity.lastX) * ticks;
-            double oz = (z - entity.lastZ) * ticks;
-            BlockPos blockPos = BlockPos.ofFloored(x + ox, y, z + oz);
-            if (!crawlTrap.contains(blockPos.up())) {
-                crawlTrap.add(blockPos.up());
+            double ox = (x - entity.xo) * ticks;
+            double oz = (z - entity.zo) * ticks;
+            BlockPos blockPos = BlockPos.containing(x + ox, y, z + oz);
+            if (!crawlTrap.contains(blockPos.above())) {
+                crawlTrap.add(blockPos.above());
             }
-            if (downConfig.get() && !crawlTrap.contains(blockPos.down())) {
-                crawlTrap.add(blockPos.down());
+            if (downConfig.get() && !crawlTrap.contains(blockPos.below())) {
+                crawlTrap.add(blockPos.below());
             }
             ticks++;
         }
@@ -270,7 +268,7 @@ public class CrawlTrap extends ObsidianPlacerModule {
     }
 
     public boolean invalidEntity(Entity entity) {
-        return !(entity instanceof ItemEntity) && !(entity instanceof ExperienceOrbEntity) && !(entity instanceof ArrowEntity);
+        return !(entity instanceof ItemEntity) && !(entity instanceof ExperienceOrb) && !(entity instanceof Arrow);
     }
 
     @EventHandler
@@ -296,8 +294,8 @@ public class CrawlTrap extends ObsidianPlacerModule {
         fadeList.entrySet().removeIf(e -> e.getValue().getFactor() == 0.0);
     }
 
-    private boolean canCrawlTrap(PlayerEntity player, BlockPos playerPos) {
-        return player.isOnGround() || !mc.world.getBlockState(playerPos.up()).isReplaceable() || !mc.world.getBlockState(playerPos.up(2)).isReplaceable();
+    private boolean canCrawlTrap(Player player, BlockPos playerPos) {
+        return player.onGround() || !mc.level.getBlockState(playerPos.above()).canBeReplaced() || !mc.level.getBlockState(playerPos.above(2)).canBeReplaced();
     }
 
     public boolean isPlacing() {

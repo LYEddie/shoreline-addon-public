@@ -16,19 +16,23 @@ import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.settings.*;
 import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityStatuses;
-import net.minecraft.entity.projectile.FishingBobberEntity;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.s2c.play.*;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundBundlePacket;
+import net.minecraft.network.protocol.game.ClientboundDamageEventPacket;
+import net.minecraft.network.protocol.game.ClientboundEntityEventPacket;
+import net.minecraft.network.protocol.game.ClientboundExplodePacket;
+import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityEvent;
+import net.minecraft.world.entity.projectile.FishingHook;
+import net.minecraft.world.phys.Vec3;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -129,14 +133,14 @@ public class VelocityII extends AddonModule {
     public void onDeactivate() {
         if (cancelVelocity) {
             if (modeConfig.get() == VelocityMode.GRIM) {
-                float yaw = mc.player.getYaw();
-                float pitch = mc.player.getPitch();
+                float yaw = mc.player.getYRot();
+                float pitch = mc.player.getXRot();
                 if (Managers.ROTATION.isRotating()) {
                     yaw = Managers.ROTATION.getRotationYaw();
                     pitch = Managers.ROTATION.getRotationPitch();
                 }
-                Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(mc.player.getX(), mc.player.getY(), mc.player.getZ(), yaw, pitch, mc.player.isOnGround(), mc.player.horizontalCollision));
-                Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, mc.player.isCrawling() ? mc.player.getBlockPos() : mc.player.getBlockPos().up(), Direction.DOWN));
+                Managers.NETWORK.sendPacket(new ServerboundMovePlayerPacket.PosRot(mc.player.getX(), mc.player.getY(), mc.player.getZ(), yaw, pitch, mc.player.onGround(), mc.player.horizontalCollision));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, mc.player.isVisuallyCrawling() ? mc.player.blockPosition() : mc.player.blockPosition().above(), Direction.DOWN));
             }
             cancelVelocity = false;
         }
@@ -145,20 +149,20 @@ public class VelocityII extends AddonModule {
 
     @EventHandler
     public void onPacketInbound(PacketEvent.Receive event) {
-        if (mc.player == null || mc.world == null) {
+        if (mc.player == null || mc.level == null) {
             return;
         }
 
-        if (event.packet instanceof PlayerPositionLookS2CPacket && concealConfig.get()) {
+        if (event.packet instanceof ClientboundPlayerPositionPacket && concealConfig.get()) {
             concealVelocity = true;
         }
 
-        if (event.packet instanceof EntityVelocityUpdateS2CPacket packet && knockbackConfig.get()) {
-            if (packet.getEntityId() != mc.player.getId()) {
+        if (event.packet instanceof ClientboundSetEntityMotionPacket packet && knockbackConfig.get()) {
+            if (packet.getId() != mc.player.getId()) {
                 return;
             }
 
-            Vec3d velocity = packet.getVelocity();
+            Vec3 velocity = packet.getMovement();
             if (concealVelocity && velocity.x == 0 && velocity.y == 0 && velocity.z == 0) {
                 concealVelocity = false;
                 return;
@@ -180,7 +184,7 @@ public class VelocityII extends AddonModule {
                         event.cancel();
                         return;
                     }
-                    ((AccessorEntityVelocityUpdateS2CPacket) packet).setVelocity(new Vec3d(
+                    ((AccessorEntityVelocityUpdateS2CPacket) packet).setVelocity(new Vec3(
                         velocity.x * (horizontalConfig.get() / 100.0f),
                         velocity.y * (verticalConfig.get() / 100.0f),
                         velocity.z * (horizontalConfig.get() / 100.0f)));
@@ -195,7 +199,7 @@ public class VelocityII extends AddonModule {
 
                 case GRIM_V3 -> event.setCancelled(isPhased());
             }
-        } else if (event.packet instanceof ExplosionS2CPacket packet && explosionConfig.get()) {
+        } else if (event.packet instanceof ClientboundExplodePacket packet && explosionConfig.get()) {
             if (modeConfig.get() == VelocityMode.WALLS && !isPhased()) {
                 return;
             }
@@ -220,17 +224,17 @@ public class VelocityII extends AddonModule {
             }
 
             if (event.isCancelled()) {
-                mc.executeSync(() -> ((AccessorClientWorld) mc.world).hookPlaySound(packet.center().x, packet.center().y, packet.center().z,
-                    SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.BLOCKS,
+                mc.executeIfPossible(() -> ((AccessorClientWorld) mc.level).hookPlaySound(packet.center().x, packet.center().y, packet.center().z,
+                    SoundEvents.GENERIC_EXPLODE.value(), SoundSource.BLOCKS,
                     4.0f, (1.0f + (RANDOM.nextFloat() - RANDOM.nextFloat()) * 0.2f) * 0.7f, false, RANDOM.nextLong()));
             }
-        } else if (event.packet instanceof BundleS2CPacket packet) {
+        } else if (event.packet instanceof ClientboundBundlePacket packet) {
             List<Packet<?>> allowedBundle = new ArrayList<>();
 
-            for (Packet<?> packet1 : packet.getPackets()) {
-                if (packet1 instanceof ExplosionS2CPacket packet2 && explosionConfig.get()) {
-                    mc.executeSync(() -> ((AccessorClientWorld) mc.world).hookPlaySound(packet2.center().x, packet2.center().y, packet2.center().z,
-                        SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.BLOCKS,
+            for (Packet<?> packet1 : packet.subPackets()) {
+                if (packet1 instanceof ClientboundExplodePacket packet2 && explosionConfig.get()) {
+                    mc.executeIfPossible(() -> ((AccessorClientWorld) mc.level).hookPlaySound(packet2.center().x, packet2.center().y, packet2.center().z,
+                        SoundEvents.GENERIC_EXPLODE.value(), SoundSource.BLOCKS,
                         4.0f, (1.0f + (RANDOM.nextFloat() - RANDOM.nextFloat()) * 0.2f) * 0.7f, false, RANDOM.nextLong()));
 
                     if (modeConfig.get() == VelocityMode.WALLS && !isPhased()) {
@@ -261,8 +265,8 @@ public class VelocityII extends AddonModule {
                             }
                         }
                     }
-                } else if (packet1 instanceof EntityVelocityUpdateS2CPacket packet2 && knockbackConfig.get()) {
-                    if (packet2.getEntityId() != mc.player.getId()) {
+                } else if (packet1 instanceof ClientboundSetEntityMotionPacket packet2 && knockbackConfig.get()) {
+                    if (packet2.getId() != mc.player.getId()) {
                         allowedBundle.add(packet1);
                         continue;
                     }
@@ -284,8 +288,8 @@ public class VelocityII extends AddonModule {
                             if (horizontalConfig.get() == 0.0f && verticalConfig.get() == 0.0f) {
                                 continue;
                             } else {
-                                Vec3d velocity = packet2.getVelocity();
-                                ((AccessorEntityVelocityUpdateS2CPacket) packet2).setVelocity(new Vec3d(
+                                Vec3 velocity = packet2.getMovement();
+                                ((AccessorEntityVelocityUpdateS2CPacket) packet2).setVelocity(new Vec3(
                                     velocity.x * (horizontalConfig.get() / 100.0f),
                                     velocity.y * (verticalConfig.get() / 100.0f),
                                     velocity.z * (horizontalConfig.get() / 100.0f)));
@@ -312,15 +316,15 @@ public class VelocityII extends AddonModule {
             }
 
             ((AccessorBundlePacket) packet).setIterable(allowedBundle);
-        } else if (event.packet instanceof EntityDamageS2CPacket packet
+        } else if (event.packet instanceof ClientboundDamageEventPacket packet
             && packet.entityId() == mc.player.getId()
             && modeConfig.get() == VelocityMode.GRIM_V3 && isPhased()) {
-            Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(false, mc.player.horizontalCollision));
-            Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(true, mc.player.horizontalCollision));
-        } else if (event.packet instanceof EntityStatusS2CPacket packet
-            && packet.getStatus() == EntityStatuses.PULL_HOOKED_ENTITY && pushFishhookConfig.get()) {
-            Entity entity = packet.getEntity(mc.world);
-            if (entity instanceof FishingBobberEntity hook && hook.getHookedEntity() == mc.player) {
+            Managers.NETWORK.sendPacket(new ServerboundMovePlayerPacket.StatusOnly(false, mc.player.horizontalCollision));
+            Managers.NETWORK.sendPacket(new ServerboundMovePlayerPacket.StatusOnly(true, mc.player.horizontalCollision));
+        } else if (event.packet instanceof ClientboundEntityEventPacket packet
+            && packet.getEventId() == EntityEvent.FISHING_ROD_REEL_IN && pushFishhookConfig.get()) {
+            Entity entity = packet.getEntity(mc.level);
+            if (entity instanceof FishingHook hook && hook.getHookedIn() == mc.player) {
                 event.cancel();
             }
         }
@@ -338,10 +342,10 @@ public class VelocityII extends AddonModule {
                     yaw = Managers.ROTATION.getRotationYaw();
                     pitch = Managers.ROTATION.getRotationPitch();
                 }
-                Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(mc.player.getX(),
-                    mc.player.getY(), mc.player.getZ(), yaw, pitch, mc.player.isOnGround(), mc.player.horizontalCollision));
-                Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK,
-                    mc.player.isCrawling() ? mc.player.getBlockPos() : mc.player.getBlockPos().up(), Direction.DOWN));
+                Managers.NETWORK.sendPacket(new ServerboundMovePlayerPacket.PosRot(mc.player.getX(),
+                    mc.player.getY(), mc.player.getZ(), yaw, pitch, mc.player.onGround(), mc.player.horizontalCollision));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK,
+                    mc.player.isVisuallyCrawling() ? mc.player.blockPosition() : mc.player.blockPosition().above(), Direction.DOWN));
             }
             cancelVelocity = false;
         }
@@ -369,18 +373,18 @@ public class VelocityII extends AddonModule {
     }
 
     private boolean isWallsTrapped() {
-        BlockPos headPos = mc.player.getBlockPos().up(mc.player.isCrawling() ? 1 : 2);
-        if (mc.world.getBlockState(headPos).isReplaceable()) {
+        BlockPos headPos = mc.player.blockPosition().above(mc.player.isVisuallyCrawling() ? 1 : 2);
+        if (mc.level.getBlockState(headPos).canBeReplaced()) {
             return false;
         }
 
         return SurroundII.getInstance().getSurroundNoDown(mc.player).stream().noneMatch(
-            blockPos -> mc.world.getBlockState(mc.player.isCrawling() ? blockPos : blockPos.up()).isReplaceable());
+            blockPos -> mc.level.getBlockState(mc.player.isVisuallyCrawling() ? blockPos : blockPos.above()).canBeReplaced());
     }
 
-    private void scaleExplosionKnockback(ExplosionS2CPacket packet) {
+    private void scaleExplosionKnockback(ClientboundExplodePacket packet) {
         packet.playerKnockback().ifPresent(knockback -> {
-            Vec3d scaled = new Vec3d(
+            Vec3 scaled = new Vec3(
                 knockback.x * (horizontalConfig.get() / 100.0f),
                 knockback.y * (verticalConfig.get() / 100.0f),
                 knockback.z * (horizontalConfig.get() / 100.0f)
@@ -391,7 +395,7 @@ public class VelocityII extends AddonModule {
 
     private boolean isPhased() {
         return PositionUtil.getAllInBox(mc.player.getBoundingBox()).stream()
-            .anyMatch(blockPos -> !mc.world.getBlockState(blockPos).isReplaceable());
+            .anyMatch(blockPos -> !mc.level.getBlockState(blockPos).canBeReplaced());
     }
 
     public static VelocityII getInstance() {

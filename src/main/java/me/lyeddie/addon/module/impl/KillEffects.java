@@ -10,14 +10,13 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.client.particle.FireworksSparkParticle;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LightningEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
-import net.minecraft.particle.ParticleTypes;
-
+import net.minecraft.client.particle.FireworkParticles;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.protocol.game.ClientboundDamageEventPacket;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LightningBolt;
+import net.minecraft.world.entity.player.Player;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,15 +49,15 @@ public class KillEffects extends AddonModule {
 
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
-        if (event.getEntity() == mc.player || !(event.getEntity() instanceof PlayerEntity player) || !wasLastAttackedByPlayer(player)) {
+        if (event.getEntity() == mc.player || !(event.getEntity() instanceof Player player) || !wasLastAttackedByPlayer(player)) {
             return;
         }
         switch (killEffectConfig.get()) {
             case LIGHTNING -> {
                 for (int i = 0; i < strikesConfig.get(); i++) {
-                    LightningEntity lightningEntity = new LightningEntity(EntityType.LIGHTNING_BOLT, mc.world);
-                    lightningEntity.setPos(player.getX(), player.getY(), player.getZ());
-                    mc.world.addEntity(lightningEntity);
+                    LightningBolt lightningEntity = new LightningBolt(EntityType.LIGHTNING_BOLT, mc.level);
+                    lightningEntity.setPosRaw(player.getX(), player.getY(), player.getZ());
+                    mc.level.addEntity(lightningEntity);
                 }
             }
             case FIREWORK -> fireworkExplode(player.getX(), player.getY(), player.getZ(), 0.5, 4);
@@ -67,12 +66,12 @@ public class KillEffects extends AddonModule {
 
     @EventHandler
     public void onPacketInbound(PacketEvent.Receive event) {
-        if (mc.world == null || mc.player == null) {
+        if (mc.level == null || mc.player == null) {
             return;
         }
-        if (event.packet instanceof EntityDamageS2CPacket packet && packet.sourceCauseId() == mc.player.getId()) {
+        if (event.packet instanceof ClientboundDamageEventPacket packet && packet.sourceCauseId() == mc.player.getId()) {
             lastAttackedEntities.entrySet().removeIf(e -> System.currentTimeMillis() - e.getValue() > 5000);
-            Entity entity = mc.world.getEntityById(packet.entityId());
+            Entity entity = mc.level.getEntity(packet.entityId());
             if (entity == null) {
                 return;
             }
@@ -100,15 +99,15 @@ public class KillEffects extends AddonModule {
     }
 
     private void addExplosionParticle(double x, double y, double z, double velocityX, double velocityY, double velocityZ) {
-        if (mc.particleManager == null || mc.world == null) {
+        if (mc.particleEngine == null || mc.level == null) {
             return;
         }
-        FireworksSparkParticle.Explosion explosion = (FireworksSparkParticle.Explosion) mc.particleManager.addParticle(ParticleTypes.FIREWORK, x, y, z, velocityX, velocityY, velocityZ);
+        FireworkParticles.SparkParticle explosion = (FireworkParticles.SparkParticle) mc.particleEngine.createParticle(ParticleTypes.FIREWORK, x, y, z, velocityX, velocityY, velocityZ);
         if (explosion == null) {
             return;
         }
         explosion.setTrail(false);
-        explosion.setFlicker(false);
+        explosion.setTwinkle(false);
         explosion.setColor(TabConfigs.get().getColorRGB());
     }
 

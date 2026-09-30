@@ -9,18 +9,18 @@ import me.lyeddie.addon.events.staged.PrePlayerUpdateEvent;
 import me.lyeddie.addon.mixin.IClientPlayerEntity;
 import me.lyeddie.addon.util.Globals;
 import meteordevelopment.meteorclient.MeteorClient;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.input.Input;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.MovementType;
-import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.util.Hand;
-import net.minecraft.util.PlayerInput;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.player.ClientInput;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerInputPacket;
+import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.entity.player.Input;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -29,57 +29,57 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(ClientPlayerEntity.class)
-public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity implements Globals, IClientPlayerEntity {
+@Mixin(LocalPlayer.class)
+public abstract class MixinClientPlayerEntity extends AbstractClientPlayer implements Globals, IClientPlayerEntity {
 
     @Shadow
     @Final
-    public ClientPlayNetworkHandler networkHandler;
+    public ClientPacketListener connection;
     @Shadow
-    private double lastXClient;
+    private double xLast;
     @Shadow
-    private double lastYClient;
+    private double yLast;
     @Shadow
-    private double lastZClient;
+    private double zLast;
     @Shadow
-    public Input input;
+    public ClientInput input;
     @Shadow
     @Final
-    protected MinecraftClient client;
+    protected Minecraft minecraft;
     @Shadow
-    private PlayerInput lastPlayerInput;
+    private Input lastSentInput;
     @Shadow
-    private float lastYawClient;
+    private float yRotLast;
     @Shadow
-    private float lastPitchClient;
+    private float xRotLast;
     @Shadow
     private boolean lastOnGround;
     @Shadow
-    private int ticksSinceLastPositionPacketSent;
+    private int positionReminder;
     @Shadow
     private boolean autoJumpEnabled;
 
     public MixinClientPlayerEntity() {
-        super(MinecraftClient.getInstance().world, MinecraftClient.getInstance().player.getGameProfile());
+        super(Minecraft.getInstance().level, Minecraft.getInstance().player.getGameProfile());
     }
 
     @Shadow
-    protected abstract void sendSprintingPacket();
+    protected abstract void sendIsSprintingIfNeeded();
 
     @Shadow
-    protected abstract boolean isCamera();
+    protected abstract boolean isControlledCamera();
 
     @Shadow
-    protected abstract void autoJump(float dx, float dz);
+    protected abstract void updateAutoJump(float dx, float dz);
 
     @Shadow
     public abstract void tick();
 
-    @Inject(method = "sendMovementPackets", at = @At(value = "HEAD"), cancellable = true)
+    @Inject(method = "sendPosition", at = @At(value = "HEAD"), cancellable = true)
     private void hookSendMovementPackets(CallbackInfo ci) {
         PrePlayerUpdateEvent playerUpdateEvent = new PrePlayerUpdateEvent();
         MeteorClient.EVENT_BUS.post(playerUpdateEvent);
-        MovementPacketsEvent movementPacketsEvent = new MovementPacketsEvent(mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYaw(), mc.player.getPitch(), mc.player.isOnGround());
+        MovementPacketsEvent movementPacketsEvent = new MovementPacketsEvent(mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYRot(), mc.player.getXRot(), mc.player.onGround());
         MeteorClient.EVENT_BUS.post(movementPacketsEvent);
 
         double x = movementPacketsEvent.getX();
@@ -97,67 +97,66 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 
         if (movementPacketsEvent.isCancelled() || encodeYawEvent.isCancelled()) {
             ci.cancel();
-            sendSprintingPacket();
-            PlayerInput currentInput = input.playerInput;
-            if (!currentInput.equals(lastPlayerInput)) {
-                networkHandler.sendPacket(new PlayerInputC2SPacket(currentInput));
-                lastPlayerInput = currentInput;
+            sendIsSprintingIfNeeded();
+            Input currentInput = input.keyPresses;
+            if (!currentInput.equals(lastSentInput)) {
+                connection.send(new ServerboundPlayerInputPacket(currentInput));
+                lastSentInput = currentInput;
             }
-            if (isCamera()) {
-                double d = x - lastXClient;
-                double e = y - lastYClient;
-                double f = z - lastZClient;
-                double g = yaw - lastYawClient;
-                double h = pitch - lastPitchClient;
-                ++ticksSinceLastPositionPacketSent;
-                boolean bl2 = MathHelper.squaredMagnitude(d, e, f) > MathHelper.square(2.0E-4) || ticksSinceLastPositionPacketSent >= 20;
+            if (isControlledCamera()) {
+                double d = x - xLast;
+                double e = y - yLast;
+                double f = z - zLast;
+                double g = yaw - yRotLast;
+                double h = pitch - xRotLast;
+                ++positionReminder;
+                boolean bl2 = Mth.lengthSquared(d, e, f) > Mth.square(2.0E-4) || positionReminder >= 20;
                 boolean bl3 = g != 0.0 || h != 0.0;
-                if (hasVehicle()) {
-                    Vec3d vec3d = getVelocity();
-                    networkHandler.sendPacket(new PlayerMoveC2SPacket.Full(vec3d.x, -999.0, vec3d.z, getYaw(), getPitch(), ground, horizontalCollision));
+                if (isPassenger()) {
+                    Vec3 vec3d = getDeltaMovement();
+                    connection.send(new ServerboundMovePlayerPacket.PosRot(vec3d.x, -999.0, vec3d.z, getYRot(), getXRot(), ground, horizontalCollision));
                     bl2 = false;
                 } else if (bl2 && bl3) {
-                    networkHandler.sendPacket(new PlayerMoveC2SPacket.Full(x, y, z, yaw, pitch, ground, horizontalCollision));
+                    connection.send(new ServerboundMovePlayerPacket.PosRot(x, y, z, yaw, pitch, ground, horizontalCollision));
                 } else if (bl2) {
-                    networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y, z, ground, horizontalCollision));
+                    connection.send(new ServerboundMovePlayerPacket.Pos(x, y, z, ground, horizontalCollision));
                 } else if (bl3) {
-                    networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(yaw, pitch, ground, horizontalCollision));
-                } else if (lastOnGround != isOnGround()) {
-                    networkHandler.sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(ground, horizontalCollision));
+                    connection.send(new ServerboundMovePlayerPacket.Rot(yaw, pitch, ground, horizontalCollision));
+                } else if (lastOnGround != onGround()) {
+                    connection.send(new ServerboundMovePlayerPacket.StatusOnly(ground, horizontalCollision));
                 }
                 if (bl2) {
-                    lastXClient = x;
-                    lastYClient = y;
-                    lastZClient = z;
-                    ticksSinceLastPositionPacketSent = 0;
+                    xLast = x;
+                    yLast = y;
+                    zLast = z;
+                    positionReminder = 0;
                 }
                 if (bl3) {
-                    lastYawClient = yaw;
-                    lastPitchClient = pitch;
+                    yRotLast = yaw;
+                    xRotLast = pitch;
                 }
                 lastOnGround = ground;
-                autoJumpEnabled = client.options.getAutoJump().getValue();
+                autoJumpEnabled = minecraft.options.autoJump().get();
             }
         }
         PostPlayerUpdateEvent playerUpdateEvent1 = new PostPlayerUpdateEvent();
         MeteorClient.EVENT_BUS.post(playerUpdateEvent1);
     }
 
-    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/" +
-        "minecraft/client/network/AbstractClientPlayerEntity;tick()V", shift = At.Shift.BEFORE, ordinal = 0))
+    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/AbstractClientPlayer;tick()V", shift = At.Shift.BEFORE, ordinal = 0))
     private void hookTickPre(CallbackInfo ci) {
         PlayerTickEvent playerTickEvent = new PlayerTickEvent();
         MeteorClient.EVENT_BUS.post(playerTickEvent);
     }
 
-    @Inject(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/input/Input;tick()V", shift = At.Shift.AFTER))
+    @Inject(method = "aiStep", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/ClientInput;tick()V", shift = At.Shift.AFTER))
     private void hookTickMovementPost(CallbackInfo ci) {
         MovementSlowdownEvent movementUpdateEvent = new MovementSlowdownEvent(input);
         MeteorClient.EVENT_BUS.post(movementUpdateEvent);
     }
 
     @Inject(method = "move", at = @At(value = "HEAD"), cancellable = true)
-    private void hookMove(MovementType movementType, Vec3d movement, CallbackInfo ci) {
+    private void hookMove(MoverType movementType, Vec3 movement, CallbackInfo ci) {
         final PlayerMoveEvent playerMoveEvent = new PlayerMoveEvent(movementType, movement);
         MeteorClient.EVENT_BUS.post(playerMoveEvent);
         if (playerMoveEvent.isCancelled()) {
@@ -165,11 +164,11 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
             double d = getX();
             double e = getZ();
             super.move(movementType, playerMoveEvent.getMovement());
-            autoJump((float) (getX() - d), (float) (getZ() - e));
+            updateAutoJump((float) (getX() - d), (float) (getZ() - e));
         }
     }
 
-    @Inject(method = "pushOutOfBlocks", at = @At(value = "HEAD"), cancellable = true)
+    @Inject(method = "moveTowardsClosestSpace", at = @At(value = "HEAD"), cancellable = true)
     private void onPushOutOfBlocks(double x, double z, CallbackInfo ci) {
         PushOutOfBlocksEvent pushOutOfBlocksEvent = new PushOutOfBlocksEvent();
         MeteorClient.EVENT_BUS.post(pushOutOfBlocksEvent);
@@ -178,14 +177,14 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
         }
     }
 
-    @Inject(method = "setCurrentHand", at = @At(value = "HEAD"))
-    private void hookSetCurrentHand(Hand hand, CallbackInfo ci) {
+    @Inject(method = "startUsingItem", at = @At(value = "HEAD"))
+    private void hookSetCurrentHand(InteractionHand hand, CallbackInfo ci) {
         SetCurrentHandEvent setCurrentHandEvent = new SetCurrentHandEvent(hand);
         MeteorClient.EVENT_BUS.post(setCurrentHandEvent);
     }
 
-    @Redirect(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;setSprinting(Z)V", ordinal = 3))
-    private void hookSetSprinting(ClientPlayerEntity instance, boolean b) {
+    @Redirect(method = "aiStep", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;setSprinting(Z)V", ordinal = 3))
+    private void hookSetSprinting(LocalPlayer instance, boolean b) {
         final SprintCancelEvent sprintEvent = new SprintCancelEvent();
         MeteorClient.EVENT_BUS.post(sprintEvent);
         if (sprintEvent.isCancelled()) {
@@ -197,11 +196,11 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 
     @Override
     public float getLastSpoofedYaw() {
-        return lastYawClient;
+        return yRotLast;
     }
 
     @Override
     public float getLastSpoofedPitch() {
-        return lastPitchClient;
+        return xRotLast;
     }
 }

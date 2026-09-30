@@ -16,8 +16,8 @@ import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.Mth;
+import net.minecraft.world.effect.MobEffects;
 
 public class SprintII extends RotationModule {
     private static SprintII INST;
@@ -46,15 +46,15 @@ public class SprintII extends RotationModule {
     @EventHandler
     public void onTick(TickEvent.Pre event) {
         if (canSprint()) {
-            float sprintYaw = getSprintYaw(mc.player.getYaw());
+            float sprintYaw = getSprintYaw(mc.player.getYRot());
             if (checkSprintAngle(sprintYaw)) {
                 return;
             }
             switch (modeConfig.get()) {
                 case LEGIT -> {
-                    if (mc.player.input.hasForwardMovement()
+                    if (mc.player.input.hasForwardImpulse()
                         && (!mc.player.horizontalCollision
-                        || mc.player.collidedSoftly)) {
+                        || mc.player.minorHorizontalCollision)) {
                         mc.player.setSprinting(true);
                     }
                 }
@@ -66,7 +66,7 @@ public class SprintII extends RotationModule {
     @EventHandler
     public void onSprintCancel(SprintCancelEvent event) {
         if (canSprint() && (modeConfig.get() == SprintMode.RAGE || modeConfig.get() == SprintMode.RAGE_STRICT)) {
-            float sprintYaw = getSprintYaw(mc.player.getYaw());
+            float sprintYaw = getSprintYaw(mc.player.getYRot());
             if (checkSprintAngle(sprintYaw)) {
                 return;
             }
@@ -77,7 +77,7 @@ public class SprintII extends RotationModule {
     @EventHandler
     public void onPlayerTick(PlayerTickEvent event) {
         if (canSprint() && modeConfig.get() == SprintMode.RAGE_STRICT) {
-            setRotation(getSprintYaw(mc.player.getYaw()), mc.player.getPitch());
+            setRotation(getSprintYaw(mc.player.getYRot()), mc.player.getXRot());
         }
     }
 
@@ -109,30 +109,30 @@ public class SprintII extends RotationModule {
             return false;
         }
         return MovementUtil.isInputtingMovement()
-            && !mc.player.isSneaking()
-            && !mc.player.isRiding()
-            && !mc.player.isGliding()
-            && !mc.player.isTouchingWater()
+            && !mc.player.isShiftKeyDown()
+            && !mc.player.isHandsBusy()
+            && !mc.player.isFallFlying()
+            && !mc.player.isInWater()
             && !mc.player.isInLava()
-            && !mc.player.isHoldingOntoLadder()
-            && !mc.player.hasStatusEffect(StatusEffects.BLINDNESS)
-            && mc.player.getHungerManager().getFoodLevel() > 6.0F;
+            && !mc.player.isSuppressingSlidingDownLadder()
+            && !mc.player.hasEffect(MobEffects.BLINDNESS)
+            && mc.player.getFoodData().getFoodLevel() > 6.0F;
     }
 
     private boolean checkSprintAngle(float sprintYaw) {
         if (modeConfig.get() == SprintMode.RAGE_STRICT) {
-            return MathHelper.angleBetween(sprintYaw, Managers.ROTATION.getServerYaw()) > 0.0f;
+            return Mth.degreesDifferenceAbs(sprintYaw, Managers.ROTATION.getServerYaw()) > 0.0f;
         } else if (modeConfig.get() == SprintMode.GRIM) {
-            return MathHelper.angleBetween(mc.player.getYaw(), Managers.ROTATION.getServerYaw()) > 0.0f;
+            return Mth.degreesDifferenceAbs(mc.player.getYRot(), Managers.ROTATION.getServerYaw()) > 0.0f;
         }
         return false;
     }
 
     public float getSprintYaw(float yaw) {
-        boolean forward = mc.options.forwardKey.isPressed();
-        boolean backward = mc.options.backKey.isPressed();
-        boolean left = mc.options.leftKey.isPressed();
-        boolean right = mc.options.rightKey.isPressed();
+        boolean forward = mc.options.keyUp.isDown();
+        boolean backward = mc.options.keyDown.isDown();
+        boolean left = mc.options.keyLeft.isDown();
+        boolean right = mc.options.keyRight.isDown();
         if (forward && !backward) {
             if (left && !right) {
                 yaw -= 45.0f;
@@ -151,7 +151,7 @@ public class SprintII extends RotationModule {
         } else if (right && !left) {
             yaw += 90.0f;
         }
-        return MathHelper.wrapDegrees(yaw);
+        return Mth.wrapDegrees(yaw);
     }
 
     public enum SprintMode {

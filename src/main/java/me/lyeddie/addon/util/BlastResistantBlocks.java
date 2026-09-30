@@ -1,12 +1,11 @@
 package me.lyeddie.addon.util;
 
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.Set;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 
 public class BlastResistantBlocks implements Globals {
     private static final Set<Block> BLAST_RESISTANT = new ReferenceOpenHashSet<>(Set.of(
@@ -26,10 +25,10 @@ public class BlastResistantBlocks implements Globals {
     ));
 
     public static boolean isUnbreakable(BlockPos pos) {
-        if (mc.world == null) {
+        if (mc.level == null) {
             return false;
         }
-        return isUnbreakable(mc.world.getBlockState(pos).getBlock());
+        return isUnbreakable(mc.level.getBlockState(pos).getBlock());
     }
 
     public static boolean isUnbreakable(Block block) {
@@ -37,10 +36,10 @@ public class BlastResistantBlocks implements Globals {
     }
 
     public static boolean isBlastResistant(BlockPos pos) {
-        if (mc.world == null) {
+        if (mc.level == null) {
             return false;
         }
-        return isBlastResistant(mc.world.getBlockState(pos).getBlock());
+        return isBlastResistant(mc.level.getBlockState(pos).getBlock());
     }
 
     public static boolean isBlastResistant(BlockState state) {

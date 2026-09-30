@@ -1,22 +1,22 @@
 package me.lyeddie.addon.util.literal;
 
 import me.lyeddie.addon.util.Globals;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.world.chunk.ChunkManager;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
+import net.minecraft.world.level.chunk.ChunkSource;
 
 public class BlockUtil implements Globals {
 
     public static boolean isBlockAccessible(BlockPos pos) {
-        return mc.world.isAir(pos) && !mc.world.isAir(pos.add(0, -1, 0))
-            && mc.world.isAir(pos.add(0, 1, 0)) && mc.world.isAir(pos.add(0, 2, 0));
+        return mc.level.isEmptyBlock(pos) && !mc.level.isEmptyBlock(pos.offset(0, -1, 0))
+            && mc.level.isEmptyBlock(pos.offset(0, 1, 0)) && mc.level.isEmptyBlock(pos.offset(0, 2, 0));
     }
 
     public static boolean isBlockLoaded(double x, double z) {
-        ChunkManager chunkManager = mc.world.getChunkManager();
+        ChunkSource chunkManager = mc.level.getChunkSource();
         if (chunkManager != null) {
-            return chunkManager.isChunkLoaded(ChunkSectionPos.getSectionCoord(x),
-                ChunkSectionPos.getSectionCoord(z));
+            return chunkManager.hasChunk(SectionPos.posToSectionCoord(x),
+                SectionPos.posToSectionCoord(z));
         }
         return false;
     }

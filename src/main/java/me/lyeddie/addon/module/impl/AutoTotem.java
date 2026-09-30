@@ -13,17 +13,20 @@ import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.*;
 import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.BlockState;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.decoration.EndCrystalEntity;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.item.*;
-import net.minecraft.network.packet.s2c.play.HealthUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.util.hit.BlockHitResult;
-
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
+import net.minecraft.network.protocol.game.ClientboundSetHealthPacket;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.item.AxeItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.TridentItem;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -116,28 +119,28 @@ public class AutoTotem extends AddonModule {
 
         if (mainhandTotemConfig.get() && mainhandSwapTimer.passed(200)) {
             int totemSlot1 = totemSlotConfig.get() - 1;
-            ItemStack totemSlotStack = mc.player.getInventory().getStack(totemSlot1);
+            ItemStack totemSlotStack = mc.player.getInventory().getItem(totemSlot1);
             totemSlot1 += 36;
             if (totemSlotStack.getItem() != Items.TOTEM_OF_UNDYING) {
                 int n = 35;
                 while (n >= 0) {
-                    if (mc.player.getInventory().getStack(n).getItem() == Items.TOTEM_OF_UNDYING) {
+                    if (mc.player.getInventory().getItem(n).getItem() == Items.TOTEM_OF_UNDYING) {
                         int slot = n < 9 ? n + 36 : n;
                         replacing = true;
                         if (alternativeConfig.get()) {
-                            mc.interactionManager.clickSlot(0, slot, totemSlot1, SlotActionType.SWAP, mc.player);
+                            mc.gameMode.handleInventoryMouseClick(0, slot, totemSlot1, ClickType.SWAP, mc.player);
                             replacing = false;
                         } else {
-                            if (mc.player.currentScreenHandler.getCursorStack().getItem() != Items.TOTEM_OF_UNDYING) {
-                                mc.interactionManager.clickSlot(0, slot, 0, SlotActionType.PICKUP, mc.player);
+                            if (mc.player.containerMenu.getCarried().getItem() != Items.TOTEM_OF_UNDYING) {
+                                mc.gameMode.handleInventoryMouseClick(0, slot, 0, ClickType.PICKUP, mc.player);
                             }
-                            if (mc.player.currentScreenHandler.getCursorStack().getItem() == Items.TOTEM_OF_UNDYING) {
-                                mc.interactionManager.clickSlot(0, totemSlot1, 0, SlotActionType.PICKUP, mc.player);
+                            if (mc.player.containerMenu.getCarried().getItem() == Items.TOTEM_OF_UNDYING) {
+                                mc.gameMode.handleInventoryMouseClick(0, totemSlot1, 0, ClickType.PICKUP, mc.player);
                                 lastTotemCount = InventoryUtil.count(Items.TOTEM_OF_UNDYING) - 1;
                             }
                             replacing = false;
-                            if (!mc.player.currentScreenHandler.getCursorStack().isEmpty() && mc.player.getOffHandStack().getItem() == Items.TOTEM_OF_UNDYING) {
-                                mc.interactionManager.clickSlot(0, slot, 0, SlotActionType.PICKUP, mc.player);
+                            if (!mc.player.containerMenu.getCarried().isEmpty() && mc.player.getOffhandItem().getItem() == Items.TOTEM_OF_UNDYING) {
+                                mc.gameMode.handleInventoryMouseClick(0, slot, 0, ClickType.PICKUP, mc.player);
                                 return;
                             }
                         }
@@ -150,7 +153,7 @@ public class AutoTotem extends AddonModule {
             if (totemInMainhand) {
                 int totemSlot = -1;
                 for (int i = 0; i < 9; i++) {
-                    ItemStack stack = mc.player.getInventory().getStack(i);
+                    ItemStack stack = mc.player.getInventory().getItem(i);
                     if (stack.getItem() == Items.TOTEM_OF_UNDYING) {
                         totemSlot = i;
                         break;
@@ -168,15 +171,15 @@ public class AutoTotem extends AddonModule {
         if (checkLethal()) {
             offhandItem = Items.TOTEM_OF_UNDYING;
         } else {
-            final ItemStack mainHandStack = mc.player.getMainHandStack();
+            final ItemStack mainHandStack = mc.player.getMainHandItem();
             final Item mainHandItem = mainHandStack.getItem();
-            if (gappleConfig.get() && mc.options.useKey.isPressed()
-                && (mainHandStack.contains(DataComponentTypes.WEAPON)
+            if (gappleConfig.get() && mc.options.keyUse.isDown()
+                && (mainHandStack.has(DataComponents.WEAPON)
                 || mainHandItem instanceof TridentItem
                 || mainHandItem instanceof AxeItem)
                 && PlayerUtil.getLocalPlayerHealth() >= healthConfig.get()) {
-                if (mc.crosshairTarget instanceof BlockHitResult result) {
-                    BlockState interactBlock = mc.world.getBlockState(result.getBlockPos());
+                if (mc.hitResult instanceof BlockHitResult result) {
+                    BlockState interactBlock = mc.level.getBlockState(result.getBlockPos());
                     if (!SneakBlocks.isSneakBlock(interactBlock)) {
                         offhandItem = getGoldenAppleType();
                     }
@@ -186,13 +189,13 @@ public class AutoTotem extends AddonModule {
             }
         }
 
-        if (mc.player.getOffHandStack().getItem() == offhandItem) {
+        if (mc.player.getOffhandItem().getItem() == offhandItem) {
             return;
         }
         int n = 35;
         if (lastHotbarSlot != -1 && lastHotbarItem != null) {
-            final ItemStack stack = mc.player.getInventory().getStack(lastHotbarSlot);
-            if (stack.getItem().equals(offhandItem) && lastHotbarItem.equals(mc.player.getOffHandStack().getItem())) {
+            final ItemStack stack = mc.player.getInventory().getItem(lastHotbarSlot);
+            if (stack.getItem().equals(offhandItem) && lastHotbarItem.equals(mc.player.getOffhandItem().getItem())) {
                 final int tmp = lastHotbarSlot;
                 lastHotbarSlot = -1;
                 lastHotbarItem = null;
@@ -200,7 +203,7 @@ public class AutoTotem extends AddonModule {
             }
         }
         while (n >= 0) {
-            if (mc.player.getInventory().getStack(n).getItem() == offhandItem) {
+            if (mc.player.getInventory().getItem(n).getItem() == offhandItem) {
                 if (n < 9) {
                     lastHotbarItem = offhandItem;
                     lastHotbarSlot = n;
@@ -208,19 +211,19 @@ public class AutoTotem extends AddonModule {
                 int slot = n < 9 ? n + 36 : n;
                 replacing = true;
                 if (alternativeConfig.get()) {
-                    mc.interactionManager.clickSlot(0, slot, 40, SlotActionType.SWAP, mc.player);
+                    mc.gameMode.handleInventoryMouseClick(0, slot, 40, ClickType.SWAP, mc.player);
                     replacing = false;
                 } else {
-                    if (mc.player.currentScreenHandler.getCursorStack().getItem() != offhandItem) {
-                        mc.interactionManager.clickSlot(0, slot, 0, SlotActionType.PICKUP, mc.player);
+                    if (mc.player.containerMenu.getCarried().getItem() != offhandItem) {
+                        mc.gameMode.handleInventoryMouseClick(0, slot, 0, ClickType.PICKUP, mc.player);
                     }
-                    if (mc.player.currentScreenHandler.getCursorStack().getItem() == offhandItem) {
-                        mc.interactionManager.clickSlot(0, 45, 0, SlotActionType.PICKUP, mc.player);
+                    if (mc.player.containerMenu.getCarried().getItem() == offhandItem) {
+                        mc.gameMode.handleInventoryMouseClick(0, 45, 0, ClickType.PICKUP, mc.player);
                         lastTotemCount = InventoryUtil.count(Items.TOTEM_OF_UNDYING) - 1;
                     }
                     replacing = false;
-                    if (!mc.player.currentScreenHandler.getCursorStack().isEmpty() && mc.player.getOffHandStack().getItem() == offhandItem) {
-                        mc.interactionManager.clickSlot(0, slot, 0, SlotActionType.PICKUP, mc.player);
+                    if (!mc.player.containerMenu.getCarried().isEmpty() && mc.player.getOffhandItem().getItem() == offhandItem) {
+                        mc.gameMode.handleInventoryMouseClick(0, slot, 0, ClickType.PICKUP, mc.player);
                         return;
                     }
                 }
@@ -231,10 +234,10 @@ public class AutoTotem extends AddonModule {
 
     @EventHandler(priority = 200)
     public void onPacketInbound(final PacketEvent.Receive event) {
-        if (mc.player == null || mc.world == null) {
+        if (mc.player == null || mc.level == null) {
             return;
         }
-        if (event.packet instanceof HealthUpdateS2CPacket packet
+        if (event.packet instanceof ClientboundSetHealthPacket packet
             && packet.getHealth() <= 0.0f && debugConfig.get()) {
             if (lastTotemCount <= 0) {
                 return;
@@ -247,9 +250,9 @@ public class AutoTotem extends AddonModule {
                 error("Failed to replace totem! Possible reasons: %s", String.join(", ", failureReasonsSet));
             }
         }
-        if (event.packet instanceof ScreenHandlerSlotUpdateS2CPacket packet
+        if (event.packet instanceof ClientboundContainerSetSlotPacket packet
             && packet.getSlot() == 45 && offhandItem == Items.TOTEM_OF_UNDYING) {
-            if (mc.player.getOffHandStack().getItem() != Items.TOTEM_OF_UNDYING || !packet.getStack().isEmpty()) {
+            if (mc.player.getOffhandItem().getItem() != Items.TOTEM_OF_UNDYING || !packet.getItem().isEmpty()) {
                 return;
             }
             replaceTime = System.currentTimeMillis();
@@ -258,10 +261,10 @@ public class AutoTotem extends AddonModule {
 
     private Set<String> getFailureReasons() {
         final Set<String> failureReasonsSet = new LinkedHashSet<>();
-        if (mc.player.currentScreenHandler.syncId != 0) {
+        if (mc.player.containerMenu.containerId != 0) {
             failureReasonsSet.add("Current screen handler is not the player inventory");
         }
-        if (!mc.player.currentScreenHandler.getCursorStack().isEmpty()) {
+        if (!mc.player.containerMenu.getCarried().isEmpty()) {
             failureReasonsSet.add("Totem was not placed in offhand on time");
         }
         return failureReasonsSet;
@@ -278,15 +281,15 @@ public class AutoTotem extends AddonModule {
     }
 
     private boolean checkLethalCrystal(float health) {
-        final List<Entity> entities = Lists.newArrayList(mc.world.getEntities());
+        final List<Entity> entities = Lists.newArrayList(mc.level.entitiesForRendering());
         for (Entity e : entities) {
-            if (e == null || !e.isAlive() || !(e instanceof EndCrystalEntity crystal)) {
+            if (e == null || !e.isAlive() || !(e instanceof EndCrystal crystal)) {
                 continue;
             }
-            if (mc.player.squaredDistanceTo(e) > 144.0) {
+            if (mc.player.distanceToSqr(e) > 144.0) {
                 continue;
             }
-            double potential = ExplosionUtil.getDamageTo(mc.player, crystal.getEntityPos(), false);
+            double potential = ExplosionUtil.getDamageTo(mc.player, crystal.position(), false);
             if (health + 0.5 > potential) {
                 continue;
             }
@@ -298,7 +301,7 @@ public class AutoTotem extends AddonModule {
 
     private Item getGoldenAppleType() {
         if (crappleConfig.get() && InventoryUtil.hasItemInInventory(Items.GOLDEN_APPLE, true)
-            && (mc.player.hasStatusEffect(StatusEffects.ABSORPTION)
+            && (mc.player.hasEffect(MobEffects.ABSORPTION)
             || !InventoryUtil.hasItemInInventory(Items.ENCHANTED_GOLDEN_APPLE, true))) {
             return Items.GOLDEN_APPLE;
         }
@@ -306,7 +309,7 @@ public class AutoTotem extends AddonModule {
     }
 
     private boolean checkMainhandTotem() { // no chorus inv.
-        if (mc.player.getMainHandStack().getItem() == Items.TOTEM_OF_UNDYING) {
+        if (mc.player.getMainHandItem().getItem() == Items.TOTEM_OF_UNDYING) {
             return false;
         }
         return checkLethalCrystal(PlayerUtil.getLocalPlayerHealth());

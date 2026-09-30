@@ -1,16 +1,16 @@
 package me.lyeddie.addon.mixin.impl.accessor;
 
-import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-@Mixin(EntityVelocityUpdateS2CPacket.class)
+@Mixin(ClientboundSetEntityMotionPacket.class)
 public interface AccessorEntityVelocityUpdateS2CPacket {
 
-    @Accessor("velocity")
+    @Accessor("movement")
     @Mutable
-    void setVelocity(Vec3d velocity);
+    void setVelocity(Vec3 velocity);
 }
 

@@ -5,9 +5,9 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.meteorclient.systems.modules.Category;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.Hand;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Player;
 import java.util.Comparator;
 
 public class CombatModule extends RotationModule {
@@ -20,11 +20,11 @@ public class CombatModule extends RotationModule {
         super(category, name, description, rotationPriority);
     }
 
-    public PlayerEntity getClosestPlayer(double range) {
-        return mc.world.getPlayers().stream().filter(e -> !(e instanceof ClientPlayerEntity) && !e.isSpectator())
-            .filter(e -> mc.player.squaredDistanceTo(e) <= range * range)
+    public Player getClosestPlayer(double range) {
+        return mc.level.players().stream().filter(e -> !(e instanceof LocalPlayer) && !e.isSpectator())
+            .filter(e -> mc.player.distanceToSqr(e) <= range * range)
             .filter(e -> !Friends.get().isFriend(e))
-            .min(Comparator.comparingDouble(e -> mc.player.squaredDistanceTo(e))).orElse(null);
+            .min(Comparator.comparingDouble(e -> mc.player.distanceToSqr(e))).orElse(null);
     }
 
     public boolean checkMultitask() {
@@ -32,7 +32,7 @@ public class CombatModule extends RotationModule {
     }
 
     public boolean checkMultitask(boolean checkOffhand) {
-        if (checkOffhand && mc.player.getActiveHand() != Hand.MAIN_HAND) {
+        if (checkOffhand && mc.player.getUsedItemHand() != InteractionHand.MAIN_HAND) {
             return false;
         }
         return mc.player.isUsingItem();

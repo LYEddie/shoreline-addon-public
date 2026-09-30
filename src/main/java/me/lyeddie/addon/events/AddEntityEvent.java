@@ -1,6 +1,6 @@
 package me.lyeddie.addon.events;
 
-import net.minecraft.entity.Entity;
+import net.minecraft.world.entity.Entity;
 
 public class AddEntityEvent {
     private final Entity entity;

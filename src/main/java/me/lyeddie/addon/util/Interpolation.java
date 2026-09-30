@@ -1,15 +1,15 @@
 package me.lyeddie.addon.util;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 public class Interpolation implements Globals {
 
-    public static Vec3d getInterpolatedPosition(Entity entity, float tickDelta) {
-        return new Vec3d(entity.lastX + ((entity.getX() - entity.lastX) * tickDelta),
-            entity.lastY + ((entity.getY() - entity.lastY) * tickDelta),
-            entity.lastZ + ((entity.getZ() - entity.lastZ) * tickDelta));
+    public static Vec3 getInterpolatedPosition(Entity entity, float tickDelta) {
+        return new Vec3(entity.xo + ((entity.getX() - entity.xo) * tickDelta),
+            entity.yo + ((entity.getY() - entity.yo) * tickDelta),
+            entity.zo + ((entity.getZ() - entity.zo) * tickDelta));
     }
 
     public static float interpolateFloat(float prev, float value, float factor) {
@@ -20,9 +20,9 @@ public class Interpolation implements Globals {
         return prev + ((value - prev) * factor);
     }
 
-    public static Box getInterpolatedBox(Box prevBox, Box box) {
-        double delta = mc.isPaused() ? 1f : mc.getRenderTickCounter().getTickProgress(true);
-        return new Box(interpolateDouble(prevBox.minX, box.minX, delta),
+    public static AABB getInterpolatedBox(AABB prevBox, AABB box) {
+        double delta = mc.isPaused() ? 1f : mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
+        return new AABB(interpolateDouble(prevBox.minX, box.minX, delta),
             interpolateDouble(prevBox.minY, box.minY, delta),
             interpolateDouble(prevBox.minZ, box.minZ, delta),
             interpolateDouble(prevBox.maxX, box.maxX, delta),
@@ -30,9 +30,9 @@ public class Interpolation implements Globals {
             interpolateDouble(prevBox.maxZ, box.maxZ, delta));
     }
 
-    public static Box getInterpolatedEntityBox(Entity entity) {
-        Box box = entity.getBoundingBox();
-        Box prevBox = entity.getBoundingBox().offset(entity.lastX - entity.getX(), entity.lastY - entity.getY(), entity.lastZ - entity.getZ());
+    public static AABB getInterpolatedEntityBox(Entity entity) {
+        AABB box = entity.getBoundingBox();
+        AABB prevBox = entity.getBoundingBox().move(entity.xo - entity.getX(), entity.yo - entity.getY(), entity.zo - entity.getZ());
         return getInterpolatedBox(prevBox, box);
     }
 }

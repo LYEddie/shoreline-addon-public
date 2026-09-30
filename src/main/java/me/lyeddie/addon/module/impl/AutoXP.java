@@ -9,12 +9,12 @@ import me.lyeddie.addon.util.literal.EntityUtil;
 import me.lyeddie.addon.managers.impl.util.TickTimer;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ExperienceBottleItem;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
-import net.minecraft.util.Hand;
+import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ExperienceBottleItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 public class AutoXP extends RotationModule {
     private static AutoXP INST;
@@ -78,7 +78,7 @@ public class AutoXP extends RotationModule {
 
         int slot = -1;
         for (int i = 0; i < 9; i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
+            ItemStack stack = mc.player.getInventory().getItem(i);
             if (stack.getItem() instanceof ExperienceBottleItem) {
                 slot = i;
                 break;
@@ -91,23 +91,23 @@ public class AutoXP extends RotationModule {
 
         Managers.INVENTORY.setSlot(slot);
         if (rotateConfig.get()) {
-            setRotation(mc.player.getYaw(), 90.0f);
+            setRotation(mc.player.getYRot(), 90.0f);
             if (isRotationBlocked()) {
                 return;
             }
         }
         for (int i = 0; i < shiftTicksConfig.get(); i++) {
-            Managers.NETWORK.sendSequencedPacket(id -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, id, mc.player.getYaw(), mc.player.getPitch()));
+            Managers.NETWORK.sendSequencedPacket(id -> new ServerboundUseItemPacket(InteractionHand.MAIN_HAND, id, mc.player.getYRot(), mc.player.getXRot()));
             if (swingConfig.get()) {
-                mc.player.swingHand(Hand.MAIN_HAND);
+                mc.player.swing(InteractionHand.MAIN_HAND);
             }
         }
         Managers.INVENTORY.syncToClient();
         delayTimer.reset();
     }
 
-    private boolean areItemsFullDura(PlayerEntity player) {
-        if (!isItemFullDura(player.getMainHandStack()) || !isItemFullDura(player.getOffHandStack())) {
+    private boolean areItemsFullDura(Player player) {
+        if (!isItemFullDura(player.getMainHandItem()) || !isItemFullDura(player.getOffhandItem())) {
             return false;
         }
 
@@ -125,7 +125,7 @@ public class AutoXP extends RotationModule {
             return true;
         }
         int maxDura = stack.getMaxDamage();
-        int currentDura = stack.getDamage();
+        int currentDura = stack.getDamageValue();
         return currentDura == 0 || maxDura == 0;
     }
 

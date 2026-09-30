@@ -7,8 +7,8 @@ import me.lyeddie.addon.util.Helpers;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
+import net.minecraft.network.protocol.common.ClientboundPingPacket;
+import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
 import java.util.Arrays;
 
 public final class AntiCheatManager implements Globals, Helpers {
@@ -24,19 +24,19 @@ public final class AntiCheatManager implements Globals, Helpers {
 
     @EventHandler
     public void onPacketInbound(final PacketEvent.Receive event) {
-        if (event.packet instanceof CommonPingS2CPacket packet) {
+        if (event.packet instanceof ClientboundPingPacket packet) {
             if (index > 3) {
                 return;
             }
-            final int uid = packet.getParameter();
+            final int uid = packet.getId();
             transactions[index] = uid;
             ++index;
             if (index == 4) {
                 grimCheck();
             }
-        } else if (event.packet instanceof PlayerPositionLookS2CPacket packet) {
+        } else if (event.packet instanceof ClientboundPlayerPositionPacket packet) {
             lastSetback = new SetbackData(packet.change().position(),
-                System.currentTimeMillis(), packet.teleportId());
+                System.currentTimeMillis(), packet.id());
         }
     }
 

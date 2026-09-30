@@ -1,27 +1,27 @@
 package me.lyeddie.addon.events;
 
 import meteordevelopment.meteorclient.events.Cancellable;
-import net.minecraft.entity.MovementType;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.phys.Vec3;
 
 public class PlayerMoveEvent extends Cancellable {
 
-    private final MovementType type;
+    private final MoverType type;
     private double x, y, z;
 
-    public PlayerMoveEvent(MovementType type, Vec3d movement) {
+    public PlayerMoveEvent(MoverType type, Vec3 movement) {
         this.type = type;
-        this.x = movement.getX();
-        this.y = movement.getY();
-        this.z = movement.getZ();
+        this.x = movement.x();
+        this.y = movement.y();
+        this.z = movement.z();
     }
 
-    public MovementType getType() {
+    public MoverType getType() {
         return type;
     }
 
-    public Vec3d getMovement() {
-        return new Vec3d(x, y, z);
+    public Vec3 getMovement() {
+        return new Vec3(x, y, z);
     }
 
     public double getX() {

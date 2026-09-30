@@ -8,20 +8,20 @@ import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.entity.EntityPose;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
-import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
+import net.minecraft.network.protocol.game.ServerboundAcceptTeleportationPacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 public class ChorusControl extends AddonModule {
 
     private boolean cancelChorusTeleport;
     private int chorusTeleportId;
-    private PlayerPositionLookS2CPacket teleportPacket;
+    private ClientboundPlayerPositionPacket teleportPacket;
 
     public ChorusControl() {
         super(Shoreline.MAIN, "ChorusControl", "Allows player to control chorus teleports");
@@ -29,8 +29,8 @@ public class ChorusControl extends AddonModule {
 
     @Override
     public void onDeactivate() {
-        if (mc.getNetworkHandler() != null && teleportPacket != null) {
-            mc.getNetworkHandler().onPlayerPositionLook(teleportPacket);
+        if (mc.getConnection() != null && teleportPacket != null) {
+            mc.getConnection().handleMovePlayer(teleportPacket);
         }
         teleportPacket = null;
         cancelChorusTeleport = false;
@@ -39,18 +39,18 @@ public class ChorusControl extends AddonModule {
     @EventHandler
     public void onPacketOutbound(PacketEvent.Send event) {
         if (cancelChorusTeleport) {
-            if (event.packet instanceof PlayerMoveC2SPacket packet && packet.changesPosition()) {
+            if (event.packet instanceof ServerboundMovePlayerPacket packet && packet.hasPosition()) {
                 event.cancel();
-            } else if (event.packet instanceof TeleportConfirmC2SPacket packet) {
+            } else if (event.packet instanceof ServerboundAcceptTeleportationPacket packet) {
                 event.cancel();
-                chorusTeleportId = packet.getTeleportId();
+                chorusTeleportId = packet.getId();
             }
         }
     }
 
     @EventHandler
     public void onPacketInbound(PacketEvent.Receive event) {
-        if (event.packet instanceof PlayerPositionLookS2CPacket packet && cancelChorusTeleport) {
+        if (event.packet instanceof ClientboundPlayerPositionPacket packet && cancelChorusTeleport) {
             event.cancel();
             teleportPacket = packet;
         }
@@ -58,17 +58,17 @@ public class ChorusControl extends AddonModule {
 
     @EventHandler
     public void onTick(TickEvent.Pre event) {
-        if (mc.player.isSneaking() && cancelChorusTeleport) {
-            if (mc.getNetworkHandler() != null && teleportPacket != null) {
-                mc.getNetworkHandler().onPlayerPositionLook(teleportPacket);
+        if (mc.player.isShiftKeyDown() && cancelChorusTeleport) {
+            if (mc.getConnection() != null && teleportPacket != null) {
+                mc.getConnection().handleMovePlayer(teleportPacket);
             }
             teleportPacket = null;
             cancelChorusTeleport = false;
         }
         if (!cancelChorusTeleport && mc.player.isUsingItem()) {
-            ItemStack stack = mc.player.getStackInHand(mc.player.getActiveHand());
-            if (stack.isOf(Items.CHORUS_FRUIT)
-                && stack.getMaxUseTime(mc.player) - mc.player.getItemUseTime() <= 1) {
+            ItemStack stack = mc.player.getItemInHand(mc.player.getUsedItemHand());
+            if (stack.is(Items.CHORUS_FRUIT)
+                && stack.getUseDuration(mc.player) - mc.player.getTicksUsingItem() <= 1) {
                 cancelChorusTeleport = true;
             }
         }
@@ -77,8 +77,8 @@ public class ChorusControl extends AddonModule {
     @EventHandler
     public void onRender(Render3DEvent event) {
         if (teleportPacket != null) {
-            Vec3d vec3d = teleportPacket.change().position();
-            Box teleportBox = mc.player.getDimensions(EntityPose.STANDING).getBoxAt(vec3d);
+            Vec3 vec3d = teleportPacket.change().position();
+            AABB teleportBox = mc.player.getDimensions(Pose.STANDING).makeBoundingBox(vec3d);
             event.renderer.box(teleportBox, TabConfigs.get().getClampColor(60), TabConfigs.get().getClampColor(100), ShapeMode.Both, 0);
         }
     }

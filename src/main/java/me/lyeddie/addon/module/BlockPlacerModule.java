@@ -4,9 +4,9 @@ import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Category;
-import net.minecraft.block.Block;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 
 public class BlockPlacerModule extends CombatModule {
 
@@ -20,7 +20,7 @@ public class BlockPlacerModule extends CombatModule {
 
     protected int getBlockItemSlot(final Block block) {
         for (int i = 0; i < 9; i++) {
-            final ItemStack stack = mc.player.getInventory().getStack(i);
+            final ItemStack stack = mc.player.getInventory().getItem(i);
             if (stack.getItem() instanceof BlockItem blockItem
                 && blockItem.getBlock() == block) {
                 return i;

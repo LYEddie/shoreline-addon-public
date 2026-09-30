@@ -1,24 +1,24 @@
 package me.lyeddie.addon.events.staged;
 
 import meteordevelopment.meteorclient.events.Cancellable;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.phys.Vec3;
 
 // staged (pre?)
 public class UpdateVelocityEvent extends Cancellable {
 
-    private final Vec3d movementInput;
+    private final Vec3 movementInput;
     private final float speed;
     private final float yaw;
-    private Vec3d velocity;
+    private Vec3 velocity;
 
-    public UpdateVelocityEvent(Vec3d movementInput, float speed, float yaw, Vec3d velocity) {
+    public UpdateVelocityEvent(Vec3 movementInput, float speed, float yaw, Vec3 velocity) {
         this.movementInput = movementInput;
         this.speed = speed;
         this.yaw = yaw;
         this.velocity = velocity;
     }
 
-    public Vec3d getMovementInput() {
+    public Vec3 getMovementInput() {
         return this.movementInput;
     }
 
@@ -26,11 +26,11 @@ public class UpdateVelocityEvent extends Cancellable {
         return this.speed;
     }
 
-    public Vec3d getVelocity() {
+    public Vec3 getVelocity() {
         return this.velocity;
     }
 
-    public void setVelocity(Vec3d velocity) {
+    public void setVelocity(Vec3 velocity) {
         this.velocity = velocity;
     }
 }

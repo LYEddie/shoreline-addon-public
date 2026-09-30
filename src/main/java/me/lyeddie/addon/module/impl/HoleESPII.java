@@ -11,8 +11,7 @@ import meteordevelopment.meteorclient.settings.*;
 import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.util.math.Box;
-
+import net.minecraft.world.phys.AABB;
 import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -166,9 +165,9 @@ public class HoleESPII extends AddonModule {
     }
 
     private void renderHole(Render3DEvent event, Hole hole, SettingColor color1, SettingColor color2) {
-        Box render;
+        AABB render;
         if (hole.getSafety() == HoleType.VOID) {
-            render = new Box(hole.getPos().getX(), hole.getPos().getY(), hole.getPos().getZ(), hole.getPos().getX() + 1, hole.getPos().getY() + heightConfig.get(), hole.getPos().getZ() + 1);
+            render = new AABB(hole.getPos().getX(), hole.getPos().getY(), hole.getPos().getZ(), hole.getPos().getX() + 1, hole.getPos().getY() + heightConfig.get(), hole.getPos().getZ() + 1);
         } else {
             render = hole.getBoundingBox(heightConfig.get());
         }

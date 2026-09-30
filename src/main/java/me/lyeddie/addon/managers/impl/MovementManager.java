@@ -5,8 +5,8 @@ import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.util.Globals;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
-import net.minecraft.util.PlayerInput;
+import net.minecraft.network.protocol.game.ServerboundPlayerInputPacket;
+import net.minecraft.world.entity.player.Input;
 
 public class MovementManager implements Globals {
     private boolean packetSneaking;
@@ -16,7 +16,7 @@ public class MovementManager implements Globals {
     }
 
     public void setMotionY(double y) {
-        mc.player.setVelocity(mc.player.getVelocity().getX(), y, mc.player.getVelocity().getZ());
+        mc.player.setDeltaMovement(mc.player.getDeltaMovement().x(), y, mc.player.getDeltaMovement().z());
     }
 
     public void setPacketSneaking(final boolean packetSneaking) {
@@ -25,8 +25,8 @@ public class MovementManager implements Globals {
     }
 
     public void sendSneaking(boolean sneaking) {
-        PlayerInput input = mc.player.input.playerInput;
-        Managers.NETWORK.sendPacket(new PlayerInputC2SPacket(new PlayerInput(
+        Input input = mc.player.input.keyPresses;
+        Managers.NETWORK.sendPacket(new ServerboundPlayerInputPacket(new Input(
             input.forward(), input.backward(), input.left(), input.right(), input.jump(), sneaking, input.sprint())));
     }
 

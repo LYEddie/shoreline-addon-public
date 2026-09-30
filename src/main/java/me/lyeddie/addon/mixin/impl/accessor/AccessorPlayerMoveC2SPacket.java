@@ -1,11 +1,11 @@
 package me.lyeddie.addon.mixin.impl.accessor;
 
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-@Mixin(PlayerMoveC2SPacket.class)
+@Mixin(ServerboundMovePlayerPacket.class)
 public interface AccessorPlayerMoveC2SPacket {
 
     @Accessor("onGround")
@@ -24,11 +24,11 @@ public interface AccessorPlayerMoveC2SPacket {
     @Mutable
     void hookSetZ(double z);
 
-    @Accessor("yaw")
+    @Accessor("yRot")
     @Mutable
     void hookSetYaw(float yaw);
 
-    @Accessor("pitch")
+    @Accessor("xRot")
     @Mutable
     void hookSetPitch(float pitch);
 }

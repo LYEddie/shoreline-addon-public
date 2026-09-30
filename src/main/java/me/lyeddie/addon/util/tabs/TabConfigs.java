@@ -7,8 +7,8 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.System;
 import meteordevelopment.meteorclient.systems.Systems;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.Mth;
 import java.awt.Color;
 
 public class TabConfigs extends System<TabConfigs> implements Globals {
@@ -127,14 +127,14 @@ public class TabConfigs extends System<TabConfigs> implements Globals {
     }
 
     @Override
-    public NbtCompound toTag() {
-        NbtCompound tag = new NbtCompound();
+    public CompoundTag toTag() {
+        CompoundTag tag = new CompoundTag();
         tag.put("settings", settings.toTag());
         return tag;
     }
 
     @Override
-    public TabConfigs fromTag(NbtCompound tag) {
+    public TabConfigs fromTag(CompoundTag tag) {
         if (tag.contains("settings")) tag.getCompound("settings").ifPresent(settings::fromTag);
         return this;
     }
@@ -154,7 +154,7 @@ public class TabConfigs extends System<TabConfigs> implements Globals {
 
     public SettingColor getClampColor(int alpha) {
         SettingColor config = colorConfig.get();
-        return new SettingColor(config.r, config.g, config.b, MathHelper.clamp(alpha, 0, 255));
+        return new SettingColor(config.r, config.g, config.b, Mth.clamp(alpha, 0, 255));
     }
 
     public boolean getMovementFix() {

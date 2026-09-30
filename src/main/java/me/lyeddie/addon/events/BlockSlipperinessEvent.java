@@ -1,7 +1,7 @@
 package me.lyeddie.addon.events;
 
 import meteordevelopment.meteorclient.events.Cancellable;
-import net.minecraft.block.Block;
+import net.minecraft.world.level.block.Block;
 
 public class BlockSlipperinessEvent extends Cancellable {
 

@@ -7,10 +7,10 @@ import me.lyeddie.addon.events.VelocityMultiplierEvent;
 import me.lyeddie.addon.events.staged.UpdateVelocityEvent;
 import me.lyeddie.addon.util.Globals;
 import meteordevelopment.meteorclient.MeteorClient;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,24 +24,24 @@ public abstract class MixinEntity implements Globals {
     @Shadow
     public double fallDistance;
     @Shadow
-    protected Vec3d movementMultiplier;
+    protected Vec3 stuckSpeedMultiplier;
 
     @Shadow
-    private static Vec3d movementInputToVelocity(Vec3d movementInput, float speed, float yaw) {
+    private static Vec3 getInputVector(Vec3 movementInput, float speed, float yaw) {
         return null;
     }
 
     @Shadow
-    public abstract Box getBoundingBox();
+    public abstract AABB getBoundingBox();
 
     @Shadow
-    public abstract Vec3d getVelocity();
+    public abstract Vec3 getDeltaMovement();
 
     @Shadow
-    public abstract void setVelocity(Vec3d velocity);
+    public abstract void setDeltaMovement(Vec3 velocity);
 
-    @Inject(method = "slowMovement", at = @At(value = "HEAD"), cancellable = true)
-    private void hookSlowMovement(BlockState state, Vec3d multiplier, CallbackInfo ci) {
+    @Inject(method = "makeStuckInBlock", at = @At(value = "HEAD"), cancellable = true)
+    private void hookSlowMovement(BlockState state, Vec3 multiplier, CallbackInfo ci) {
         if ((Object) this != mc.player) {
             return;
         }
@@ -50,11 +50,11 @@ public abstract class MixinEntity implements Globals {
         if (slowMovementEvent.isCancelled()) {
             ci.cancel();
             this.fallDistance = 0.0f;
-            this.movementMultiplier = multiplier.multiply(slowMovementEvent.getMultiplier());
+            this.stuckSpeedMultiplier = multiplier.scale(slowMovementEvent.getMultiplier());
         }
     }
 
-    @Inject(method = "getVelocityMultiplier", at = @At("RETURN"), cancellable = true)
+    @Inject(method = "getBlockSpeedFactor", at = @At("RETURN"), cancellable = true)
     private void onGetVelocityMultiplier(CallbackInfoReturnable<Float> cir, @Local BlockState blockState) {
         if ((Object) this != mc.player) return;
         float original = cir.getReturnValueF();
@@ -64,23 +64,23 @@ public abstract class MixinEntity implements Globals {
         if (event.isCancelled()) {
             cir.setReturnValue(1.0f); // 0.3000iq play
         } else {
-            cir.setReturnValue(event.getBlock().getVelocityMultiplier());
+            cir.setReturnValue(event.getBlock().getSpeedFactor());
         }
     }
 
-    @Inject(method = "updateVelocity", at = @At(value = "HEAD"), cancellable = true)
-    private void hookUpdateVelocity(float speed, Vec3d movementInput, CallbackInfo ci) {
+    @Inject(method = "moveRelative", at = @At(value = "HEAD"), cancellable = true)
+    private void hookUpdateVelocity(float speed, Vec3 movementInput, CallbackInfo ci) {
         if ((Object) this == mc.player) {
-            UpdateVelocityEvent updateVelocityEvent = new UpdateVelocityEvent(movementInput, speed, mc.player.getYaw(), movementInputToVelocity(movementInput, speed, mc.player.getYaw()));
+            UpdateVelocityEvent updateVelocityEvent = new UpdateVelocityEvent(movementInput, speed, mc.player.getYRot(), getInputVector(movementInput, speed, mc.player.getYRot()));
             MeteorClient.EVENT_BUS.post(updateVelocityEvent);
             if (updateVelocityEvent.isCancelled()) {
                 ci.cancel();
-                mc.player.setVelocity(mc.player.getVelocity().add(updateVelocityEvent.getVelocity()));
+                mc.player.setDeltaMovement(mc.player.getDeltaMovement().add(updateVelocityEvent.getVelocity()));
             }
         }
     }
 
-    @Inject(method = "pushAwayFrom", at = @At(value = "HEAD"), cancellable = true)
+    @Inject(method = "push(Lnet/minecraft/world/entity/Entity;)V", at = @At(value = "HEAD"), cancellable = true)
     private void hookPushAwayFrom(Entity entity, CallbackInfo ci) {
         PushEntityEvent pushEntityEvent = new PushEntityEvent((Entity) (Object) this, entity);
         MeteorClient.EVENT_BUS.post(pushEntityEvent);

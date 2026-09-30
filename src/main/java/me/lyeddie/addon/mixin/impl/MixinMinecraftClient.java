@@ -6,13 +6,13 @@ import me.lyeddie.addon.events.ItemUseEvent;
 import me.lyeddie.addon.events.irrevocable.RunTickEvent;
 import me.lyeddie.addon.mixin.IMinecraftClient;
 import meteordevelopment.meteorclient.MeteorClient;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.RunArgs;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.network.ClientPlayerInteractionManager;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.main.GameConfig;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.multiplayer.MultiPlayerGameMode;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -23,18 +23,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.ArrayList;
 import java.util.List;
 
-@Mixin(MinecraftClient.class)
+@Mixin(Minecraft.class)
 public abstract class MixinMinecraftClient implements IMinecraftClient {
 
     @Unique
     private final List<Integer> deadList = new ArrayList<>();
     @Shadow
-    public ClientWorld world;
+    public ClientLevel level;
     @Shadow
-    public ClientPlayerEntity player;
+    public LocalPlayer player;
     @Shadow
     @Nullable
-    public ClientPlayerInteractionManager interactionManager;
+    public MultiPlayerGameMode gameMode;
     @Unique
     private boolean leftClick;
     @Unique
@@ -45,10 +45,10 @@ public abstract class MixinMinecraftClient implements IMinecraftClient {
     private boolean doItemUseCalled;
 
     @Shadow
-    protected abstract void doItemUse();
+    protected abstract void startUseItem();
 
     @Shadow
-    protected abstract boolean doAttack();
+    protected abstract boolean startAttack();
 
     @Override
     public void leftClick() {
@@ -60,12 +60,12 @@ public abstract class MixinMinecraftClient implements IMinecraftClient {
         rightClick = true;
     }
 
-    @Inject(method = {"<init>"}, at = {@At(value = "INVOKE", target = "Lnet/minecraft/text/KeybindTranslations;setFactory(Ljava/util/function/Function;)V")})
-    private void hookInit(RunArgs args, CallbackInfo info) {
+    @Inject(method = {"<init>"}, at = {@At(value = "INVOKE", target = "Lnet/minecraft/network/chat/contents/KeybindResolver;setKeyResolver(Ljava/util/function/Function;)V")})
+    private void hookInit(GameConfig args, CallbackInfo info) {
         Shoreline.LOG.info("init mixin at " + getClass().getSimpleName());
     }
 
-    @Inject(method = "run", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;render(Z)V", shift = At.Shift.BEFORE))
+    @Inject(method = "run", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;runTick(Z)V", shift = At.Shift.BEFORE))
     private void hookRun(CallbackInfo ci) {
         final RunTickEvent runTickEvent = new RunTickEvent();
         MeteorClient.EVENT_BUS.post(runTickEvent);
@@ -75,14 +75,14 @@ public abstract class MixinMinecraftClient implements IMinecraftClient {
     private void hookTickPre(CallbackInfo ci) {
         doAttackCalled = false;
         doItemUseCalled = false;
-        if (interactionManager == null) {
+        if (gameMode == null) {
             return;
         }
         if (leftClick && !doAttackCalled) {
-            doAttack();
+            startAttack();
         }
         if (rightClick && !doItemUseCalled) {
-            doItemUse();
+            startUseItem();
         }
         leftClick = false;
         rightClick = false;
@@ -90,14 +90,14 @@ public abstract class MixinMinecraftClient implements IMinecraftClient {
 
     @Inject(method = "tick", at = @At(value = "TAIL"))
     private void hookTickPost(CallbackInfo ci) {
-        if (player != null && world != null) {
-            for (Entity entity : world.getEntities()) {
+        if (player != null && level != null) {
+            for (Entity entity : level.entitiesForRendering()) {
                 if (entity instanceof LivingEntity e) {
-                    if (e.isDead() && !deadList.contains(e.getId())) {
+                    if (e.isDeadOrDying() && !deadList.contains(e.getId())) {
                         EntityDeathEvent entityDeathEvent = new EntityDeathEvent(e);
                         MeteorClient.EVENT_BUS.post(entityDeathEvent);
                         deadList.add(e.getId());
-                    } else if (!e.isDead()) {
+                    } else if (!e.isDeadOrDying()) {
                         deadList.remove((Integer) e.getId());
                     }
                 }
@@ -105,7 +105,7 @@ public abstract class MixinMinecraftClient implements IMinecraftClient {
         }
     }
 
-    @Inject(method = "doItemUse", at = @At(value = "HEAD"), cancellable = true)
+    @Inject(method = "startUseItem", at = @At(value = "HEAD"), cancellable = true)
     private void hookDoItemUse(CallbackInfo ci) {
         doItemUseCalled = true;
         ItemUseEvent itemUseEvent = new ItemUseEvent();

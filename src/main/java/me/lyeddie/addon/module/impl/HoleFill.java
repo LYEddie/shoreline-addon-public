@@ -14,16 +14,16 @@ import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.decoration.EndCrystalEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -135,7 +135,7 @@ public class HoleFill extends ObsidianPlacerModule {
     public void onPlayerTick(PlayerTickEvent event) {
         int blocksPlaced = 0;
 
-        if ((!multitaskConfig.get() && checkMultitask()) || (stopMotionConfig.get() && !mc.player.isOnGround())) {
+        if ((!multitaskConfig.get() && checkMultitask()) || (stopMotionConfig.get() && !mc.player.onGround())) {
             fills.clear();
             return;
         }
@@ -164,7 +164,7 @@ public class HoleFill extends ObsidianPlacerModule {
             }
 
             if (autoConfig.get()) {
-                for (PlayerEntity entity : mc.world.getPlayers()) {
+                for (Player entity : mc.level.players()) {
                     if (entity == mc.player || Friends.get().isFriend(entity)) {
                         continue;
                     }
@@ -172,7 +172,7 @@ public class HoleFill extends ObsidianPlacerModule {
                     if (dist > enemyRangeConfig.get()) {
                         continue;
                     }
-                    if (entity.getY() >= hole.getY() &&
+                    if (entity.getY() >= hole.y() &&
                         hole.squaredDistanceTo(entity) > getValueSq(targetRangeConfig.get())) {
                         continue;
                     }
@@ -195,9 +195,9 @@ public class HoleFill extends ObsidianPlacerModule {
             attackBlockingCrystals(fills);
         }
 
-        Vec3d prevMotion = mc.player.getVelocity();
+        Vec3 prevMotion = mc.player.getDeltaMovement();
         if (stopMotionConfig.get()) {
-            mc.player.setVelocity(0.0, 0.0, 0.0);
+            mc.player.setDeltaMovement(0.0, 0.0, 0.0);
         }
 
         while (blocksPlaced < shiftTicksConfig.get()) {
@@ -215,19 +215,19 @@ public class HoleFill extends ObsidianPlacerModule {
         }
 
         if (stopMotionConfig.get()) {
-            mc.player.setVelocity(prevMotion);
+            mc.player.setDeltaMovement(prevMotion);
         }
     }
 
     public void attackBlockingCrystals(List<BlockPos> posList) {
         for (BlockPos pos : posList) {
-            Entity crystalEntity = mc.world.getOtherEntities(null, new Box(pos)).stream()
-                .filter(e -> e instanceof EndCrystalEntity).findFirst().orElse(null);
+            Entity crystalEntity = mc.level.getEntities(null, new AABB(pos)).stream()
+                .filter(e -> e instanceof EndCrystal).findFirst().orElse(null);
             if (crystalEntity == null) {
                 continue;
             }
-            Managers.NETWORK.sendPacket(PlayerInteractEntityC2SPacket.attack(crystalEntity, mc.player.isSneaking()));
-            Managers.NETWORK.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+            Managers.NETWORK.sendPacket(ServerboundInteractPacket.createAttackPacket(crystalEntity, mc.player.isShiftKeyDown()));
+            Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
             return;
         }
     }

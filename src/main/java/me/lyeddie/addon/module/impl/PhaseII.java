@@ -15,22 +15,25 @@ import me.lyeddie.addon.util.literal.RotationUtil;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.ScaffoldingBlock;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.decoration.ItemFrameEntity;
-import net.minecraft.item.EnderPearlItem;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.*;
-import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.decoration.ItemFrame;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.item.EnderpearlItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.ScaffoldingBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.Shapes;
 
 public class PhaseII extends ObsidianPlacerModule {
     private static PhaseII INST;
@@ -129,40 +132,40 @@ public class PhaseII extends ObsidianPlacerModule {
         if (modeConfig.get() == PhaseMode.PEARL) {
             int pearlSlot = -1;
             for (int i = 0; i < 45; i++) {
-                ItemStack stack = mc.player.getInventory().getStack(i);
-                if (stack.getItem() instanceof EnderPearlItem) {
+                ItemStack stack = mc.player.getInventory().getItem(i);
+                if (stack.getItem() instanceof EnderpearlItem) {
                     pearlSlot = i;
                     break;
                 }
             }
 
-            if (pearlSlot == -1 || mc.player.getItemCooldownManager().isCoolingDown(mc.player.getInventory().getStack(pearlSlot))) {
+            if (pearlSlot == -1 || mc.player.getCooldowns().isOnCooldown(mc.player.getInventory().getItem(pearlSlot))) {
                 toggle();
                 return;
             }
 
-            float prevYaw = mc.player.getYaw();
-            float prevPitch = mc.player.getPitch();
-            final Vec3d pearlTargetVec = new Vec3d(Math.floor(mc.player.getX()) + 0.5, 0.0, Math.floor(mc.player.getZ()) + 0.5);
-            float[] rotations = RotationUtil.getRotationsTo(mc.player.getEyePos(), pearlTargetVec);
+            float prevYaw = mc.player.getYRot();
+            float prevPitch = mc.player.getXRot();
+            final Vec3 pearlTargetVec = new Vec3(Math.floor(mc.player.getX()) + 0.5, 0.0, Math.floor(mc.player.getZ()) + 0.5);
+            float[] rotations = RotationUtil.getRotationsTo(mc.player.getEyePosition(), pearlTargetVec);
             float yaw = rotations[0] + 180.0f;
 
             if (attackConfig.get()) {
                 BlockHitResult hitResult = (BlockHitResult) RayCastUtil.rayCast(3.0, new float[]{yaw, 60.0f});
-                for (Entity entity : mc.world.getOtherEntities(null, new Box(hitResult.getBlockPos()).expand(0.2))) {
-                    if (entity instanceof ItemFrameEntity itemFrameEntity) {
-                        if (!itemFrameEntity.getHeldItemStack().isEmpty()) {
-                            Managers.NETWORK.sendPacket(PlayerInteractEntityC2SPacket.attack(entity, mc.player.isSneaking()));
+                for (Entity entity : mc.level.getEntities(null, new AABB(hitResult.getBlockPos()).inflate(0.2))) {
+                    if (entity instanceof ItemFrame itemFrameEntity) {
+                        if (!itemFrameEntity.getItem().isEmpty()) {
+                            Managers.NETWORK.sendPacket(ServerboundInteractPacket.createAttackPacket(entity, mc.player.isShiftKeyDown()));
                         }
-                        Managers.NETWORK.sendPacket(PlayerInteractEntityC2SPacket.attack(entity, mc.player.isSneaking()));
-                        Managers.NETWORK.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                        Managers.NETWORK.sendPacket(ServerboundInteractPacket.createAttackPacket(entity, mc.player.isShiftKeyDown()));
+                        Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
                     }
                 }
 
-                BlockState state = mc.world.getBlockState(mc.player.getBlockPos());
+                BlockState state = mc.level.getBlockState(mc.player.blockPosition());
                 if (state.getBlock() instanceof ScaffoldingBlock) {
-                    Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, mc.player.getBlockPos(), Direction.UP));
-                    Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, mc.player.getBlockPos(), Direction.UP));
+                    Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, mc.player.blockPosition(), Direction.UP));
+                    Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, mc.player.blockPosition(), Direction.UP));
                 }
             }
 
@@ -172,7 +175,7 @@ public class PhaseII extends ObsidianPlacerModule {
                     yaw1 += 360.0f;
                 }
 
-                BlockPos blockPos = mc.player.getBlockPos();
+                BlockPos blockPos = mc.player.blockPosition();
                 if (yaw1 >= 22.5 && yaw1 < 67.5) {
                     blockPos = blockPos.south().west();
                 } else if (yaw1 >= 67.5 && yaw1 < 112.5) {
@@ -192,7 +195,7 @@ public class PhaseII extends ObsidianPlacerModule {
                 }
 
                 BlockSlot blockItem = getResistantBlockItem();
-                if (blockItem != null && blockPos != null && !mc.world.getBlockState(blockPos.down()).isReplaceable()) {
+                if (blockItem != null && blockPos != null && !mc.level.getBlockState(blockPos.below()).canBeReplaced()) {
                     Managers.INTERACT.placeBlock(blockPos, blockItem.block(), blockItem.slot(), strictDirectionConfig.get(), false, true, (state, angles) -> {
                             if (state) {
                                 Managers.ROTATION.setRotationSilent(angles[0], angles[1]);
@@ -205,26 +208,26 @@ public class PhaseII extends ObsidianPlacerModule {
 
             setRotationClient(yaw, pitchConfig.get());
             if (swapAltConfig.get()) {
-                mc.interactionManager.clickSlot(0, pearlSlot < 9 ? pearlSlot + 36 : pearlSlot, 0, SlotActionType.PICKUP, mc.player);
-                mc.interactionManager.clickSlot(0, mc.player.getInventory().getSelectedSlot() + 36, 0, SlotActionType.PICKUP, mc.player);
-                mc.interactionManager.clickSlot(0, pearlSlot < 9 ? pearlSlot + 36 : pearlSlot, 0, SlotActionType.PICKUP, mc.player);
+                mc.gameMode.handleInventoryMouseClick(0, pearlSlot < 9 ? pearlSlot + 36 : pearlSlot, 0, ClickType.PICKUP, mc.player);
+                mc.gameMode.handleInventoryMouseClick(0, mc.player.getInventory().getSelectedSlot() + 36, 0, ClickType.PICKUP, mc.player);
+                mc.gameMode.handleInventoryMouseClick(0, pearlSlot < 9 ? pearlSlot + 36 : pearlSlot, 0, ClickType.PICKUP, mc.player);
             } else if (pearlSlot < 9) {
                 Managers.INVENTORY.setSlot(pearlSlot);
             }
 
             setRotationSilent(yaw, pitchConfig.get());
-            Managers.NETWORK.sendSequencedPacket(id -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, id, yaw, pitchConfig.get()));
+            Managers.NETWORK.sendSequencedPacket(id -> new ServerboundUseItemPacket(InteractionHand.MAIN_HAND, id, yaw, pitchConfig.get()));
             Managers.PEARL.setLastThrownAngles(new float[]{yaw, pitchConfig.get()});
             if (swingConfig.get()) {
-                mc.player.swingHand(Hand.MAIN_HAND);
+                mc.player.swing(InteractionHand.MAIN_HAND);
             } else {
-                Managers.NETWORK.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
             }
 
             if (swapAltConfig.get()) {
-                mc.interactionManager.clickSlot(0, pearlSlot < 9 ? pearlSlot + 36 : pearlSlot, 0, SlotActionType.PICKUP, mc.player);
-                mc.interactionManager.clickSlot(0, mc.player.getInventory().getSelectedSlot() + 36, 0, SlotActionType.PICKUP, mc.player);
-                mc.interactionManager.clickSlot(0, pearlSlot < 9 ? pearlSlot + 36 : pearlSlot, 0, SlotActionType.PICKUP, mc.player);
+                mc.gameMode.handleInventoryMouseClick(0, pearlSlot < 9 ? pearlSlot + 36 : pearlSlot, 0, ClickType.PICKUP, mc.player);
+                mc.gameMode.handleInventoryMouseClick(0, mc.player.getInventory().getSelectedSlot() + 36, 0, ClickType.PICKUP, mc.player);
+                mc.gameMode.handleInventoryMouseClick(0, pearlSlot < 9 ? pearlSlot + 36 : pearlSlot, 0, ClickType.PICKUP, mc.player);
             } else if (pearlSlot < 9) {
                 Managers.INVENTORY.syncToClient();
             }
@@ -233,9 +236,9 @@ public class PhaseII extends ObsidianPlacerModule {
             setRotationClient(prevYaw, prevPitch);
             toggle();
         } else if (autoClipConfig.get()) {
-            double cos = Math.cos(Math.toRadians(mc.player.getYaw() + 90.0f));
-            double sin = Math.sin(Math.toRadians(mc.player.getYaw() + 90.0f));
-            mc.player.setPosition(mc.player.getX() + (1.0 * blocksConfig.get() * cos + 0.0 * blocksConfig.get() * sin),
+            double cos = Math.cos(Math.toRadians(mc.player.getYRot() + 90.0f));
+            double sin = Math.sin(Math.toRadians(mc.player.getYRot() + 90.0f));
+            mc.player.setPos(mc.player.getX() + (1.0 * blocksConfig.get() * cos + 0.0 * blocksConfig.get() * sin),
                 mc.player.getY(), mc.player.getZ() + (1.0 * blocksConfig.get() * sin - 0.0 * blocksConfig.get() * cos));
         }
     }
@@ -247,16 +250,16 @@ public class PhaseII extends ObsidianPlacerModule {
 
     @EventHandler
     public void onTick(TickEvent.Pre event) {
-        if (modeConfig.get() != PhaseMode.CLIP || !mc.player.isOnGround() || mc.player.isRiding()) {
+        if (modeConfig.get() != PhaseMode.CLIP || !mc.player.onGround() || mc.player.isHandsBusy()) {
             return;
         }
 
-        Vec3d vec3d = mc.player.getBlockPos().toCenterPos();
+        Vec3 vec3d = mc.player.blockPosition().getCenter();
         boolean flagX = (vec3d.x - mc.player.getX()) > 0;
         boolean flagZ = (vec3d.z - mc.player.getZ()) > 0;
         double x = vec3d.x + 0.20000000009497754 * (flagX ? -1 : 1);
         double z = vec3d.z + 0.2000000000949811 * (flagZ ? -1 : 1);
-        mc.player.setPosition(x, mc.player.getY(), z);
+        mc.player.setPos(x, mc.player.getY(), z);
         toggle();
     }
 
@@ -267,22 +270,22 @@ public class PhaseII extends ObsidianPlacerModule {
         }
         switch (modeConfig.get()) {
             case NORMAL -> {
-                if (event.getVoxelShape() != VoxelShapes.empty() && event.getVoxelShape().getBoundingBox().maxY > mc.player.getBoundingBox().minY && mc.player.isSneaking()) {
+                if (event.getVoxelShape() != Shapes.empty() && event.getVoxelShape().bounds().maxY > mc.player.getBoundingBox().minY && mc.player.isShiftKeyDown()) {
                     event.cancel();
-                    event.setVoxelShape(VoxelShapes.empty());
+                    event.setVoxelShape(Shapes.empty());
                 }
             }
             case SAND -> {
                 event.cancel();
-                event.setVoxelShape(VoxelShapes.empty());
-                mc.player.noClip = true;
+                event.setVoxelShape(Shapes.empty());
+                mc.player.noPhysics = true;
             }
             case CLIMB -> {
                 if (mc.player.horizontalCollision) {
                     event.cancel();
-                    event.setVoxelShape(VoxelShapes.empty());
+                    event.setVoxelShape(Shapes.empty());
                 }
-                if (mc.player.input.playerInput.sneak() || (mc.player.input.playerInput.jump()
+                if (mc.player.input.keyPresses.shift() || (mc.player.input.keyPresses.jump()
                     && event.getPos().getY() > mc.player.getY())) {
                     event.cancel();
                 }
@@ -292,7 +295,7 @@ public class PhaseII extends ObsidianPlacerModule {
                     return;
                 }
                 event.cancel();
-                event.setVoxelShape(VoxelShapes.empty());
+                event.setVoxelShape(Shapes.empty());
             }
         }
     }
@@ -310,37 +313,37 @@ public class PhaseII extends ObsidianPlacerModule {
     private void handlePlayerUpdate() {
         switch (modeConfig.get()) {
             case NORMAL -> {
-                if (mc.player.isSneaking() && isPhasing()) {
-                    float yaw = mc.player.getYaw();
-                    mc.player.setBoundingBox(mc.player.getBoundingBox().offset(
+                if (mc.player.isShiftKeyDown() && isPhasing()) {
+                    float yaw = mc.player.getYRot();
+                    mc.player.setBoundingBox(mc.player.getBoundingBox().move(
                         distanceConfig.get() * Math.cos(Math.toRadians(yaw + 90.0f)),
                         0.0, distanceConfig.get() * Math.sin(Math.toRadians(yaw + 90.0f))));
                 }
             }
             case SAND -> {
                 Managers.MOVEMENT.setMotionY(0.0);
-                if (mc.isWindowFocused()) {
-                    if (mc.player.input.playerInput.jump()) {
-                        Managers.MOVEMENT.setMotionY(mc.player.getVelocity().y + 0.3);
+                if (mc.isWindowActive()) {
+                    if (mc.player.input.keyPresses.jump()) {
+                        Managers.MOVEMENT.setMotionY(mc.player.getDeltaMovement().y + 0.3);
                     }
-                    if (mc.player.input.playerInput.sneak()) {
-                        Managers.MOVEMENT.setMotionY(mc.player.getVelocity().y - 0.3);
+                    if (mc.player.input.keyPresses.shift()) {
+                        Managers.MOVEMENT.setMotionY(mc.player.getDeltaMovement().y - 0.3);
                     }
                 }
-                mc.player.noClip = true;
+                mc.player.noPhysics = true;
             }
             case GRIM -> {
                 if (grimPos == null) {
-                    BlockPos downPos = EntityUtil.getRoundedBlockPos(mc.player).down();
-                    BlockState state1 = mc.world.getBlockState(downPos);
+                    BlockPos downPos = EntityUtil.getRoundedBlockPos(mc.player).below();
+                    BlockState state1 = mc.level.getBlockState(downPos);
                     if (!state1.isAir() && !BlastResistantBlocks.isUnbreakable(state1.getBlock())) {
                         grimPos = downPos;
                     }
                     return;
                 }
-                Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, grimPos, Direction.UP));
-                Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, grimPos, Direction.UP));
-                Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, grimPos, Direction.UP));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, grimPos, Direction.UP));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, grimPos, Direction.UP));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, grimPos, Direction.UP));
             }
         }
     }
@@ -351,12 +354,12 @@ public class PhaseII extends ObsidianPlacerModule {
     }
 
     public boolean isPhasing() {
-        Box bb = mc.player.getBoundingBox();
-        for (int x = MathHelper.floor(bb.minX); x < MathHelper.floor(bb.maxX) + 1; x++) {
-            for (int y = MathHelper.floor(bb.minY); y < MathHelper.floor(bb.maxY) + 1; y++) {
-                for (int z = MathHelper.floor(bb.minZ); z < MathHelper.floor(bb.maxZ) + 1; z++) {
-                    if (mc.world.getBlockState(new BlockPos(x, y, z)).blocksMovement()) {
-                        if (bb.intersects(new Box(x, y, z, x + 1.0, y + 1.0, z + 1.0))) {
+        AABB bb = mc.player.getBoundingBox();
+        for (int x = Mth.floor(bb.minX); x < Mth.floor(bb.maxX) + 1; x++) {
+            for (int y = Mth.floor(bb.minY); y < Mth.floor(bb.maxY) + 1; y++) {
+                for (int z = Mth.floor(bb.minZ); z < Mth.floor(bb.maxZ) + 1; z++) {
+                    if (mc.level.getBlockState(new BlockPos(x, y, z)).blocksMotion()) {
+                        if (bb.intersects(new AABB(x, y, z, x + 1.0, y + 1.0, z + 1.0))) {
                             return true;
                         }
                     }

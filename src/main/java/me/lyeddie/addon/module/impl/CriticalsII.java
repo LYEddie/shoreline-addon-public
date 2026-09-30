@@ -16,16 +16,16 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.block.state.BlockState;
 
 import static me.lyeddie.addon.util.Globals.RANDOM;
 
@@ -80,7 +80,7 @@ public class CriticalsII extends AddonModule {
     @EventHandler
     public void onPacketOutbound(PacketEvent.Send event) {
 
-        if (mc.player == null || mc.world == null) {
+        if (mc.player == null || mc.level == null) {
             return;
         }
 
@@ -102,11 +102,11 @@ public class CriticalsII extends AddonModule {
 
         if (event.packet instanceof IPlayerInteractEntityC2SPacket packet
             && packet.getType() == InteractType.ATTACK) {
-            if (mc.player.isRiding() || mc.player.isGliding()
-                || mc.player.isTouchingWater()
+            if (mc.player.isHandsBusy() || mc.player.isFallFlying()
+                || mc.player.isInWater()
                 || mc.player.isInLava()
-                || mc.player.isHoldingOntoLadder()
-                || mc.player.hasStatusEffect(StatusEffects.BLINDNESS)
+                || mc.player.isSuppressingSlidingDownLadder()
+                || mc.player.hasEffect(MobEffects.BLINDNESS)
                 || InventoryUtil.isHolding32k()) {
                 return;
             }
@@ -118,9 +118,9 @@ public class CriticalsII extends AddonModule {
             if (EntityUtil.isVehicle(e)) {
                 if (modeConfig.get() == CritMode.PACKET) {
                     for (int i = 0; i < 5; ++i) {
-                        Managers.NETWORK.sendQuietPacket(PlayerInteractEntityC2SPacket.attack(e,
+                        Managers.NETWORK.sendQuietPacket(ServerboundInteractPacket.createAttackPacket(e,
                             Managers.POSITION.isSneaking()));
-                        Managers.NETWORK.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                        Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
                     }
                 }
                 return;
@@ -128,7 +128,7 @@ public class CriticalsII extends AddonModule {
 
             postUpdateSprint = mc.player.isSprinting();
             if (postUpdateSprint) {
-                Managers.NETWORK.sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Action.STOP_SPRINTING));
             }
 
             attackSpoofJump(e);
@@ -142,25 +142,25 @@ public class CriticalsII extends AddonModule {
         double z = Managers.POSITION.getZ();
         switch (modeConfig.get()) {
             case VANILLA -> {
-                if (mc.player.isOnGround() && !mc.player.input.playerInput.jump()) {
+                if (mc.player.onGround() && !mc.player.input.keyPresses.jump()) {
                     double d = 1.0e-7 + 1.0e-7 * (1.0 + RANDOM.nextInt(RANDOM.nextBoolean() ? 34 : 43));
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 0.1016f + d * 3.0f, z, false, mc.player.horizontalCollision));
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 0.0202f + d * 2.0f, z, false, mc.player.horizontalCollision));
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 3.239e-4 + d, z, false, mc.player.horizontalCollision));
-                    mc.player.addCritParticles(e);
+                    Managers.NETWORK.sendPacket(new ServerboundMovePlayerPacket.Pos(x, y + 0.1016f + d * 3.0f, z, false, mc.player.horizontalCollision));
+                    Managers.NETWORK.sendPacket(new ServerboundMovePlayerPacket.Pos(x, y + 0.0202f + d * 2.0f, z, false, mc.player.horizontalCollision));
+                    Managers.NETWORK.sendPacket(new ServerboundMovePlayerPacket.Pos(x, y + 3.239e-4 + d, z, false, mc.player.horizontalCollision));
+                    mc.player.crit(e);
                 }
             }
             case PACKET -> {
-                if (mc.player.isOnGround() && !mc.player.input.playerInput.jump()) {
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 0.0625f, z, false, mc.player.horizontalCollision));
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y, z, false, mc.player.horizontalCollision));
-                    mc.player.addCritParticles(e);
+                if (mc.player.onGround() && !mc.player.input.keyPresses.jump()) {
+                    Managers.NETWORK.sendPacket(new ServerboundMovePlayerPacket.Pos(x, y + 0.0625f, z, false, mc.player.horizontalCollision));
+                    Managers.NETWORK.sendPacket(new ServerboundMovePlayerPacket.Pos(x, y, z, false, mc.player.horizontalCollision));
+                    mc.player.crit(e);
                 }
             }
             case PACKET_STRICT -> {
-                if (attackTimer.passed(500) && mc.player.isOnGround() && !mc.player.input.playerInput.jump()) {
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 1.1e-7f, z, false, mc.player.horizontalCollision));
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x, y + 1.0e-8f, z, false, mc.player.horizontalCollision));
+                if (attackTimer.passed(500) && mc.player.onGround() && !mc.player.input.keyPresses.jump()) {
+                    Managers.NETWORK.sendPacket(new ServerboundMovePlayerPacket.Pos(x, y + 1.1e-7f, z, false, mc.player.horizontalCollision));
+                    Managers.NETWORK.sendPacket(new ServerboundMovePlayerPacket.Pos(x, y + 1.0e-8f, z, false, mc.player.horizontalCollision));
                     postUpdateGround = true;
                     attackTimer.reset();
                 }
@@ -174,16 +174,16 @@ public class CriticalsII extends AddonModule {
                     return;
                 }
 
-                if (attackTimer.passed(250) && mc.player.isOnGround() && !mc.player.isCrawling()) {
+                if (attackTimer.passed(250) && mc.player.onGround() && !mc.player.isVisuallyCrawling()) {
                     float yaw = Managers.ROTATION.getServerYaw();
                     float pitch = Managers.ROTATION.getServerPitch();
                     if (Managers.ROTATION.isRotating()) {
                         yaw = Managers.ROTATION.getRotationYaw();
                         pitch = Managers.ROTATION.getRotationPitch();
                     }
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(x, y + 0.0625, z, yaw, pitch, false, mc.player.horizontalCollision));
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(x, y + 0.0625013579, z, yaw, pitch, false, mc.player.horizontalCollision));
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(x, y + 1.3579e-6, z, yaw, pitch, false, mc.player.horizontalCollision));
+                    Managers.NETWORK.sendPacket(new ServerboundMovePlayerPacket.PosRot(x, y + 0.0625, z, yaw, pitch, false, mc.player.horizontalCollision));
+                    Managers.NETWORK.sendPacket(new ServerboundMovePlayerPacket.PosRot(x, y + 0.0625013579, z, yaw, pitch, false, mc.player.horizontalCollision));
+                    Managers.NETWORK.sendPacket(new ServerboundMovePlayerPacket.PosRot(x, y + 1.3579e-6, z, yaw, pitch, false, mc.player.horizontalCollision));
                     attackTimer.reset();
                 }
             }
@@ -196,16 +196,16 @@ public class CriticalsII extends AddonModule {
                     return;
                 }
 
-                if (mc.player.isOnGround() && !mc.player.isCrawling()) {
+                if (mc.player.onGround() && !mc.player.isVisuallyCrawling()) {
                     float yaw = Managers.ROTATION.getServerYaw();
                     float pitch = Managers.ROTATION.getServerPitch();
                     if (Managers.ROTATION.isRotating()) {
                         yaw = Managers.ROTATION.getRotationYaw();
                         pitch = Managers.ROTATION.getRotationPitch();
                     }
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(x, y, z, yaw, pitch, true, mc.player.horizontalCollision));
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(x, y + 0.0625f, z, yaw, pitch, false, mc.player.horizontalCollision));
-                    Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.Full(x, y + 0.04535f, z, yaw, pitch, false, mc.player.horizontalCollision));
+                    Managers.NETWORK.sendPacket(new ServerboundMovePlayerPacket.PosRot(x, y, z, yaw, pitch, true, mc.player.horizontalCollision));
+                    Managers.NETWORK.sendPacket(new ServerboundMovePlayerPacket.PosRot(x, y + 0.0625f, z, yaw, pitch, false, mc.player.horizontalCollision));
+                    Managers.NETWORK.sendPacket(new ServerboundMovePlayerPacket.PosRot(x, y + 0.04535f, z, yaw, pitch, false, mc.player.horizontalCollision));
                 }
             }
             case LOW_HOP -> {
@@ -220,14 +220,14 @@ public class CriticalsII extends AddonModule {
             return;
         }
 
-        if (event.getPacket() instanceof PlayerInteractEntityC2SPacket) {
+        if (event.getPacket() instanceof ServerboundInteractPacket) {
             if (postUpdateGround) {
-                Managers.NETWORK.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(mc.player.getX(), mc.player.getY(), mc.player.getZ(), false, mc.player.horizontalCollision));
+                Managers.NETWORK.sendPacket(new ServerboundMovePlayerPacket.Pos(mc.player.getX(), mc.player.getY(), mc.player.getZ(), false, mc.player.horizontalCollision));
                 postUpdateGround = false;
             }
 
             if (postUpdateSprint) {
-                Managers.NETWORK.sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_SPRINTING));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Action.START_SPRINTING));
                 postUpdateSprint = false;
             }
         }
@@ -238,10 +238,10 @@ public class CriticalsII extends AddonModule {
     }
 
     public boolean isDoublePhased() {
-        for (BlockPos pos : PositionUtil.getAllInBox(mc.player.getBoundingBox(), mc.player.getBlockPos())) {
-            BlockState state = mc.world.getBlockState(pos);
-            BlockState state2 = mc.world.getBlockState(pos.up());
-            if (state.blocksMovement() && state2.blocksMovement()) {
+        for (BlockPos pos : PositionUtil.getAllInBox(mc.player.getBoundingBox(), mc.player.blockPosition())) {
+            BlockState state = mc.level.getBlockState(pos);
+            BlockState state2 = mc.level.getBlockState(pos.above());
+            if (state.blocksMotion() && state2.blocksMotion()) {
                 return true;
             }
         }
@@ -250,7 +250,7 @@ public class CriticalsII extends AddonModule {
 
     public boolean isPhased() {
         for (BlockPos pos : PositionUtil.getAllInBox(mc.player.getBoundingBox())) {
-            if (mc.world.getBlockState(pos).blocksMovement()) {
+            if (mc.level.getBlockState(pos).blocksMotion()) {
                 return true;
             }
         }

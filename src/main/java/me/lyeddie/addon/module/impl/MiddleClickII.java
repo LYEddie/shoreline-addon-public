@@ -12,14 +12,14 @@ import meteordevelopment.meteorclient.systems.friends.Friend;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.meteorclient.utils.misc.input.KeyAction;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.util.hit.HitResult;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
 
 public class MiddleClickII extends AddonModule {
     private static MiddleClickII INST;
@@ -45,13 +45,13 @@ public class MiddleClickII extends AddonModule {
 
     @EventHandler
     public void onMouseClick(MouseClickEvent event) {
-        if (mc.player == null || mc.interactionManager == null) {
+        if (mc.player == null || mc.gameMode == null) {
             return;
         }
-        if (event.action == KeyAction.Press && event.button() == 2 && this.mc.currentScreen == null) {
-            double d = mc.player.getEntityInteractionRange();
+        if (event.action == KeyAction.Press && event.button() == 2 && this.mc.screen == null) {
+            double d = mc.player.entityInteractionRange();
             HitResult result = RayCastUtil.raycastEntity(d);
-            if (result != null && result.getType() == HitResult.Type.ENTITY && friendConfig.get() && ((EntityHitResult) result).getEntity() instanceof PlayerEntity target) {
+            if (result != null && result.getType() == HitResult.Type.ENTITY && friendConfig.get() && ((EntityHitResult) result).getEntity() instanceof Player target) {
                 Friend playerObj = Friends.get().get(target.getName().getString());
                 if (Friends.get().isFriend(target)) {
                     Friends.get().remove(playerObj);
@@ -60,7 +60,7 @@ public class MiddleClickII extends AddonModule {
                 }
             } else {
                 Item item = null;
-                if (mc.player.isGliding() && fireworkConfig.get()) {
+                if (mc.player.isFallFlying() && fireworkConfig.get()) {
                     item = Items.FIREWORK_ROCKET;
                 } else if (pearlConfig.get()) {
                     item = Items.ENDER_PEARL;
@@ -70,7 +70,7 @@ public class MiddleClickII extends AddonModule {
                 }
                 int slot = -1;
                 for (int i = 0; i < 45; i++) {
-                    ItemStack stack = mc.player.getInventory().getStack(i);
+                    ItemStack stack = mc.player.getInventory().getItem(i);
                     if (stack.getItem() == item) {
                         slot = i;
                         break;
@@ -83,16 +83,16 @@ public class MiddleClickII extends AddonModule {
 
                 if (slot < 9) {
                     Managers.INVENTORY.setSlot(slot);
-                    mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
+                    mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
                     Managers.INVENTORY.syncToClient();
                 } else {
-                    mc.interactionManager.clickSlot(0, slot, 0, SlotActionType.PICKUP, mc.player);
-                    mc.interactionManager.clickSlot(0, mc.player.getInventory().getSelectedSlot() + 36, 0, SlotActionType.PICKUP, mc.player);
-                    mc.interactionManager.clickSlot(0, slot, 0, SlotActionType.PICKUP, mc.player);
-                    mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
-                    mc.interactionManager.clickSlot(0, slot, 0, SlotActionType.PICKUP, mc.player);
-                    mc.interactionManager.clickSlot(0, mc.player.getInventory().getSelectedSlot() + 36, 0, SlotActionType.PICKUP, mc.player);
-                    mc.interactionManager.clickSlot(0, slot, 0, SlotActionType.PICKUP, mc.player);
+                    mc.gameMode.handleInventoryMouseClick(0, slot, 0, ClickType.PICKUP, mc.player);
+                    mc.gameMode.handleInventoryMouseClick(0, mc.player.getInventory().getSelectedSlot() + 36, 0, ClickType.PICKUP, mc.player);
+                    mc.gameMode.handleInventoryMouseClick(0, slot, 0, ClickType.PICKUP, mc.player);
+                    mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
+                    mc.gameMode.handleInventoryMouseClick(0, slot, 0, ClickType.PICKUP, mc.player);
+                    mc.gameMode.handleInventoryMouseClick(0, mc.player.getInventory().getSelectedSlot() + 36, 0, ClickType.PICKUP, mc.player);
+                    mc.gameMode.handleInventoryMouseClick(0, slot, 0, ClickType.PICKUP, mc.player);
                 }
             }
         }

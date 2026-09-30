@@ -5,7 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import me.lyeddie.addon.util.Globals;
-import net.minecraft.client.network.PlayerListEntry;
+import net.minecraft.client.multiplayer.PlayerInfo;
 import javax.net.ssl.HttpsURLConnection;
 import java.net.URL;
 import java.util.*;
@@ -19,10 +19,10 @@ public class LookupManager implements Globals {
             return uuid;
         }
 
-        if (mc.getNetworkHandler() != null) {
-            List<PlayerListEntry> playerListEntries =
-                new ArrayList<>(mc.getNetworkHandler().getPlayerList());
-            PlayerListEntry profile = playerListEntries.stream().filter(info -> info.getProfile().name().equalsIgnoreCase(name)).findFirst().orElse(null);
+        if (mc.getConnection() != null) {
+            List<PlayerInfo> playerListEntries =
+                new ArrayList<>(mc.getConnection().getOnlinePlayers());
+            PlayerInfo profile = playerListEntries.stream().filter(info -> info.getProfile().name().equalsIgnoreCase(name)).findFirst().orElse(null);
             if (profile != null) {
                 UUID result = profile.getProfile().id();
                 LOOKUPS_UUID.put(name, result);

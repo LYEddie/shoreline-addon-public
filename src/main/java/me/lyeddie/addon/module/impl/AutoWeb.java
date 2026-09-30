@@ -11,10 +11,10 @@ import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -95,7 +95,7 @@ public class AutoWeb extends BlockPlacerModule {
 
     @EventHandler
     public void onPlayerTick(PlayerTickEvent event) {
-        if ((!multitaskConfig.get() && checkMultitask()) || (stopMotionConfig.get() && !mc.player.isOnGround())) {
+        if ((!multitaskConfig.get() && checkMultitask()) || (stopMotionConfig.get() && !mc.player.onGround())) {
             webs.clear();
             return;
         }
@@ -112,7 +112,7 @@ public class AutoWeb extends BlockPlacerModule {
             return;
         }
         List<BlockPos> webPlacements = new ArrayList<>();
-        for (PlayerEntity entity : mc.world.getPlayers()) {
+        for (Player entity : mc.level.players()) {
             if (entity == mc.player || Friends.get().isFriend(entity)) {
                 continue;
             }
@@ -120,18 +120,18 @@ public class AutoWeb extends BlockPlacerModule {
             if (d > enemyRangeConfig.get()) {
                 continue;
             }
-            BlockPos feetPos = entity.getBlockPos();
-            double dist = mc.player.getEyePos().squaredDistanceTo(feetPos.toCenterPos());
-            if (mc.world.getBlockState(feetPos).isAir() && dist <= getValueSq(rangeConfig.get())) {
+            BlockPos feetPos = entity.blockPosition();
+            double dist = mc.player.getEyePosition().distanceToSqr(feetPos.getCenter());
+            if (mc.level.getBlockState(feetPos).isAir() && dist <= getValueSq(rangeConfig.get())) {
                 if (!Managers.INTERACT.canPlace(feetPos, Blocks.COBWEB)) {
                     continue;
                 }
                 webPlacements.add(feetPos);
             }
             if (coverHeadConfig.get()) {
-                BlockPos headPos = feetPos.up();
-                double dist2 = mc.player.getEyePos().squaredDistanceTo(headPos.toCenterPos());
-                if (mc.world.getBlockState(headPos).isAir() && dist2 <= getValueSq(rangeConfig.get()) && Managers.INTERACT.canPlace(headPos, Blocks.COBWEB)) {
+                BlockPos headPos = feetPos.above();
+                double dist2 = mc.player.getEyePosition().distanceToSqr(headPos.getCenter());
+                if (mc.level.getBlockState(headPos).isAir() && dist2 <= getValueSq(rangeConfig.get()) && Managers.INTERACT.canPlace(headPos, Blocks.COBWEB)) {
                     webPlacements.add(headPos);
                 }
             }
@@ -140,9 +140,9 @@ public class AutoWeb extends BlockPlacerModule {
         if (webs.isEmpty()) {
             return;
         }
-        Vec3d prevMotion = mc.player.getVelocity();
+        Vec3 prevMotion = mc.player.getDeltaMovement();
         if (stopMotionConfig.get()) {
-            mc.player.setVelocity(0.0, 0.0, 0.0);
+            mc.player.setDeltaMovement(0.0, 0.0, 0.0);
         }
         while (blocksPlaced < shiftTicksConfig.get()) {
             if (blocksPlaced >= webs.size()) {
@@ -159,7 +159,7 @@ public class AutoWeb extends BlockPlacerModule {
         }
 
         if (this.stopMotionConfig.get()) {
-            mc.player.setVelocity(prevMotion);
+            mc.player.setDeltaMovement(prevMotion);
         }
     }
 

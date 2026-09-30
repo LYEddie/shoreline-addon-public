@@ -2,7 +2,6 @@ package me.lyeddie.addon.module.impl;
 
 import me.lyeddie.addon.module.CombatModule;
 import me.lyeddie.addon.Shoreline;
-import me.lyeddie.addon.util.Interpolation;
 import me.lyeddie.addon.events.irrevocable.DisconnectEvent;
 import me.lyeddie.addon.events.irrevocable.PlayerTickEvent;
 import me.lyeddie.addon.events.irrevocable.RemoveEntityEvent;
@@ -21,28 +20,37 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.AttributeModifiersComponent;
-import net.minecraft.enchantment.Enchantments;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.decoration.EndCrystalEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.entity.projectile.ArrowEntity;
-import net.minecraft.entity.projectile.thrown.ExperienceBottleEntity;
-import net.minecraft.item.*;
-import net.minecraft.network.packet.c2s.play.*;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.RaycastContext;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
+import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.arrow.Arrow;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownExperienceBottle;
+import net.minecraft.world.item.AxeItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.MaceItem;
+import net.minecraft.world.item.TridentItem;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import org.apache.commons.lang3.mutable.MutableDouble;
 
 import java.util.Comparator;
@@ -273,7 +281,7 @@ public class Aura extends CombatModule {
             return;
         }
 
-        final Vec3d eyepos = Managers.POSITION.getEyePos();
+        final Vec3 eyepos = Managers.POSITION.getEyePos();
         entityTarget = switch (modeConfig.get()) {
             case SWITCH -> getAttackTarget(eyepos);
             case SINGLE -> {
@@ -288,14 +296,14 @@ public class Aura extends CombatModule {
             silentRotations = null;
             return;
         }
-        if (mc.player.isUsingItem() && mc.player.getActiveHand() == Hand.MAIN_HAND
-            || mc.options.attackKey.isPressed() || PlayerUtil.isHotbarKeysPressed()) {
+        if (mc.player.isUsingItem() && mc.player.getUsedItemHand() == InteractionHand.MAIN_HAND
+            || mc.options.keyAttack.isDown() || PlayerUtil.isHotbarKeysPressed()) {
             autoSwapTimer.reset();
         }
 
         int slot = getSwordSlot();
         boolean silentSwapped = false;
-        if (!mc.player.getMainHandStack().contains(DataComponentTypes.WEAPON) && slot != -1) {
+        if (!mc.player.getMainHandItem().has(DataComponents.WEAPON) && slot != -1) {
             switch (autoSwapConfig.get()) {
                 case NORMAL -> {
                     if (autoSwapTimer.passed(500)) {
@@ -312,7 +320,7 @@ public class Aura extends CombatModule {
             return;
         }
         if (rotateConfig.get()) {
-            float[] rotation = RotationUtil.getRotationsTo(mc.player.getEyePos(),
+            float[] rotation = RotationUtil.getRotationsTo(mc.player.getEyePosition(),
                 getAttackRotateVec(entityTarget));
             if (!silentRotateConfig.get() && strictRotateConfig.get()) {
                 float serverYaw = Managers.ROTATION.getWrappedYaw();
@@ -346,16 +354,16 @@ public class Aura extends CombatModule {
             return;
         }
         if (attackDelayConfig.get()) {
-            PlayerInventory inventory = mc.player.getInventory();
-            ItemStack itemStack = inventory.getStack((slot == -1 || !swordCheckConfig.get()) ? mc.player.getInventory().getSelectedSlot() : slot);
+            Inventory inventory = mc.player.getInventory();
+            ItemStack itemStack = inventory.getItem((slot == -1 || !swordCheckConfig.get()) ? mc.player.getInventory().getSelectedSlot() : slot);
 
-            MutableDouble attackSpeed = new MutableDouble(mc.player.getAttributeBaseValue(EntityAttributes.ATTACK_SPEED));
+            MutableDouble attackSpeed = new MutableDouble(mc.player.getAttributeBaseValue(Attributes.ATTACK_SPEED));
 
-            AttributeModifiersComponent attributeModifiers = itemStack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
+            ItemAttributeModifiers attributeModifiers = itemStack.get(DataComponents.ATTRIBUTE_MODIFIERS);
             if (attributeModifiers != null) {
-                attributeModifiers.applyModifiers(EquipmentSlot.MAINHAND, (entry, modifier) -> {
-                    if (entry.equals(EntityAttributes.ATTACK_SPEED)) {
-                        attackSpeed.add(modifier.value());
+                attributeModifiers.forEach(EquipmentSlot.MAINHAND, (entry, modifier) -> {
+                    if (entry.equals(Attributes.ATTACK_SPEED)) {
+                        attackSpeed.add(modifier.amount());
                     }
                 });
             }
@@ -408,7 +416,7 @@ public class Aura extends CombatModule {
         if (mc.player == null) {
             return;
         }
-        if (event.packet instanceof UpdateSelectedSlotC2SPacket) {
+        if (event.packet instanceof ServerboundSetCarriedItemPacket) {
             switchTimer.reset();
         }
     }
@@ -420,7 +428,7 @@ public class Aura extends CombatModule {
         }
         if (entityTarget != null && renderConfig.get() && (isHoldingSword() || autoSwapConfig.get() == Swap.SILENT)) {
             long currentTime = System.currentTimeMillis() - lastAttackTime;
-            float animFactor = 1.0f - MathHelper.clamp(currentTime / 1000f, 0.0f, 1.0f);
+            float animFactor = 1.0f - Mth.clamp(currentTime / 1000f, 0.0f, 1.0f);
             int attackDelay = (int) (70.0 * animFactor);
 
             SettingColor set = TabConfigs.get().getColor();
@@ -435,12 +443,12 @@ public class Aura extends CombatModule {
             setRotationSilent(silentRotations[0], silentRotations[1]);
         }
 
-        PlayerInteractEntityC2SPacket packet = PlayerInteractEntityC2SPacket.attack(entity, mc.player.isSneaking());
+        ServerboundInteractPacket packet = ServerboundInteractPacket.createAttackPacket(entity, mc.player.isShiftKeyDown());
         Managers.NETWORK.sendPacket(packet);
         if (swingConfig.get()) {
-            mc.player.swingHand(Hand.MAIN_HAND);
+            mc.player.swing(InteractionHand.MAIN_HAND);
         } else {
-            Managers.NETWORK.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+            Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
         }
         postAttackTarget(entity);
 
@@ -454,8 +462,8 @@ public class Aura extends CombatModule {
         float sharp = 0.0f;
         int slot = -1;
         for (int i = 0; i < 9; i++) {
-            final ItemStack stack = mc.player.getInventory().getStack(i);
-            if (stack.contains(DataComponentTypes.WEAPON)) {
+            final ItemStack stack = mc.player.getInventory().getItem(i);
+            if (stack.has(DataComponents.WEAPON)) {
                 float sharpness = EnchantmentUtil.getLevel(stack,
                     Enchantments.SHARPNESS) * 0.5f + 0.5f;
                 float dmg = getAttackDamage(stack) + sharpness;
@@ -474,7 +482,7 @@ public class Aura extends CombatModule {
             } else if (stack.getItem() instanceof TridentItem) {
                 float sharpness = EnchantmentUtil.getLevel(stack,
                     Enchantments.SHARPNESS) * 0.5f + 0.5f;
-                float dmg = TridentItem.ATTACK_DAMAGE + sharpness;
+                float dmg = TridentItem.BASE_DAMAGE + sharpness;
                 if (dmg > sharp) {
                     sharp = dmg;
                     slot = i;
@@ -493,13 +501,13 @@ public class Aura extends CombatModule {
     }
 
     private float getAttackDamage(ItemStack stack) {
-        AttributeModifiersComponent modifiers = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
+        ItemAttributeModifiers modifiers = stack.get(DataComponents.ATTRIBUTE_MODIFIERS);
         if (modifiers == null) return 0.0f;
 
         double damage = 0.0;
-        for (AttributeModifiersComponent.Entry entry : modifiers.modifiers()) {
-            if (entry.attribute().equals(EntityAttributes.ATTACK_DAMAGE)) {
-                damage += entry.modifier().value();
+        for (ItemAttributeModifiers.Entry entry : modifiers.modifiers()) {
+            if (entry.attribute().equals(Attributes.ATTACK_DAMAGE)) {
+                damage += entry.modifier().amount();
             }
         }
         return (float) damage;
@@ -509,7 +517,7 @@ public class Aura extends CombatModule {
         int slot = -1;
         int maxBreach = 0;
         for (int i = 0; i < 9; i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
+            ItemStack stack = mc.player.getInventory().getItem(i);
             if (!(stack.getItem() instanceof MaceItem)) {
                 continue;
             }
@@ -523,13 +531,13 @@ public class Aura extends CombatModule {
     }
 
     private void preAttackTarget() {
-        final ItemStack offhand = mc.player.getOffHandStack();
+        final ItemStack offhand = mc.player.getOffhandItem();
         shielding = false;
         if (stopShieldConfig.get()) {
             shielding = offhand.getItem() == Items.SHIELD && mc.player.isBlocking();
             if (shielding) {
-                Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.RELEASE_USE_ITEM,
-                    Managers.POSITION.getBlockPos(), Direction.getFacing(mc.player.getX(),
+                Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.RELEASE_USE_ITEM,
+                    Managers.POSITION.getBlockPos(), Direction.getApproximateNearest(mc.player.getX(),
                     mc.player.getY(), mc.player.getZ())));
             }
         }
@@ -542,8 +550,8 @@ public class Aura extends CombatModule {
             }
             sprinting = Managers.POSITION.isSprinting();
             if (sprinting) {
-                Managers.NETWORK.sendPacket(new ClientCommandC2SPacket(mc.player,
-                    ClientCommandC2SPacket.Mode.STOP_SPRINTING));
+                Managers.NETWORK.sendPacket(new ServerboundPlayerCommandPacket(mc.player,
+                    ServerboundPlayerCommandPacket.Action.STOP_SPRINTING));
             }
         }
     }
@@ -551,28 +559,28 @@ public class Aura extends CombatModule {
     private void postAttackTarget(Entity entity) {
         if (shielding) {
             Managers.NETWORK.sendSequencedPacket(s ->
-                new PlayerInteractItemC2SPacket(Hand.OFF_HAND, s, mc.player.getYaw(), mc.player.getPitch()));
+                new ServerboundUseItemPacket(InteractionHand.OFF_HAND, s, mc.player.getYRot(), mc.player.getXRot()));
         }
         if (sneaking) {
             Managers.MOVEMENT.sendSneaking(true);
         }
         if (sprinting) {
-            Managers.NETWORK.sendPacket(new ClientCommandC2SPacket(mc.player,
-                ClientCommandC2SPacket.Mode.START_SPRINTING));
+            Managers.NETWORK.sendPacket(new ServerboundPlayerCommandPacket(mc.player,
+                ServerboundPlayerCommandPacket.Action.START_SPRINTING));
         }
     }
 
-    private Entity getAttackTarget(Vec3d pos) {
+    private Entity getAttackTarget(Vec3 pos) {
         double min = Double.MAX_VALUE;
         Entity attackTarget = null;
-        for (Entity entity : mc.world.getEntities()) {
+        for (Entity entity : mc.level.entitiesForRendering()) {
             if (entity == null || entity == mc.player
                 || !entity.isAlive() || !isEnemy(entity)
-                || (entity instanceof PlayerEntity ent && (Friends.get().isFriend(ent)))
-                || entity instanceof EndCrystalEntity
+                || (entity instanceof Player ent && (Friends.get().isFriend(ent)))
+                || entity instanceof EndCrystal
                 || entity instanceof ItemEntity
-                || entity instanceof ArrowEntity
-                || entity instanceof ExperienceBottleEntity) {
+                || entity instanceof Arrow
+                || entity instanceof ThrownExperienceBottle) {
                 continue;
             }
             if (armorCheckConfig.get()
@@ -580,9 +588,9 @@ public class Aura extends CombatModule {
                 && EntityUtil.getArmorItems(livingEntity).isEmpty()) {
                 continue;
             }
-            double dist = pos.distanceTo(entity.getEntityPos());
+            double dist = pos.distanceTo(entity.position());
             if (dist <= searchRangeConfig.get()) {
-                if (entity.age < ticksExistedConfig.get()) {
+                if (entity.tickCount < ticksExistedConfig.get()) {
                     continue;
                 }
                 switch (priorityConfig.get()) {
@@ -621,36 +629,36 @@ public class Aura extends CombatModule {
         float emax = 0.0f;
         for (ItemStack armor : EntityUtil.getArmorItems(e)) {
             if (armor != null && !armor.isEmpty()) {
-                edmg += armor.getDamage();
+                edmg += armor.getDamageValue();
                 emax += armor.getMaxDamage();
             }
         }
         return 100.0f - edmg / emax;
     }
 
-    public boolean isInAttackRange(Vec3d pos, Entity entity) {
-        final Vec3d entityPos = getAttackRotateVec(entity);
+    public boolean isInAttackRange(Vec3 pos, Entity entity) {
+        final Vec3 entityPos = getAttackRotateVec(entity);
         double dist = pos.distanceTo(entityPos);
         return isInAttackRange(dist, pos, entityPos);
     }
 
-    public boolean isInAttackRange(double dist, Vec3d pos, Vec3d entityPos) {
+    public boolean isInAttackRange(double dist, Vec3 pos, Vec3 entityPos) {
         if (vanillaRangeConfig.get() && dist > 3.0f) {
             return false;
         }
         if (dist > rangeConfig.get()) {
             return false;
         }
-        BlockHitResult result = mc.world.raycast(new RaycastContext(
+        BlockHitResult result = mc.level.clip(new ClipContext(
             pos, entityPos,
-            RaycastContext.ShapeType.COLLIDER,
-            RaycastContext.FluidHandling.NONE, mc.player));
-        if (result != null && !result.getBlockPos().equals(BlockPos.ofFloored(entityPos)) && dist > wallRangeConfig.get()) {
+            ClipContext.Block.COLLIDER,
+            ClipContext.Fluid.NONE, mc.player));
+        if (result != null && !result.getBlockPos().equals(BlockPos.containing(entityPos)) && dist > wallRangeConfig.get()) {
             return false;
         }
         if (fovConfig.get() != 180.0f) {
             float[] rots = RotationUtil.getRotationsTo(pos, entityPos);
-            float diff = MathHelper.wrapDegrees(mc.player.getYaw()) - rots[0];
+            float diff = Mth.wrapDegrees(mc.player.getYRot()) - rots[0];
             float magnitude = Math.abs(diff);
             return magnitude <= fovConfig.get();
         }
@@ -658,29 +666,29 @@ public class Aura extends CombatModule {
     }
 
     public boolean isHoldingSword() {
-        return !swordCheckConfig.get() || mc.player.getMainHandStack().contains(DataComponentTypes.WEAPON)
-            || mc.player.getMainHandStack().getItem() instanceof AxeItem
-            || mc.player.getMainHandStack().getItem() instanceof TridentItem
-            || mc.player.getMainHandStack().getItem() instanceof MaceItem;
+        return !swordCheckConfig.get() || mc.player.getMainHandItem().has(DataComponents.WEAPON)
+            || mc.player.getMainHandItem().getItem() instanceof AxeItem
+            || mc.player.getMainHandItem().getItem() instanceof TridentItem
+            || mc.player.getMainHandItem().getItem() instanceof MaceItem;
     }
 
-    private Vec3d getAttackRotateVec(Entity entity) {
-        Vec3d feetPos = entity.getEntityPos();
+    private Vec3 getAttackRotateVec(Entity entity) {
+        Vec3 feetPos = entity.position();
         return switch (hitVectorConfig.get()) {
             case FEET -> feetPos;
-            case TORSO -> feetPos.add(0.0, entity.getHeight() / 2.0f, 0.0);
-            case EYES -> entity.getEyePos();
+            case TORSO -> feetPos.add(0.0, entity.getBbHeight() / 2.0f, 0.0);
+            case EYES -> entity.getEyePosition();
             case AUTO -> {
-                Vec3d torsoPos = feetPos.add(0.0, entity.getHeight() / 2.0f, 0.0);
-                Vec3d eyesPos = entity.getEyePos();
-                yield Stream.of(feetPos, torsoPos, eyesPos).min(Comparator.comparing(b -> mc.player.getEyePos().squaredDistanceTo(b))).orElse(eyesPos);
+                Vec3 torsoPos = feetPos.add(0.0, entity.getBbHeight() / 2.0f, 0.0);
+                Vec3 eyesPos = entity.getEyePosition();
+                yield Stream.of(feetPos, torsoPos, eyesPos).min(Comparator.comparing(b -> mc.player.getEyePosition().distanceToSqr(b))).orElse(eyesPos);
             }
         };
     }
 
     private boolean isEnemy(Entity e) {
         return (!e.isInvisible() || invisiblesConfig.get())
-            && e instanceof PlayerEntity && playersConfig.get()
+            && e instanceof Player && playersConfig.get()
             || EntityUtil.isMonster(e) && monstersConfig.get()
             || EntityUtil.isNeutral(e) && neutralsConfig.get()
             || EntityUtil.isPassive(e) && animalsConfig.get();

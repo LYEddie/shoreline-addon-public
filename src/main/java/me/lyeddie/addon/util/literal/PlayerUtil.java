@@ -1,14 +1,14 @@
 package me.lyeddie.addon.util.literal;
 
 import me.lyeddie.addon.util.Globals;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.CobwebBlock;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.registry.tag.EntityTypeTags;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.core.BlockPos;
+import net.minecraft.tags.EntityTypeTags;
+import net.minecraft.util.Mth;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.level.block.WebBlock;
+import net.minecraft.world.level.block.state.BlockState;
 
 public final class PlayerUtil implements Globals {
     public static float getLocalPlayerHealth() {
@@ -16,18 +16,18 @@ public final class PlayerUtil implements Globals {
     }
 
     public static int computeFallDamage(float fallDistance, float damageMultiplier) {
-        if (mc.player.getType().isIn(EntityTypeTags.FALL_DAMAGE_IMMUNE)) {
+        if (mc.player.getType().is(EntityTypeTags.FALL_DAMAGE_IMMUNE)) {
             return 0;
         } else {
-            final StatusEffectInstance statusEffectInstance = mc.player.getStatusEffect(StatusEffects.JUMP_BOOST);
+            final MobEffectInstance statusEffectInstance = mc.player.getEffect(MobEffects.JUMP_BOOST);
             final float f = statusEffectInstance == null ? 0.0F : (float) (statusEffectInstance.getAmplifier() + 1);
-            return MathHelper.ceil((fallDistance - 3.0F - f) * damageMultiplier);
+            return Mth.ceil((fallDistance - 3.0F - f) * damageMultiplier);
         }
     }
 
     public static boolean isHotbarKeysPressed() {
-        for (KeyBinding binding : mc.options.hotbarKeys) {
-            if (binding.isPressed()) {
+        for (KeyMapping binding : mc.options.keyHotbarSlots) {
+            if (binding.isDown()) {
                 return true;
             }
         }
@@ -35,9 +35,9 @@ public final class PlayerUtil implements Globals {
     }
 
     public static boolean inWeb(double expandBb) {
-        for (BlockPos blockPos : PositionUtil.getAllInBox(mc.player.getBoundingBox().expand(expandBb))) {
-            BlockState state = mc.world.getBlockState(blockPos);
-            if (state.getBlock() instanceof CobwebBlock) {
+        for (BlockPos blockPos : PositionUtil.getAllInBox(mc.player.getBoundingBox().inflate(expandBb))) {
+            BlockState state = mc.level.getBlockState(blockPos);
+            if (state.getBlock() instanceof WebBlock) {
                 return true;
             }
         }

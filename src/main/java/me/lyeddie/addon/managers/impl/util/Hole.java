@@ -1,15 +1,14 @@
 package me.lyeddie.addon.managers.impl.util;
 
 import com.google.common.collect.Lists;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Position;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Position;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 public class Hole implements Position {
     private final List<BlockPos> holeOffsets;
@@ -24,7 +23,7 @@ public class Hole implements Position {
     }
 
     public double squaredDistanceTo(Entity entity) {
-        return entity.getEyePos().squaredDistanceTo(getCenter());
+        return entity.getEyePosition().distanceToSqr(getCenter());
     }
 
     public boolean isStandard() {
@@ -36,11 +35,11 @@ public class Hole implements Position {
     }
 
     public boolean isDoubleX() {
-        return isDouble() && holeOffsets.contains(origin.add(2, 0, 0));
+        return isDouble() && holeOffsets.contains(origin.offset(2, 0, 0));
     }
 
     public boolean isDoubleZ() {
-        return isDouble() && holeOffsets.contains(origin.add(0, 0, 2));
+        return isDouble() && holeOffsets.contains(origin.offset(0, 0, 2));
     }
 
     public boolean isQuad() {
@@ -63,32 +62,32 @@ public class Hole implements Position {
         return holeOffsets.addAll(Arrays.asList(off));
     }
 
-    public Vec3d getCenter() {
+    public Vec3 getCenter() {
         BlockPos center;
         if (isDoubleX()) {
-            center = origin.add(1, 0, 0);
+            center = origin.offset(1, 0, 0);
         } else if (isDoubleZ()) {
-            center = origin.add(0, 0, -1);
+            center = origin.offset(0, 0, -1);
         } else if (isQuad()) {
-            center = origin.add(1, 0, -1);
+            center = origin.offset(1, 0, -1);
         } else {
-            return origin.toCenterPos();
+            return origin.getCenter();
         }
-        return Vec3d.of(center);
+        return Vec3.atLowerCornerOf(center);
     }
 
-    public Box getBoundingBox(double height) {
-        Box render = null;
+    public AABB getBoundingBox(double height) {
+        AABB render = null;
         if (getSafety() == HoleType.VOID) {
-            render = new Box(getX(), getY(), getZ(), getX() + 1.0, getY() + 1.0, getZ() + 1.0);
+            render = new AABB(x(), y(), z(), x() + 1.0, y() + 1.0, z() + 1.0);
         } else if (isDoubleX()) {
-            render = new Box(getX(), getY(), getZ(), getX() + 2.0, getY() + height, getZ() + 1.0);
+            render = new AABB(x(), y(), z(), x() + 2.0, y() + height, z() + 1.0);
         } else if (isDoubleZ()) {
-            render = new Box(getX(), getY(), getZ(), getX() + 1.0, getY() + height, getZ() + 2.0);
+            render = new AABB(x(), y(), z(), x() + 1.0, y() + height, z() + 2.0);
         } else if (isQuad()) {
-            render = new Box(getX(), getY(), getZ(), getX() + 2.0, getY() + height, getZ() + 2.0);
+            render = new AABB(x(), y(), z(), x() + 2.0, y() + height, z() + 2.0);
         } else if (isStandard()) {
-            render = new Box(getX(), getY(), getZ(), getX() + 1.0, getY() + height, getZ() + 1.0);
+            render = new AABB(x(), y(), z(), x() + 1.0, y() + height, z() + 1.0);
         }
         return render;
     }
@@ -102,17 +101,17 @@ public class Hole implements Position {
     }
 
     @Override
-    public double getX() {
+    public double x() {
         return origin.getX();
     }
 
     @Override
-    public double getY() {
+    public double y() {
         return origin.getY();
     }
 
     @Override
-    public double getZ() {
+    public double z() {
         return origin.getZ();
     }
 }

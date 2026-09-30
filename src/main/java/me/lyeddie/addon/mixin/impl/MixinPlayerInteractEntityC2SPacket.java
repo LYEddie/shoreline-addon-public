@@ -4,14 +4,14 @@ import io.netty.buffer.Unpooled;
 import me.lyeddie.addon.mixin.IPlayerInteractEntityC2SPacket;
 import me.lyeddie.addon.util.Globals;
 import me.lyeddie.addon.util.InteractType;
-import net.minecraft.entity.Entity;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
-@Mixin(PlayerInteractEntityC2SPacket.class)
+@Mixin(ServerboundInteractPacket.class)
 public abstract class MixinPlayerInteractEntityC2SPacket implements IPlayerInteractEntityC2SPacket, Globals {
 
     @Shadow
@@ -19,21 +19,21 @@ public abstract class MixinPlayerInteractEntityC2SPacket implements IPlayerInter
     private int entityId;
 
     @Shadow
-    public abstract void write(PacketByteBuf buf);
+    public abstract void write(FriendlyByteBuf buf);
 
     @Override
     public Entity getEntity() {
-        if (mc.world == null) {
+        if (mc.level == null) {
             return null;
         }
-        return mc.world.getEntityById(entityId);
+        return mc.level.getEntity(entityId);
     }
 
     @Override
     public InteractType getType() {
-        PacketByteBuf packetBuf = new PacketByteBuf(Unpooled.buffer());
+        FriendlyByteBuf packetBuf = new FriendlyByteBuf(Unpooled.buffer());
         write(packetBuf);
         packetBuf.readVarInt();
-        return packetBuf.readEnumConstant(InteractType.class);
+        return packetBuf.readEnum(InteractType.class);
     }
 }

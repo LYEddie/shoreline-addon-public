@@ -10,12 +10,11 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.item.BlockItem;
-import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
-import net.minecraft.util.math.BlockPos;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import java.util.List;
 
 public class AntiInteract extends AddonModule {
@@ -38,7 +37,7 @@ public class AntiInteract extends AddonModule {
     @EventHandler
     public void onInteractBlock(InteractBlockEvent event) {
         BlockPos pos = event.getHitResult().getBlockPos();
-        BlockState state = mc.world.getBlockState(pos);
+        BlockState state = mc.level.getBlockState(pos);
         if (blacklistConfig.get().contains(state.getBlock())) {
             event.cancel();
         }
@@ -46,12 +45,12 @@ public class AntiInteract extends AddonModule {
 
     @EventHandler
     public void onPacketOutbound(PacketEvent.Send event) {
-        if (mc.player == null || mc.world == null) {
+        if (mc.player == null || mc.level == null) {
             return;
         }
-        if (event.packet instanceof PlayerInteractBlockC2SPacket packet) {
-            BlockPos pos = packet.getBlockHitResult().getBlockPos();
-            BlockState state = mc.world.getBlockState(pos);
+        if (event.packet instanceof ServerboundUseItemOnPacket packet) {
+            BlockPos pos = packet.getHitResult().getBlockPos();
+            BlockState state = mc.level.getBlockState(pos);
             if (blacklistConfig.get().contains(state.getBlock())) {
                 event.cancel();
             }
@@ -60,7 +59,7 @@ public class AntiInteract extends AddonModule {
 
     @EventHandler
     public void onInteractBorder(InteractBorderEvent event) {
-        if (!borderConfig.get() || mc.player.getMainHandStack().getItem() instanceof BlockItem) {
+        if (!borderConfig.get() || mc.player.getMainHandItem().getItem() instanceof BlockItem) {
             return;
         }
         event.cancel();

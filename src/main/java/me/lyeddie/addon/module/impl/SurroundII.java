@@ -13,20 +13,27 @@ import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.decoration.EndCrystalEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
-import net.minecraft.network.packet.s2c.play.*;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.*;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Vec3i;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
+import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundBundlePacket;
+import net.minecraft.network.protocol.game.ClientboundExplodePacket;
+import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
+import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import java.util.*;
-import java.util.List;
 
 public class SurroundII extends ObsidianPlacerModule {
     private static SurroundII INST;
@@ -141,7 +148,7 @@ public class SurroundII extends ObsidianPlacerModule {
             return;
         }
 
-        if ((!multitaskConfig.get() && checkMultitask()) || (stopMotionConfig.get() && !mc.player.isOnGround())) {
+        if ((!multitaskConfig.get() && checkMultitask()) || (stopMotionConfig.get() && !mc.player.onGround())) {
             surround.clear();
             placements.clear();
             return;
@@ -174,15 +181,15 @@ public class SurroundII extends ObsidianPlacerModule {
                 }
                 Direction direction = Managers.INTERACT.getInteractDirectionInternal(block, strictDirectionConfig.get());
                 if (direction == null) {
-                    placements.add(block.down());
+                    placements.add(block.below());
                 }
             }
         }
         placements.sort(Comparator.comparingInt(Vec3i::getY));
 
-        Vec3d prevMotion = mc.player.getVelocity();
+        Vec3 prevMotion = mc.player.getDeltaMovement();
         if (stopMotionConfig.get()) {
-            mc.player.setVelocity(0.0, 0.0, 0.0);
+            mc.player.setDeltaMovement(0.0, 0.0, 0.0);
         }
 
         while (blocksPlaced < shiftTicksConfig.get()) {
@@ -197,16 +204,16 @@ public class SurroundII extends ObsidianPlacerModule {
         if (rotateConfig.get()) {
             Managers.ROTATION.setRotationSilentSync();
         }
-        if (stopMotionConfig.get()) mc.player.setVelocity(prevMotion);
+        if (stopMotionConfig.get()) mc.player.setDeltaMovement(prevMotion);
     }
 
     @EventHandler
     public void onPacketInbound(PacketEvent.Receive event) {
-        if (mc.player == null || mc.world == null) {
+        if (mc.player == null || mc.level == null) {
             return;
         }
-        if (event.packet instanceof BundleS2CPacket packet) {
-            for (Packet<?> packet1 : packet.getPackets()) {
+        if (event.packet instanceof ClientboundBundlePacket packet) {
+            for (Packet<?> packet1 : packet.subPackets()) {
                 handlePackets(packet1);
             }
         } else {
@@ -219,11 +226,11 @@ public class SurroundII extends ObsidianPlacerModule {
             return;
         }
 
-        if (serverPacket instanceof BlockUpdateS2CPacket packet) {
-            final BlockState blockState = packet.getState();
+        if (serverPacket instanceof ClientboundBlockUpdatePacket packet) {
+            final BlockState blockState = packet.getBlockState();
             final BlockPos targetPos = packet.getPos();
             if (surround.contains(targetPos)) {
-                if (blockState.isReplaceable()) {
+                if (blockState.canBeReplaced()) {
                     BlockSlot blockItem = getResistantBlockItem();
                     if (blockItem == null) return;
                     placeBlock(targetPos, blockItem);
@@ -233,8 +240,8 @@ public class SurroundII extends ObsidianPlacerModule {
             }
         }
 
-        if (serverPacket instanceof ExplosionS2CPacket packet && replaceConfig.get() == ReplaceMode.FAST) {
-            BlockPos pos = BlockPos.ofFloored(packet.center());
+        if (serverPacket instanceof ClientboundExplodePacket packet && replaceConfig.get() == ReplaceMode.FAST) {
+            BlockPos pos = BlockPos.containing(packet.center());
             if (surround.contains(pos)) {
                 BlockSlot blockItem = getResistantBlockItem();
                 if (blockItem == null) return;
@@ -242,11 +249,11 @@ public class SurroundII extends ObsidianPlacerModule {
             }
         }
 
-        if (serverPacket instanceof EntitiesDestroyS2CPacket packetxx && replaceConfig.get() == ReplaceMode.NORMAL) {
+        if (serverPacket instanceof ClientboundRemoveEntitiesPacket packetxx && replaceConfig.get() == ReplaceMode.NORMAL) {
             for (int id : packetxx.getEntityIds()) {
-                Entity entity = mc.world.getEntityById(id);
-                if (entity instanceof EndCrystalEntity) {
-                    BlockPos targetPos = entity.getBlockPos();
+                Entity entity = mc.level.getEntity(id);
+                if (entity instanceof EndCrystal) {
+                    BlockPos targetPos = entity.blockPosition();
                     if (surround.contains(targetPos)) {
                         BlockSlot blockItem = getResistantBlockItem();
                         if (blockItem == null) return;
@@ -256,9 +263,9 @@ public class SurroundII extends ObsidianPlacerModule {
             }
         }
 
-        if (serverPacket instanceof EntitySpawnS2CPacket packet && packet.getEntityType().equals(EntityType.END_CRYSTAL) && replaceConfig.get() == ReplaceMode.STRICT) {
+        if (serverPacket instanceof ClientboundAddEntityPacket packet && packet.getType().equals(EntityType.END_CRYSTAL) && replaceConfig.get() == ReplaceMode.STRICT) {
             for (BlockPos pos : surround) {
-                if (!pos.equals(BlockPos.ofFloored(packet.getX(), packet.getY(), packet.getZ()))) {
+                if (!pos.equals(BlockPos.containing(packet.getX(), packet.getY(), packet.getZ()))) {
                     continue;
                 }
 
@@ -281,13 +288,13 @@ public class SurroundII extends ObsidianPlacerModule {
 
     public void attackBlockingCrystals(List<BlockPos> posList) {
         for (BlockPos pos : posList) {
-            Entity crystalEntity = mc.world.getOtherEntities(null, new Box(pos)).stream()
-                .filter(e -> e instanceof EndCrystalEntity).findFirst().orElse(null);
+            Entity crystalEntity = mc.level.getEntities(null, new AABB(pos)).stream()
+                .filter(e -> e instanceof EndCrystal).findFirst().orElse(null);
             if (crystalEntity == null) {
                 continue;
             }
-            Managers.NETWORK.sendPacket(PlayerInteractEntityC2SPacket.attack(crystalEntity, mc.player.isSneaking()));
-            Managers.NETWORK.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+            Managers.NETWORK.sendPacket(ServerboundInteractPacket.createAttackPacket(crystalEntity, mc.player.isShiftKeyDown()));
+            Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
             return;
         }
     }
@@ -299,10 +306,10 @@ public class SurroundII extends ObsidianPlacerModule {
             if (shiftDelayConfig.get() > 0.0f && placed != null && System.currentTimeMillis() - placed < shiftDelayConfig.get() * 50.0f) {
                 continue;
             }
-            if (!mc.world.getBlockState(surroundPos).isReplaceable()) {
+            if (!mc.level.getBlockState(surroundPos).canBeReplaced()) {
                 continue;
             }
-            double dist = mc.player.squaredDistanceTo(surroundPos.toCenterPos());
+            double dist = mc.player.distanceToSqr(surroundPos.getCenter());
             if (dist > getValueSq(placeRangeConfig.get())) {
                 continue;
             }
@@ -314,14 +321,14 @@ public class SurroundII extends ObsidianPlacerModule {
         return placements;
     }
 
-    public List<BlockPos> getSurround(PlayerEntity player) {
+    public List<BlockPos> getSurround(Player player) {
         List<BlockPos> surroundBlocks = getSurroundNoDown(player);
         List<BlockPos> playerBlocks = getPlayerBlocks(player);
         for (BlockPos playerPos : playerBlocks) {
-            if (playerPos.equals(player.getBlockPos())) {
+            if (playerPos.equals(player.blockPosition())) {
                 continue;
             }
-            surroundBlocks.add(playerPos.down());
+            surroundBlocks.add(playerPos.below());
         }
         if (mineExtendConfig.get()) {
             for (BlockPos surroundPos : new ArrayList<>(surroundBlocks)) {
@@ -332,7 +339,7 @@ public class SurroundII extends ObsidianPlacerModule {
                     if (direction == Direction.DOWN) {
                         continue;
                     }
-                    BlockPos blockerPos = surroundPos.offset(direction);
+                    BlockPos blockerPos = surroundPos.relative(direction);
                     if (playerBlocks.contains(blockerPos) || AutoMine.getInstance().getMiningBlock() == blockerPos) {
                         continue;
                     }
@@ -342,27 +349,27 @@ public class SurroundII extends ObsidianPlacerModule {
         }
 
         if (AirPlaceII.getInstance().isActive() && headConfig.get()) {
-            surroundBlocks.add(mc.player.getBlockPos().up(2));
+            surroundBlocks.add(mc.player.blockPosition().above(2));
         }
         return surroundBlocks;
     }
 
-    public List<BlockPos> getSurroundNoDown(PlayerEntity player) {
+    public List<BlockPos> getSurroundNoDown(Player player) {
         return getSurroundNoDown(player, 0.0f);
     }
 
-    public List<BlockPos> getSurroundNoDown(PlayerEntity player, float range) {
+    public List<BlockPos> getSurroundNoDown(Player player, float range) {
         List<BlockPos> surroundBlocks = new ArrayList<>();
         List<BlockPos> playerBlocks = getPlayerBlocks(player);
         for (BlockPos pos : playerBlocks) {
-            if (range > 0.0f && mc.player.getEyePos().squaredDistanceTo(pos.toCenterPos()) > range * range) {
+            if (range > 0.0f && mc.player.getEyePosition().distanceToSqr(pos.getCenter()) > range * range) {
                 continue;
             }
             for (Direction dir : Direction.values()) {
                 if (!dir.getAxis().isHorizontal()) {
                     continue;
                 }
-                BlockPos pos1 = pos.offset(dir);
+                BlockPos pos1 = pos.relative(dir);
                 if (surroundBlocks.contains(pos1) || playerBlocks.contains(pos1)) {
                     continue;
                 }
@@ -372,7 +379,7 @@ public class SurroundII extends ObsidianPlacerModule {
         return surroundBlocks;
     }
 
-    public List<BlockPos> getPlayerBlocks(PlayerEntity entity) {
+    public List<BlockPos> getPlayerBlocks(Player entity) {
         BlockPos playerPos = PositionUtil.getRoundedBlockPos(entity.getX(), entity.getY(), entity.getZ());
         final List<BlockPos> playerBlocks = new ArrayList<>();
         if (extendConfig.get()) {

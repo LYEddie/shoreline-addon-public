@@ -1,7 +1,7 @@
 package me.lyeddie.addon.mixin.impl.accessor;
 
-import net.minecraft.network.packet.BundlePacket;
-import net.minecraft.network.packet.Packet;
+import net.minecraft.network.protocol.BundlePacket;
+import net.minecraft.network.protocol.Packet;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;

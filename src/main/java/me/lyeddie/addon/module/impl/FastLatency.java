@@ -9,8 +9,8 @@ import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.network.packet.c2s.play.RequestCommandCompletionsC2SPacket;
-import net.minecraft.network.packet.s2c.play.CommandSuggestionsS2CPacket;
+import net.minecraft.network.protocol.game.ClientboundCommandSuggestionsPacket;
+import net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket;
 
 public class FastLatency extends AddonModule {
     private static FastLatency INST;
@@ -43,7 +43,7 @@ public class FastLatency extends AddonModule {
     @EventHandler // stage¿
     public void onTick(TickEvent.Post event) {
         if (lastRequest.passed(5000) && requestTimer.passed(500)) {
-            Managers.NETWORK.sendPacket(new RequestCommandCompletionsC2SPacket(1000, "w "));
+            Managers.NETWORK.sendPacket(new ServerboundCommandSuggestionPacket(1000, "w "));
             requestTimer.reset();
             lastRequest.reset();
             requestTime = System.currentTimeMillis();
@@ -52,7 +52,7 @@ public class FastLatency extends AddonModule {
 
     @EventHandler
     public void onPacketInbound(PacketEvent.Receive event) {
-        if (event.packet instanceof CommandSuggestionsS2CPacket packet && packet.id() == 1000) {
+        if (event.packet instanceof ClientboundCommandSuggestionsPacket packet && packet.id() == 1000) {
             latency = System.currentTimeMillis() - requestTime;
             lastRequest.setElapsedTime(Timer.MAX_TIME);
         }

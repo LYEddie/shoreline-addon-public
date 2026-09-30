@@ -1,6 +1,6 @@
 package me.lyeddie.addon.events.irrevocable;
 
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.world.entity.LivingEntity;
 
 public class EntityDeathEvent {
     private final LivingEntity entity;

@@ -1,26 +1,26 @@
 package me.lyeddie.addon.mixin.impl.accessor;
 
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.network.ClientPlayerInteractionManager;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.client.multiplayer.MultiPlayerGameMode;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.phys.BlockHitResult;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
-@Mixin(ClientPlayerInteractionManager.class)
+@Mixin(MultiPlayerGameMode.class)
 public interface AccessorClientPlayerInteractionManager {
 
-    @Invoker("syncSelectedSlot")
+    @Invoker("ensureHasSentCarriedItem")
     void hookSyncSelectedSlot();
 
-    @Invoker("interactBlockInternal")
-    ActionResult hookInteractBlockInternal(ClientPlayerEntity player, Hand hand, BlockHitResult hitResult);
+    @Invoker("performUseItemOn")
+    InteractionResult hookInteractBlockInternal(LocalPlayer player, InteractionHand hand, BlockHitResult hitResult);
 
-    @Accessor("currentBreakingProgress")
+    @Accessor("destroyProgress")
     float hookGetCurrentBreakingProgress();
 
-    @Accessor("currentBreakingProgress")
+    @Accessor("destroyProgress")
     void hookSetCurrentBreakingProgress(float currentBreakingProgress);
 }

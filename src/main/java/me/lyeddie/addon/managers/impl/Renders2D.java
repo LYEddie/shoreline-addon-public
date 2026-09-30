@@ -4,7 +4,7 @@ import me.lyeddie.addon.util.Globals;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.render.Render2DEvent;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.phys.Vec3;
 import meteordevelopment.meteorclient.renderer.text.TextRenderer;
 import meteordevelopment.meteorclient.utils.render.NametagUtils;
 import meteordevelopment.meteorclient.utils.render.color.Color;
@@ -22,11 +22,11 @@ public class Renders2D implements Globals {
         MeteorClient.EVENT_BUS.subscribe(this);
     }
 
-    public void renderSign(String text, Vec3d pos, int color) {
+    public void renderSign(String text, Vec3 pos, int color) {
         renderSign(text, pos, color, DEFAULT_SCALE);
     }
 
-    public void renderSign(String text, Vec3d pos, int color, double scale) {
+    public void renderSign(String text, Vec3 pos, int color, double scale) {
         if (text == null || pos == null) return;
 
         signs.add(new Sign(
@@ -37,11 +37,11 @@ public class Renders2D implements Globals {
         ));
     }
 
-    public void renderSign(String text, Vec3d pos, Color color) {
+    public void renderSign(String text, Vec3 pos, Color color) {
         renderSign(text, pos, color, DEFAULT_SCALE);
     }
 
-    public void renderSign(String text, Vec3d pos, Color color, double scale) {
+    public void renderSign(String text, Vec3 pos, Color color, double scale) {
         if (text == null || pos == null || color == null) return;
 
         signs.add(new Sign(
@@ -54,7 +54,7 @@ public class Renders2D implements Globals {
 
     @EventHandler
     private void onRender2D(Render2DEvent event) {
-        if (mc.player == null || mc.world == null) {
+        if (mc.player == null || mc.level == null) {
             signs.clear();
             return;
         }

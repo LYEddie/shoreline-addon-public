@@ -9,10 +9,13 @@ import me.lyeddie.addon.util.PerSecondCounter;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.client.network.*;
-import net.minecraft.network.listener.ServerPlayPacketListener;
-import net.minecraft.network.packet.Packet;
-
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.multiplayer.prediction.BlockStatePredictionHandler;
+import net.minecraft.client.multiplayer.prediction.PredictiveAction;
+import net.minecraft.client.multiplayer.resolver.ServerAddress;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ServerGamePacketListener;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -21,7 +24,7 @@ public class NetworkManager implements Globals {
     private final PerSecondCounter outgoingCounter = new PerSecondCounter();
     private final PerSecondCounter incomingCounter = new PerSecondCounter();
     private ServerAddress address;
-    private ServerInfo info;
+    private ServerData info;
 
     public NetworkManager() {
         MeteorClient.EVENT_BUS.subscribe(this);
@@ -49,26 +52,26 @@ public class NetworkManager implements Globals {
     }
 
     public void sendPacket(final Packet<?> p) {
-        if (mc.getNetworkHandler() != null) {
+        if (mc.getConnection() != null) {
             PACKET_CACHE.add(p);
-            mc.getNetworkHandler().sendPacket(p);
+            mc.getConnection().send(p);
         }
     }
 
     public void sendQuietPacket(final Packet<?> p) {
-        if (mc.getNetworkHandler() != null) {
+        if (mc.getConnection() != null) {
             PACKET_CACHE.add(p);
-            ((IClientPlayNetworkHandler) mc.getNetworkHandler()).sendQuietPacket(p);
+            ((IClientPlayNetworkHandler) mc.getConnection()).sendQuietPacket(p);
         }
     }
 
-    public void sendSequencedPacket(final SequencedPacketCreator p) {
-        if (mc.world != null) {
-            PendingUpdateManager updater =
-                ((AccessorClientWorld) mc.world).hookGetPendingUpdateManager().incrementSequence();
+    public void sendSequencedPacket(final PredictiveAction p) {
+        if (mc.level != null) {
+            BlockStatePredictionHandler updater =
+                ((AccessorClientWorld) mc.level).hookGetPendingUpdateManager().startPredicting();
             try {
-                int i = updater.getSequence();
-                Packet<ServerPlayPacketListener> packet = p.predict(i);
+                int i = updater.currentSequence();
+                Packet<ServerGamePacketListener> packet = p.predict(i);
                 sendPacket(packet);
             } catch (Throwable e) {
                 e.printStackTrace();
@@ -89,9 +92,9 @@ public class NetworkManager implements Globals {
     }
 
     public int getClientLatency() {
-        if (mc.getNetworkHandler() != null) {
-            final PlayerListEntry playerEntry =
-                mc.getNetworkHandler().getPlayerListEntry(mc.player.getGameProfile().id());
+        if (mc.getConnection() != null) {
+            final PlayerInfo playerEntry =
+                mc.getConnection().getPlayerInfo(mc.player.getGameProfile().id());
             if (playerEntry != null) {
                 return playerEntry.getLatency();
             }
@@ -99,11 +102,11 @@ public class NetworkManager implements Globals {
         return 0;
     }
 
-    public ServerInfo getInfo() {
+    public ServerData getInfo() {
         return info;
     }
 
-    public void setInfo(ServerInfo info) {
+    public void setInfo(ServerData info) {
         this.info = info;
     }
 
@@ -117,7 +120,7 @@ public class NetworkManager implements Globals {
 
     public String getServerIp() {
         if (info != null) {
-            return info.address;
+            return info.ip;
         }
         return "Singleplayer";
     }

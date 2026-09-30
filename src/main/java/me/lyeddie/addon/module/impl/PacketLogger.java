@@ -10,12 +10,25 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
-import net.minecraft.network.packet.c2s.play.*;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.hit.BlockHitResult;
-
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.common.ServerboundPongPacket;
+import net.minecraft.network.protocol.game.ServerboundAcceptTeleportationPacket;
+import net.minecraft.network.protocol.game.ServerboundClientCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
+import net.minecraft.network.protocol.game.ServerboundContainerClosePacket;
+import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.network.protocol.game.ServerboundMoveVehiclePacket;
+import net.minecraft.network.protocol.game.ServerboundPickItemFromBlockPacket;
+import net.minecraft.network.protocol.game.ServerboundPickItemFromEntityPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
+import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
+import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.phys.BlockHitResult;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -156,7 +169,7 @@ public class PacketLogger extends AddonModule implements Helpers {
         Map<Identifier, Integer> packetCountMap = new HashMap<>();
         for (PacketLog packetLog : packetLogs) {
             Packet<?> packet = packetLog.packet();
-            Identifier identifier = packet.getPacketType().id();
+            Identifier identifier = packet.type().id();
             if (packetCountMap.containsKey(identifier)) {
                 packetCountMap.replace(identifier, packetCountMap.get(identifier) + 1);
             } else {
@@ -167,7 +180,7 @@ public class PacketLogger extends AddonModule implements Helpers {
         List<String> strings = new ArrayList<>();
         for (Map.Entry<Identifier, Integer> entry : packetCountMap.entrySet()) {
             Identifier packet = entry.getKey();
-            strings.add(packet.toShortTranslationKey() + ": " + entry.getValue());
+            strings.add(packet.toShortLanguageKey() + ": " + entry.getValue());
         }
 
         info("PacketLogger", String.join(",", strings));
@@ -175,85 +188,85 @@ public class PacketLogger extends AddonModule implements Helpers {
 
     @EventHandler
     public void onPacketOutbound(PacketEvent.Send event) {
-        if (event.packet instanceof PlayerMoveC2SPacket.Full packet && moveFullConfig.get()) {
+        if (event.packet instanceof ServerboundMovePlayerPacket.PosRot packet && moveFullConfig.get()) {
             StringBuilder builder = new StringBuilder();
             builder.append("PlayerMove Full - ");
-            if (packet.changesPosition()) {
+            if (packet.hasPosition()) {
                 builder.append("x: ").append(packet.getX(0.0)).append(", y: ").append(packet.getY(0.0)).append(", z: ").append(packet.getZ(0.0)).append(" ");
             }
-            if (packet.changesLook()) {
-                builder.append("yaw: ").append(packet.getYaw(0.0f)).append(", pitch: ").append(packet.getPitch(0.0f)).append(" ");
+            if (packet.hasRotation()) {
+                builder.append("yaw: ").append(packet.getYRot(0.0f)).append(", pitch: ").append(packet.getXRot(0.0f)).append(" ");
             }
             builder.append(" onground: ").append(packet.isOnGround());
             logPacket(packet, builder.toString());
         }
-        if (event.packet instanceof PlayerMoveC2SPacket.PositionAndOnGround packet && movePosConfig.get()) {
+        if (event.packet instanceof ServerboundMovePlayerPacket.Pos packet && movePosConfig.get()) {
             StringBuilder builder = new StringBuilder();
             builder.append("PlayerMove PosGround - ");
-            if (packet.changesPosition()) {
+            if (packet.hasPosition()) {
                 builder.append("x: ").append(packet.getX(0.0)).append(", y: ").append(packet.getY(0.0)).append(", z: ").append(packet.getZ(0.0)).append(" ");
             }
             builder.append(" onground: ").append(packet.isOnGround());
             logPacket(packet, builder.toString());
         }
-        if (event.packet instanceof PlayerMoveC2SPacket.LookAndOnGround packet && moveLookConfig.get()) {
+        if (event.packet instanceof ServerboundMovePlayerPacket.Rot packet && moveLookConfig.get()) {
             StringBuilder builder = new StringBuilder();
             builder.append("PlayerMove LookGround - ");
-            if (packet.changesLook()) {
-                builder.append("yaw: ").append(packet.getYaw(0.0f)).append(", pitch: ").append(packet.getPitch(0.0f)).append(" ");
+            if (packet.hasRotation()) {
+                builder.append("yaw: ").append(packet.getYRot(0.0f)).append(", pitch: ").append(packet.getXRot(0.0f)).append(" ");
             }
             builder.append(" onground: ").append(packet.isOnGround());
             logPacket(packet, builder.toString());
         }
-        if (event.packet instanceof PlayerMoveC2SPacket.OnGroundOnly packet && moveGroundConfig.get()) {
+        if (event.packet instanceof ServerboundMovePlayerPacket.StatusOnly packet && moveGroundConfig.get()) {
             String s = "PlayerMove Ground - onground: " + packet.isOnGround();
             logPacket(packet, s);
         }
-        if (event.packet instanceof VehicleMoveC2SPacket packet && vehicleMoveConfig.get()) {
-            logPacket(packet, "VehicleMove - pos: %s, yaw: %s, pitch: %s", packet.position(), packet.yaw(), packet.pitch());
+        if (event.packet instanceof ServerboundMoveVehiclePacket packet && vehicleMoveConfig.get()) {
+            logPacket(packet, "VehicleMove - pos: %s, yaw: %s, pitch: %s", packet.position(), packet.yRot(), packet.xRot());
         }
-        if (event.packet instanceof PlayerActionC2SPacket packet && playerActionConfig.get()) {
+        if (event.packet instanceof ServerboundPlayerActionPacket packet && playerActionConfig.get()) {
             logPacket(packet, "PlayerAction - action: %s, direction: %s, pos: %s", packet.getAction().name(), packet.getDirection().name(), packet.getPos().toShortString());
         }
-        if (event.packet instanceof UpdateSelectedSlotC2SPacket packet && updateSlotConfig.get()) {
-            logPacket(packet, "UpdateSlot - slot: %d", packet.getSelectedSlot());
+        if (event.packet instanceof ServerboundSetCarriedItemPacket packet && updateSlotConfig.get()) {
+            logPacket(packet, "UpdateSlot - slot: %d", packet.getSlot());
         }
-        if (event.packet instanceof HandSwingC2SPacket packet && handSwingConfig.get()) {
+        if (event.packet instanceof ServerboundSwingPacket packet && handSwingConfig.get()) {
             logPacket(packet, "HandSwing - hand: %s", packet.getHand().name());
         }
-        if (event.packet instanceof CommonPongC2SPacket packet && pongConfig.get()) {
-            logPacket(packet, "Pong - %d", packet.getParameter());
+        if (event.packet instanceof ServerboundPongPacket packet && pongConfig.get()) {
+            logPacket(packet, "Pong - %d", packet.getId());
         }
-        if (event.packet instanceof PlayerInteractEntityC2SPacket packet && mc.world != null && interactEntityConfig.get()) {
+        if (event.packet instanceof ServerboundInteractPacket packet && mc.level != null && interactEntityConfig.get()) {
             logPacket(packet, "InteractEntity");
         }
-        if (event.packet instanceof PlayerInteractBlockC2SPacket packet && interactBlockConfig.get()) {
-            BlockHitResult blockHitResult = packet.getBlockHitResult();
-            logPacket(packet, "InteractBlock - pos: %s, dir: %s, hand: %s", blockHitResult.getBlockPos().toShortString(), blockHitResult.getSide().name(), packet.getHand().name());
+        if (event.packet instanceof ServerboundUseItemOnPacket packet && interactBlockConfig.get()) {
+            BlockHitResult blockHitResult = packet.getHitResult();
+            logPacket(packet, "InteractBlock - pos: %s, dir: %s, hand: %s", blockHitResult.getBlockPos().toShortString(), blockHitResult.getDirection().name(), packet.getHand().name());
         }
-        if (event.packet instanceof PlayerInteractItemC2SPacket packet && interactItemConfig.get()) {
+        if (event.packet instanceof ServerboundUseItemPacket packet && interactItemConfig.get()) {
             logPacket(packet, "InteractItem - hand: %s", packet.getHand().name());
         }
-        if (event.packet instanceof CloseHandledScreenC2SPacket packet && closeScreenConfig.get()) {
-            logPacket(packet, "CloseScreen - id: %s", packet.getSyncId());
+        if (event.packet instanceof ServerboundContainerClosePacket packet && closeScreenConfig.get()) {
+            logPacket(packet, "CloseScreen - id: %s", packet.getContainerId());
         }
-        if (event.packet instanceof ClientCommandC2SPacket packet && commandConfig.get()) {
-            logPacket(packet, "ClientCommand - mode: %s", packet.getMode().name());
+        if (event.packet instanceof ServerboundPlayerCommandPacket packet && commandConfig.get()) {
+            logPacket(packet, "ClientCommand - mode: %s", packet.getAction().name());
         }
-        if (event.packet instanceof ClientStatusC2SPacket packet && statusConfig.get()) {
-            logPacket(packet, "ClientStatus - mode: %s", packet.getMode().name());
+        if (event.packet instanceof ServerboundClientCommandPacket packet && statusConfig.get()) {
+            logPacket(packet, "ClientStatus - mode: %s", packet.getAction().name());
         }
-        if (event.packet instanceof ClickSlotC2SPacket packet && clickSlotConfig.get()) {
-            logPacket(packet, "ClickSlot - type: %s, slot: %s, button: %s, id: %s", packet.actionType().name(), packet.slot(), packet.button(), packet.syncId());
+        if (event.packet instanceof ServerboundContainerClickPacket packet && clickSlotConfig.get()) {
+            logPacket(packet, "ClickSlot - type: %s, slot: %s, button: %s, id: %s", packet.clickType().name(), packet.slotNum(), packet.buttonNum(), packet.containerId());
         }
-        if (event.packet instanceof PickItemFromBlockC2SPacket packet && pickInventoryConfig.get()) {
+        if (event.packet instanceof ServerboundPickItemFromBlockPacket packet && pickInventoryConfig.get()) {
             logPacket(packet, "PickBlock - pos: %s, includeData: %s", packet.pos(), packet.includeData());
         }
-        if (event.packet instanceof PickItemFromEntityC2SPacket packet && pickInventoryConfig.get()) {
+        if (event.packet instanceof ServerboundPickItemFromEntityPacket packet && pickInventoryConfig.get()) {
             logPacket(packet, "PickEntity - id: %s, includeData: %s", packet.id(), packet.includeData());
         }
-        if (event.packet instanceof TeleportConfirmC2SPacket packet && teleportConfirmConfig.get()) {
-            logPacket(packet, "TeleportConfirm - id: %s", packet.getTeleportId());
+        if (event.packet instanceof ServerboundAcceptTeleportationPacket packet && teleportConfirmConfig.get()) {
+            logPacket(packet, "TeleportConfirm - id: %s", packet.getId());
         }
     }
 

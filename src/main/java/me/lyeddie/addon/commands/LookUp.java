@@ -5,7 +5,7 @@ import me.lyeddie.addon.util.PlayerArgumentType;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.util.Helpers;
 import meteordevelopment.meteorclient.commands.Command;
-import net.minecraft.command.CommandSource;
+import net.minecraft.commands.SharedSuggestionProvider;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.UUID;
@@ -18,7 +18,7 @@ public class LookUp extends Command implements Helpers {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<CommandSource> builder) {
+    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
         builder.executes(context -> {
             info("no args");
             return 1;
