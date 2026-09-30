@@ -14,7 +14,7 @@ import net.minecraft.client.particle.FireworkParticles;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.protocol.game.ClientboundDamageEventPacket;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.player.Player;
 import java.util.HashMap;
@@ -55,7 +55,7 @@ public class KillEffects extends AddonModule {
         switch (killEffectConfig.get()) {
             case LIGHTNING -> {
                 for (int i = 0; i < strikesConfig.get(); i++) {
-                    LightningBolt lightningEntity = new LightningBolt(EntityType.LIGHTNING_BOLT, mc.level);
+                    LightningBolt lightningEntity = new LightningBolt(EntityTypes.LIGHTNING_BOLT, mc.level);
                     lightningEntity.setPosRaw(player.getX(), player.getY(), player.getZ());
                     mc.level.addEntity(lightningEntity);
                 }

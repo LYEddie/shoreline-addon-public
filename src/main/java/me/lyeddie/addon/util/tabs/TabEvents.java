@@ -130,7 +130,7 @@ public class TabEvents implements Globals, Helpers {
     }
 
     public static Vec3 getDirectionOffsetPos(BlockPos pos, Direction direction) {
-        Vec3 pos1 = pos.getCenter();
+        Vec3 pos1 = Vec3.atCenterOf(pos);
         return switch (direction) {
             case UP -> pos1.add(0.0, 0.5, 0.0);
             case DOWN -> pos1.add(0.0, -0.5, 0.0);

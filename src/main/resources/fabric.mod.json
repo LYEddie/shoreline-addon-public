@@ -27,7 +27,7 @@
   },
   "accessWidener": "shoreline-addon.accesswidener",
   "depends": {
-    "java": ">=21",
+    "java": ">=25",
     "minecraft": ["${mc_version}"],
     "meteor-client": "*"
   }

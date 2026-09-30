@@ -214,7 +214,7 @@ public class SpeedMineII extends CombatModule {
             }
         }
         MiningData miningData2 = miningQueue.getFirst();
-        final double distance = mc.player.getEyePosition().distanceToSqr(miningData2.getPos().getCenter());
+        final double distance = mc.player.getEyePosition().distanceToSqr(Vec3.atCenterOf(miningData2.getPos()));
         if (distance > getValueSq(rangeConfig.get())) {
             miningQueue.remove(miningData2);
             return;
@@ -435,7 +435,7 @@ public class SpeedMineII extends CombatModule {
             return;
         }
         if (rotateConfig.get()) {
-            float[] rotations = RotationUtil.getRotationsTo(mc.player.getEyePosition(), data.getPos().getCenter());
+            float[] rotations = RotationUtil.getRotationsTo(mc.player.getEyePosition(), Vec3.atCenterOf(data.getPos()));
             if (grimConfig.get()) {
                 setRotationSilent(rotations[0], rotations[1]);
             } else {

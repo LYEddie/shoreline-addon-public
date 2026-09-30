@@ -39,11 +39,11 @@ public class AddonModule extends Module {
         MutableComponent last = Component.empty();
         last.append(prefix + " §7[§d" + title + "§7] ");
         last.append(mutVal);
-        ((IChatHud) mc.gui.getChat()).meteor$add(last, (Config.get().deleteChatFeedback.get() ? 0 : 1));
+        ((IChatHud) mc.gui.hud.getChat()).meteor$add(last, (Config.get().deleteChatFeedback.get() ? 0 : 1));
     }
 
     public void sendMessage(Component text, int id) {
-        ((IChatHud) mc.gui.getChat()).meteor$add(text, id);
+        ((IChatHud) mc.gui.hud.getChat()).meteor$add(text, id);
     }
 
 /*    public Color getClampColor(SettingColor set, int alpha) {

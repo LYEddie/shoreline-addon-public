@@ -71,7 +71,7 @@ public class Hole implements Position {
         } else if (isQuad()) {
             center = origin.offset(1, 0, -1);
         } else {
-            return origin.getCenter();
+            return Vec3.atCenterOf(origin);
         }
         return Vec3.atLowerCornerOf(center);
     }

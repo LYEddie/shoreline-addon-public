@@ -121,7 +121,7 @@ public class AutoWeb extends BlockPlacerModule {
                 continue;
             }
             BlockPos feetPos = entity.blockPosition();
-            double dist = mc.player.getEyePosition().distanceToSqr(feetPos.getCenter());
+            double dist = mc.player.getEyePosition().distanceToSqr(Vec3.atCenterOf(feetPos));
             if (mc.level.getBlockState(feetPos).isAir() && dist <= getValueSq(rangeConfig.get())) {
                 if (!Managers.INTERACT.canPlace(feetPos, Blocks.COBWEB)) {
                     continue;
@@ -130,7 +130,7 @@ public class AutoWeb extends BlockPlacerModule {
             }
             if (coverHeadConfig.get()) {
                 BlockPos headPos = feetPos.above();
-                double dist2 = mc.player.getEyePosition().distanceToSqr(headPos.getCenter());
+                double dist2 = mc.player.getEyePosition().distanceToSqr(Vec3.atCenterOf(headPos));
                 if (mc.level.getBlockState(headPos).isAir() && dist2 <= getValueSq(rangeConfig.get()) && Managers.INTERACT.canPlace(headPos, Blocks.COBWEB)) {
                     webPlacements.add(headPos);
                 }

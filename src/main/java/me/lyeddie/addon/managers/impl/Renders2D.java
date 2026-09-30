@@ -68,14 +68,14 @@ public class Renders2D implements Globals {
         for (Sign sign : renderSigns) {
             if (!NametagUtils.to2D(sign.pos, sign.scale)) continue;
 
-            NametagUtils.begin(sign.pos);
-            TextRenderer.get().begin(1, false, true);
+            NametagUtils.begin(sign.pos, event.graphics);
+            TextRenderer.get().begin(event.graphics, 1, false, true);
 
             double width = TextRenderer.get().getWidth(sign.text) / 2.0;
             TextRenderer.get().render(sign.text, -width, 0, sign.color, true);
 
             TextRenderer.get().end();
-            NametagUtils.end();
+            NametagUtils.end(event.graphics);
         }
 
         renderSigns.clear();

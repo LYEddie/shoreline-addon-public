@@ -11,7 +11,7 @@ import net.minecraft.world.phys.Vec3;
 public final class RayCastUtil implements Globals {
 
     public static HitResult raycastEntity(final double reach) {
-        Camera view = mc.gameRenderer.getMainCamera();
+        Camera view = mc.gameRenderer.mainCamera();
         Vec3 vec3d = view.position();
         Vec3 vec3d2 = RotationUtil.getRotationVector(view.xRot(), view.yRot());
         Vec3 vec3d3 = vec3d.add(vec3d2.x * reach, vec3d2.y * reach, vec3d2.z * reach);

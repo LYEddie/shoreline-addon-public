@@ -78,7 +78,7 @@ public class BreakHighlight extends AddonModule {
                 breakingProgress.remove(mine.getKey(), mine.getValue());
                 continue;
             }
-            double dist = mc.player.distanceToSqr(mining.getCenter());
+            double dist = mc.player.distanceToSqr(Vec3.atCenterOf(mining));
             if (dist > getValueSq(rangeConfig.get())) {
                 continue;
             }

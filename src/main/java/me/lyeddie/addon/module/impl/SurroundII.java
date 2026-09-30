@@ -26,7 +26,7 @@ import net.minecraft.network.protocol.game.ServerboundAttackPacket;
 import net.minecraft.network.protocol.game.ServerboundSwingPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Block;
@@ -263,7 +263,7 @@ public class SurroundII extends ObsidianPlacerModule {
             }
         }
 
-        if (serverPacket instanceof ClientboundAddEntityPacket packet && packet.getType().equals(EntityType.END_CRYSTAL) && replaceConfig.get() == ReplaceMode.STRICT) {
+        if (serverPacket instanceof ClientboundAddEntityPacket packet && packet.getType().equals(EntityTypes.END_CRYSTAL) && replaceConfig.get() == ReplaceMode.STRICT) {
             for (BlockPos pos : surround) {
                 if (!pos.equals(BlockPos.containing(packet.getX(), packet.getY(), packet.getZ()))) {
                     continue;
@@ -309,7 +309,7 @@ public class SurroundII extends ObsidianPlacerModule {
             if (!mc.level.getBlockState(surroundPos).canBeReplaced()) {
                 continue;
             }
-            double dist = mc.player.distanceToSqr(surroundPos.getCenter());
+            double dist = mc.player.distanceToSqr(Vec3.atCenterOf(surroundPos));
             if (dist > getValueSq(placeRangeConfig.get())) {
                 continue;
             }
@@ -362,7 +362,7 @@ public class SurroundII extends ObsidianPlacerModule {
         List<BlockPos> surroundBlocks = new ArrayList<>();
         List<BlockPos> playerBlocks = getPlayerBlocks(player);
         for (BlockPos pos : playerBlocks) {
-            if (range > 0.0f && mc.player.getEyePosition().distanceToSqr(pos.getCenter()) > range * range) {
+            if (range > 0.0f && mc.player.getEyePosition().distanceToSqr(Vec3.atCenterOf(pos)) > range * range) {
                 continue;
             }
             for (Direction dir : Direction.values()) {

@@ -32,6 +32,4 @@ public interface AccessorMinecraftClient {
     @Accessor("level")
     void hookSetWorld(ClientLevel world);
 
-    @Accessor("clientLevelTeardownInProgress")
-    void hookSetDisconnecting(boolean disconnecting);
 }

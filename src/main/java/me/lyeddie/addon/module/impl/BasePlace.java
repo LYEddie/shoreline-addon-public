@@ -198,12 +198,12 @@ public class BasePlace extends ObsidianPlacerModule {
                 continue;
             }
 
-            double dist = mc.player.distanceToSqr(basePos.getCenter());
+            double dist = mc.player.distanceToSqr(Vec3.atCenterOf(basePos));
             if (dist > getValueSq(placeRangeConfig.get())) {
                 continue;
             }
 
-            double dmg1 = ExplosionUtil.getDamageTo(player, pos.getCenter(), assumeArmorConfig.get());
+            double dmg1 = ExplosionUtil.getDamageTo(player, Vec3.atCenterOf(pos), assumeArmorConfig.get());
             if (dmg1 < minDamageConfig.get()) {
                 continue;
             }

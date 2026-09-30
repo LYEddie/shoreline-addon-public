@@ -111,7 +111,7 @@ public class Replenish extends AddonModule {
     }
 
     public boolean isInInventoryScreen() {
-        return mc.screen instanceof ContainerScreen || mc.screen instanceof ShulkerBoxScreen || mc.screen instanceof InventoryScreen;
+        return mc.gui.screen() instanceof ContainerScreen || mc.gui.screen() instanceof ShulkerBoxScreen || mc.gui.screen() instanceof InventoryScreen;
     }
 
     private void replenishStack(int slot, ItemStack stack) {

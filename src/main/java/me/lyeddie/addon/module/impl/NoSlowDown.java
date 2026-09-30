@@ -320,8 +320,8 @@ public class NoSlowDown extends AddonModule {
     }
 
     public boolean checkScreen() {
-        return mc.screen != null && !(mc.screen instanceof ChatScreen
-            || mc.screen instanceof SignEditScreen || mc.screen instanceof DeathScreen);
+        return mc.gui.screen() != null && !(mc.gui.screen() instanceof ChatScreen
+            || mc.gui.screen() instanceof SignEditScreen || mc.gui.screen() instanceof DeathScreen);
     }
 
     public List<BlockPos> getIntersectingWebs(AABB boundingBox) {

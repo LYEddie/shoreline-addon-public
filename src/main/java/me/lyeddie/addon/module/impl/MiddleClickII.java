@@ -48,7 +48,7 @@ public class MiddleClickII extends AddonModule {
         if (mc.player == null || mc.gameMode == null) {
             return;
         }
-        if (event.action == KeyAction.Press && event.button() == 2 && this.mc.screen == null) {
+        if (event.action == KeyAction.Press && event.button() == 2 && this.mc.gui.screen() == null) {
             double d = mc.player.entityInteractionRange();
             HitResult result = RayCastUtil.raycastEntity(d);
             if (result != null && result.getType() == HitResult.Type.ENTITY && friendConfig.get() && ((EntityHitResult) result).getEntity() instanceof Player target) {

@@ -233,7 +233,7 @@ public class ScaffoldII extends BlockPlacerModule {
     private void calcRotations(final BlockData blockData) {
         final BlockPos pos = blockData.getHitResult().getBlockPos();
         final Direction side = blockData.getHitResult().getDirection();
-        final Vec3 basicHitVec = pos.getCenter()
+        final Vec3 basicHitVec = Vec3.atCenterOf(pos)
             .add(side.getStepX() * 0.5f, side.getStepY() * 0.5f, side.getStepZ() * 0.5f);
         blockData.setAngles(RotationUtil.getRotationsTo(mc.player.getEyePosition(), basicHitVec));
         blockData.setHitResult(new BlockHitResult(basicHitVec, side, pos, false));
@@ -337,7 +337,7 @@ public class ScaffoldII extends BlockPlacerModule {
         }
 
         public static BlockData basic(final BlockPos pos, final Direction direction) {
-            return new BlockData(new BlockHitResult(pos.getCenter(), direction, pos, false), null);
+            return new BlockData(new BlockHitResult(Vec3.atCenterOf(pos), direction, pos, false), null);
         }
 
         public BlockHitResult getHitResult() {

@@ -227,7 +227,7 @@ public class CrawlTrap extends ObsidianPlacerModule {
                 && !(Managers.BLOCK.isPassed(surroundPos, 0.7f) && mineIgnoreConfig.get())) {
                 continue;
             }
-            double dist = mc.player.distanceToSqr(surroundPos.getCenter());
+            double dist = mc.player.distanceToSqr(Vec3.atCenterOf(surroundPos));
             if (dist > getValueSq(rangeConfig.get())) {
                 continue;
             }

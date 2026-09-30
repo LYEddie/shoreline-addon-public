@@ -296,7 +296,7 @@ public class AutoMine extends CombatModule {
         }
 
         if (instantMine != null) {
-            final double distance = mc.player.getEyePosition().distanceToSqr(instantMine.getPos().getCenter());
+            final double distance = mc.player.getEyePosition().distanceToSqr(Vec3.atCenterOf(instantMine.getPos()));
             if (distance > getValueSq(rangeConfig.get()) || instantMine.getTicksMining() > mineTicksConfig.get()) {
                 abortMining(instantMine);
                 instantMineAnim.animation.setState(false);
@@ -544,7 +544,7 @@ public class AutoMine extends CombatModule {
                 continue;
             }
 
-            double dist = mc.player.getEyePosition().distanceToSqr(blockPos.getCenter());
+            double dist = mc.player.getEyePosition().distanceToSqr(Vec3.atCenterOf(blockPos));
             if (dist > getValueSq(rangeConfig.get())) {
                 continue;
             }
@@ -575,7 +575,7 @@ public class AutoMine extends CombatModule {
                 return true;
             }
 
-            double dist = mc.player.getEyePosition().distanceToSqr(p.getCenter());
+            double dist = mc.player.getEyePosition().distanceToSqr(Vec3.atCenterOf(p));
             if (dist > getValueSq(rangeConfig.get())) {
                 return true;
             }
@@ -697,7 +697,7 @@ public class AutoMine extends CombatModule {
 
     public void startMining(MineData data) {
         if (rotateConfig.get()) {
-            float[] rotations = RotationUtil.getRotationsTo(mc.player.getEyePosition(), data.getPos().getCenter());
+            float[] rotations = RotationUtil.getRotationsTo(mc.player.getEyePosition(), Vec3.atCenterOf(data.getPos()));
             if (grimConfig.get()) {
                 setRotationSilent(rotations[0], rotations[1]);
             } else {
@@ -747,7 +747,7 @@ public class AutoMine extends CombatModule {
 
     public void stopMining(MineData data) {
         if (rotateConfig.get()) {
-            float[] rotations = RotationUtil.getRotationsTo(mc.player.getEyePosition(), data.getPos().getCenter());
+            float[] rotations = RotationUtil.getRotationsTo(mc.player.getEyePosition(), Vec3.atCenterOf(data.getPos()));
             if (grimConfig.get()) {
                 setRotationSilent(rotations[0], rotations[1]);
             } else {
@@ -884,7 +884,7 @@ public class AutoMine extends CombatModule {
         }
 
         private double getPriority() {
-            double dist = mc.player.getEyePosition().distanceToSqr(pos.below().getCenter());
+            double dist = mc.player.getEyePosition().distanceToSqr(Vec3.atCenterOf(pos.below()));
             if (dist <= AutoCrystal.getInstance().getPlaceRange()) {
                 return 10.0f;
             }

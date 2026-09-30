@@ -525,7 +525,7 @@ public class AutoCrystal extends CombatModule {
         if (attackCrystal != null) {
             crystalRotation = attackCrystal.damageData.position();
         } else if (placeCrystal != null) {
-            crystalRotation = placeCrystal.damageData.getCenter().add(0.0, 0.5, 0.0);
+            crystalRotation = Vec3.atCenterOf(placeCrystal.damageData).add(0.0, 0.5, 0.0);
         }
         if (rotateConfig.get() && crystalRotation != null && (placeCrystal == null || canHoldCrystal())) {
             float[] rotations = RotationUtil.getRotationsTo(mc.player.getEyePosition(), crystalRotation);
@@ -617,7 +617,7 @@ public class AutoCrystal extends CombatModule {
 
             if (debugDamageConfig.get() && renderPos1 != null) {
                 Managers.RENDERS2D.renderSign(String.format("%.1f", renderDamage),
-                    renderPos1.getCenter(), new Color(255, 255, 255, (int) (255.0f * factor)).getRGB());
+                    Vec3.atCenterOf(renderPos1), new Color(255, 255, 255, (int) (255.0f * factor)).getRGB());
             }
 
             fadeList.entrySet().removeIf(e ->
@@ -875,7 +875,7 @@ public class AutoCrystal extends CombatModule {
             return;
         }
         Direction sidePlace = getPlaceDirection(blockPos);
-        BlockHitResult result = new BlockHitResult(blockPos.getCenter(), sidePlace, blockPos, false);
+        BlockHitResult result = new BlockHitResult(Vec3.atCenterOf(blockPos), sidePlace, blockPos, false);
         if (autoSwapConfig.get() != Swap.OFF && hand != InteractionHand.OFF_HAND && getCrystalHand() == null) {
             if (isSilentSwap(autoSwapConfig.get()) && InventoryUtil.count(Items.END_CRYSTAL) == 0) {
                 return;
@@ -1070,7 +1070,7 @@ public class AutoCrystal extends CombatModule {
             if (antiSurroundConfig.get()) {
                 return validData.stream()
                     .filter(DamageData::isAntiSurround)
-                    .min(Comparator.comparingDouble(d -> mc.player.distanceToSqr(d.getBlockPos().getCenter())))
+                    .min(Comparator.comparingDouble(d -> mc.player.distanceToSqr(Vec3.atCenterOf(d.getBlockPos()))))
                     .orElse(null);
             }
             return null;
@@ -1176,7 +1176,7 @@ public class AutoCrystal extends CombatModule {
             if (antiSurroundConfig.get()) {
                 return validData.stream()
                     .filter(DamageData::isAntiSurround)
-                    .min(Comparator.comparingDouble(d -> mc.player.distanceToSqr(d.getBlockPos().getCenter())))
+                    .min(Comparator.comparingDouble(d -> mc.player.distanceToSqr(Vec3.atCenterOf(d.getBlockPos()))))
                     .orElse(null);
             }
             return null;
@@ -1189,7 +1189,7 @@ public class AutoCrystal extends CombatModule {
         double placeWallRange = placeWallRangeConfig.get();
         Vec3 player = placeRangeEyeConfig.get() ? mc.player.getEyePosition() : mc.player.position();
         double dist = placeRangeCenterConfig.get() ?
-            player.distanceToSqr(pos.getCenter()) : pos.distToLowCornerSqr(player.x, player.y, player.z);
+            player.distanceToSqr(Vec3.atCenterOf(pos)) : pos.distToLowCornerSqr(player.x, player.y, player.z);
         if (dist > placeRange * placeRange) {
             return true;
         }
@@ -1224,7 +1224,7 @@ public class AutoCrystal extends CombatModule {
             return;
         }
 
-        float[] rotations = RotationUtil.getRotationsTo(mc.player.getEyePosition(), blockPos.getCenter());
+        float[] rotations = RotationUtil.getRotationsTo(mc.player.getEyePosition(), Vec3.atCenterOf(blockPos));
         setRotation(rotations[0], rotations[1]);
         placeCrystal(blockPos, InteractionHand.MAIN_HAND, false);
         fadeList.put(blockPos, new Animation(true, fadeTimeConfig.get()));

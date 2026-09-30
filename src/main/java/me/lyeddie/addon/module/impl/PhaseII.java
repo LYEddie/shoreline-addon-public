@@ -254,7 +254,7 @@ public class PhaseII extends ObsidianPlacerModule {
             return;
         }
 
-        Vec3 vec3d = mc.player.blockPosition().getCenter();
+        Vec3 vec3d = Vec3.atCenterOf(mc.player.blockPosition());
         boolean flagX = (vec3d.x - mc.player.getX()) > 0;
         boolean flagZ = (vec3d.z - mc.player.getZ()) > 0;
         double x = vec3d.x + 0.20000000009497754 * (flagX ? -1 : 1);

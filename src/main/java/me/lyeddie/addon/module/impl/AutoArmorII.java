@@ -62,7 +62,7 @@ public class AutoArmorII extends AddonModule {
 
     @EventHandler
     public void onTick(PlayerTickEvent event) {
-        if (mc.screen != null && !(mc.screen instanceof InventoryScreen && inventoryConfig.get())) {
+        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof InventoryScreen && inventoryConfig.get())) {
             return;
         }
 

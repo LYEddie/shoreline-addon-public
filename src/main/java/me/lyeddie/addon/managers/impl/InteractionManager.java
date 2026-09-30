@@ -112,13 +112,13 @@ public final class InteractionManager implements Globals {
     }
 
     public boolean placeBlock(final BlockPos pos, final Direction direction, final int slot, final boolean clientSwing, final boolean grimAirPlace, final boolean packet, final RotationCallback rotationCallback) {
-        Vec3 hitVec = pos.getCenter().add(new Vec3(direction.step()).scale(0.5));
+        Vec3 hitVec = Vec3.atCenterOf(pos).add(new Vec3(direction.step()).scale(0.5));
         return placeBlock(new BlockHitResult(hitVec, direction, pos, false),
             slot, clientSwing, grimAirPlace, packet, rotationCallback);
     }
 
     public boolean placeBlock(final BlockPos pos, final Direction direction, final int slot, final boolean clientSwing, final boolean grimAirPlace, final RotationCallback rotationCallback) {
-        Vec3 hitVec = pos.getCenter().add(new Vec3(direction.step()).scale(0.5));
+        Vec3 hitVec = Vec3.atCenterOf(pos).add(new Vec3(direction.step()).scale(0.5));
         return placeBlock(new BlockHitResult(hitVec, direction, pos, false),
             slot, clientSwing, grimAirPlace, rotationCallback);
     }
@@ -226,7 +226,7 @@ public final class InteractionManager implements Globals {
     }
 
     public Direction getInteractDirectionInternal(final BlockPos blockPos, final boolean strictDirection) {
-        Set<Direction> validDirections = getPlaceDirectionsNCP(mc.player.getEyePosition(), blockPos.getCenter());
+        Set<Direction> validDirections = getPlaceDirectionsNCP(mc.player.getEyePosition(), Vec3.atCenterOf(blockPos));
         Direction interactDirection = null;
         for (final Direction direction : Direction.values()) {
             final BlockState state = mc.level.getBlockState(blockPos.relative(direction));

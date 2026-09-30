@@ -259,7 +259,7 @@ public class AutoTrapII extends ObsidianPlacerModule {
             if (!mc.level.getBlockState(surroundPos).canBeReplaced()) {
                 continue;
             }
-            double dist = mc.player.distanceToSqr(surroundPos.getCenter());
+            double dist = mc.player.distanceToSqr(Vec3.atCenterOf(surroundPos));
             if (dist > getValueSq(placeRangeConfig.get())) {
                 continue;
             }
@@ -311,7 +311,7 @@ public class AutoTrapII extends ObsidianPlacerModule {
                         support = true;
                         break;
                     }
-                    double dist = mc.player.distanceToSqr(pos1.getCenter());
+                    double dist = mc.player.distanceToSqr(Vec3.atCenterOf(pos1));
                     if (dist < min) {
                         supportingPos = pos1;
                         min = dist;
