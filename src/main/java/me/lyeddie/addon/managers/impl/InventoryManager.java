@@ -20,7 +20,7 @@ import net.minecraft.network.protocol.game.ClientboundSetHeldSlotPacket;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.ItemStack;
 import java.util.ArrayList;
 import java.util.List;
@@ -125,8 +125,8 @@ public class InventoryManager implements Globals {
 
     public void setSlotAlt(final int barSlot) {
         if (Inventory.isHotbarSlot(barSlot)) {
-            mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId,
-                barSlot + 36, slot, ClickType.SWAP, mc.player);
+            mc.gameMode.handleContainerInput(mc.player.inventoryMenu.containerId,
+                barSlot + 36, slot, ContainerInput.SWAP, mc.player);
         }
     }
 
@@ -157,15 +157,15 @@ public class InventoryManager implements Globals {
     }
 
     public int pickupSlot(final int slot) {
-        return click(slot, 0, ClickType.PICKUP);
+        return click(slot, 0, ContainerInput.PICKUP);
     }
 
-    public int click(int slot, int button, ClickType type) {
+    public int click(int slot, int button, ContainerInput type) {
         if (slot < 0) {
             return -1;
         }
         AbstractContainerMenu screenHandler = mc.player.containerMenu;
-        mc.gameMode.handleInventoryMouseClick(screenHandler.containerId, slot, button, type, mc.player);
+        mc.gameMode.handleContainerInput(screenHandler.containerId, slot, button, type, mc.player);
         return screenHandler.getStateId();
     }
 

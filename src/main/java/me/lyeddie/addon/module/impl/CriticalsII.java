@@ -2,7 +2,6 @@ package me.lyeddie.addon.module.impl;
 
 import me.lyeddie.addon.Shoreline;
 import me.lyeddie.addon.events.staged.OutboundPostPacketEvent;
-import me.lyeddie.addon.mixin.IPlayerInteractEntityC2SPacket;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.util.*;
 import me.lyeddie.addon.util.literal.EntityUtil;
@@ -17,7 +16,7 @@ import meteordevelopment.meteorclient.settings.SettingGroup;
 import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import net.minecraft.network.protocol.game.ServerboundAttackPacket;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
 import net.minecraft.network.protocol.game.ServerboundSwingPacket;
@@ -100,8 +99,7 @@ public class CriticalsII extends AddonModule {
             return;
         }
 
-        if (event.packet instanceof IPlayerInteractEntityC2SPacket packet
-            && packet.getType() == InteractType.ATTACK) {
+        if (event.packet instanceof ServerboundAttackPacket packet) {
             if (mc.player.isHandsBusy() || mc.player.isFallFlying()
                 || mc.player.isInWater()
                 || mc.player.isInLava()
@@ -111,15 +109,14 @@ public class CriticalsII extends AddonModule {
                 return;
             }
 
-            final Entity e = packet.getEntity();
+            final Entity e = mc.level.getEntity(packet.entityId());
             if (e == null || !e.isAlive() || !(e instanceof LivingEntity)) {
                 return;
             }
             if (EntityUtil.isVehicle(e)) {
                 if (modeConfig.get() == CritMode.PACKET) {
                     for (int i = 0; i < 5; ++i) {
-                        Managers.NETWORK.sendQuietPacket(ServerboundInteractPacket.createAttackPacket(e,
-                            Managers.POSITION.isSneaking()));
+                        Managers.NETWORK.sendQuietPacket(new ServerboundAttackPacket(e.getId()));
                         Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
                     }
                 }
@@ -220,7 +217,7 @@ public class CriticalsII extends AddonModule {
             return;
         }
 
-        if (event.getPacket() instanceof ServerboundInteractPacket) {
+        if (event.getPacket() instanceof ServerboundAttackPacket) {
             if (postUpdateGround) {
                 Managers.NETWORK.sendPacket(new ServerboundMovePlayerPacket.Pos(mc.player.getX(), mc.player.getY(), mc.player.getZ(), false, mc.player.horizontalCollision));
                 postUpdateGround = false;

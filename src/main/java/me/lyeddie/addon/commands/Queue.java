@@ -3,7 +3,7 @@ package me.lyeddie.addon.commands;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import me.lyeddie.addon.managers.Managers;
 import meteordevelopment.meteorclient.commands.Command;
-import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.client.multiplayer.ClientSuggestionProvider;
 import java.util.concurrent.Executors;
 
 public class Queue extends Command {
@@ -15,7 +15,7 @@ public class Queue extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
         builder.executes(c -> {
             try {
                 Executors.newSingleThreadExecutor().execute(() -> {

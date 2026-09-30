@@ -75,17 +75,14 @@ public class NoWeather extends AddonModule {
     private void setWeather(Weather weather) {
         switch (weather) {
             case CLEAR, ASH -> {
-                mc.level.getLevelData().setRaining(false);
                 mc.level.setRainLevel(0.0f);
                 mc.level.setThunderLevel(0.0f);
             }
             case RAIN -> {
-                mc.level.getLevelData().setRaining(true);
                 mc.level.setRainLevel(1.0f);
                 mc.level.setThunderLevel(0.0f);
             }
             case THUNDER -> {
-                mc.level.getLevelData().setRaining(true);
                 mc.level.setRainLevel(2.0f);
                 mc.level.setThunderLevel(1.0f);
             }

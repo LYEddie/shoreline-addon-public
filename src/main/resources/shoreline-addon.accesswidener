@@ -1,7 +1,4 @@
-accessWidener v1 named
-accessible class net/minecraft/client/particle/FireworksSparkParticle$Explosion
-accessible field net/minecraft/entity/data/DataTracker entries [Lnet/minecraft/entity/data/DataTracker$Entry;
-accessible field net/minecraft/entity/Entity POSE Lnet/minecraft/entity/data/TrackedData;
+accessWidener v1 official
 accessible field net/minecraft/network/syncher/SynchedEntityData itemsById [Lnet/minecraft/network/syncher/SynchedEntityData$DataItem;
 accessible field net/minecraft/world/entity/Entity DATA_POSE Lnet/minecraft/network/syncher/EntityDataAccessor;
 accessible class net/minecraft/client/particle/FireworkParticles$SparkParticle

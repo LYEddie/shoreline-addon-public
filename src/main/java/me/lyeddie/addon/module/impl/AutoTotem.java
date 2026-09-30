@@ -19,7 +19,7 @@ import net.minecraft.network.protocol.game.ClientboundSetHealthPacket;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -128,19 +128,19 @@ public class AutoTotem extends AddonModule {
                         int slot = n < 9 ? n + 36 : n;
                         replacing = true;
                         if (alternativeConfig.get()) {
-                            mc.gameMode.handleInventoryMouseClick(0, slot, totemSlot1, ClickType.SWAP, mc.player);
+                            mc.gameMode.handleContainerInput(0, slot, totemSlot1, ContainerInput.SWAP, mc.player);
                             replacing = false;
                         } else {
                             if (mc.player.containerMenu.getCarried().getItem() != Items.TOTEM_OF_UNDYING) {
-                                mc.gameMode.handleInventoryMouseClick(0, slot, 0, ClickType.PICKUP, mc.player);
+                                mc.gameMode.handleContainerInput(0, slot, 0, ContainerInput.PICKUP, mc.player);
                             }
                             if (mc.player.containerMenu.getCarried().getItem() == Items.TOTEM_OF_UNDYING) {
-                                mc.gameMode.handleInventoryMouseClick(0, totemSlot1, 0, ClickType.PICKUP, mc.player);
+                                mc.gameMode.handleContainerInput(0, totemSlot1, 0, ContainerInput.PICKUP, mc.player);
                                 lastTotemCount = InventoryUtil.count(Items.TOTEM_OF_UNDYING) - 1;
                             }
                             replacing = false;
                             if (!mc.player.containerMenu.getCarried().isEmpty() && mc.player.getOffhandItem().getItem() == Items.TOTEM_OF_UNDYING) {
-                                mc.gameMode.handleInventoryMouseClick(0, slot, 0, ClickType.PICKUP, mc.player);
+                                mc.gameMode.handleContainerInput(0, slot, 0, ContainerInput.PICKUP, mc.player);
                                 return;
                             }
                         }
@@ -211,19 +211,19 @@ public class AutoTotem extends AddonModule {
                 int slot = n < 9 ? n + 36 : n;
                 replacing = true;
                 if (alternativeConfig.get()) {
-                    mc.gameMode.handleInventoryMouseClick(0, slot, 40, ClickType.SWAP, mc.player);
+                    mc.gameMode.handleContainerInput(0, slot, 40, ContainerInput.SWAP, mc.player);
                     replacing = false;
                 } else {
                     if (mc.player.containerMenu.getCarried().getItem() != offhandItem) {
-                        mc.gameMode.handleInventoryMouseClick(0, slot, 0, ClickType.PICKUP, mc.player);
+                        mc.gameMode.handleContainerInput(0, slot, 0, ContainerInput.PICKUP, mc.player);
                     }
                     if (mc.player.containerMenu.getCarried().getItem() == offhandItem) {
-                        mc.gameMode.handleInventoryMouseClick(0, 45, 0, ClickType.PICKUP, mc.player);
+                        mc.gameMode.handleContainerInput(0, 45, 0, ContainerInput.PICKUP, mc.player);
                         lastTotemCount = InventoryUtil.count(Items.TOTEM_OF_UNDYING) - 1;
                     }
                     replacing = false;
                     if (!mc.player.containerMenu.getCarried().isEmpty() && mc.player.getOffhandItem().getItem() == offhandItem) {
-                        mc.gameMode.handleInventoryMouseClick(0, slot, 0, ClickType.PICKUP, mc.player);
+                        mc.gameMode.handleContainerInput(0, slot, 0, ContainerInput.PICKUP, mc.player);
                         return;
                     }
                 }

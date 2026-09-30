@@ -22,7 +22,6 @@
     "MixinMinecraftClient",
     "MixinPlayerEntity",
     "MixinPlayerEntityRenderer",
-    "MixinPlayerInteractEntityC2SPacket",
     "MixinRenderTickCounter",
     "MixinServerPlayerEntity",
     "MixinShulkerBoxSlot",

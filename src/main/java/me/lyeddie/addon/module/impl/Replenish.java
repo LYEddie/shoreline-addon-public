@@ -17,7 +17,7 @@ import net.minecraft.client.gui.screens.inventory.ContainerScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.inventory.ShulkerBoxScreen;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -132,10 +132,10 @@ public class Replenish extends AddonModule {
         }
 
         if (slot1 != -1) {
-            mc.gameMode.handleInventoryMouseClick(0, slot1, 0, ClickType.PICKUP, mc.player);
-            mc.gameMode.handleInventoryMouseClick(0, slot + 36, 0, ClickType.PICKUP, mc.player);
+            mc.gameMode.handleContainerInput(0, slot1, 0, ContainerInput.PICKUP, mc.player);
+            mc.gameMode.handleContainerInput(0, slot + 36, 0, ContainerInput.PICKUP, mc.player);
             if (!mc.player.containerMenu.getCarried().isEmpty()) {
-                mc.gameMode.handleInventoryMouseClick(0, slot1, 0, ClickType.PICKUP, mc.player);
+                mc.gameMode.handleContainerInput(0, slot1, 0, ContainerInput.PICKUP, mc.player);
             }
         }
     }

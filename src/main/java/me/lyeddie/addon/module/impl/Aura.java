@@ -23,7 +23,7 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import net.minecraft.network.protocol.game.ServerboundAttackPacket;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
@@ -443,7 +443,7 @@ public class Aura extends CombatModule {
             setRotationSilent(silentRotations[0], silentRotations[1]);
         }
 
-        ServerboundInteractPacket packet = ServerboundInteractPacket.createAttackPacket(entity, mc.player.isShiftKeyDown());
+        ServerboundAttackPacket packet = new ServerboundAttackPacket(entity.getId());
         Managers.NETWORK.sendPacket(packet);
         if (swingConfig.get()) {
             mc.player.swing(InteractionHand.MAIN_HAND);

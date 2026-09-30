@@ -460,9 +460,9 @@ public class SpeedII extends AddonModule {
             return;
         }
         if (event.packet instanceof ClientboundSetEntityMotionPacket packet
-            && packet.getId() == mc.player.getId()) {
-            double x = packet.getMovement().x;
-            double z = packet.getMovement().z;
+            && packet.id() == mc.player.getId()) {
+            double x = packet.movement().x;
+            double z = packet.movement().z;
         } else if (event.packet instanceof ClientboundPlayerPositionPacket) {
             resetStrafe();
         }

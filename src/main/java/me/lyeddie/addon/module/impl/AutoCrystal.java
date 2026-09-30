@@ -27,7 +27,7 @@ import net.minecraft.network.protocol.game.ClientboundBundlePacket;
 import net.minecraft.network.protocol.game.ClientboundExplodePacket;
 import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
-import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import net.minecraft.network.protocol.game.ServerboundAttackPacket;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
 import net.minecraft.network.protocol.game.ServerboundSwingPacket;
 import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
@@ -43,7 +43,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.EndCrystalItem;
 import net.minecraft.world.item.ExperienceBottleItem;
@@ -796,8 +796,8 @@ public class AutoCrystal extends CombatModule {
                 boolean canSwap = slot != Managers.INVENTORY.getServerSlot() && (antiWeaknessConfig.get() != Swap.NORMAL || autoSwapTimer.passed(500));
                 if (antiWeaknessConfig.get() != Swap.OFF && canSwap) {
                     if (antiWeaknessConfig.get() == Swap.SILENT_ALT) {
-                        mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId,
-                            slot + 36, mc.player.getInventory().getSelectedSlot(), ClickType.SWAP, mc.player);
+                        mc.gameMode.handleContainerInput(mc.player.inventoryMenu.containerId,
+                            slot + 36, mc.player.getInventory().getSelectedSlot(), ContainerInput.SWAP, mc.player);
                     } else if (antiWeaknessConfig.get() == Swap.SILENT) {
                         Managers.INVENTORY.setSlot(slot);
                     } else {
@@ -807,8 +807,8 @@ public class AutoCrystal extends CombatModule {
                 attackInternal(entity, InteractionHand.MAIN_HAND);
                 if (canSwap) {
                     if (antiWeaknessConfig.get() == Swap.SILENT_ALT) {
-                        mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId,
-                            slot + 36, mc.player.getInventory().getSelectedSlot(), ClickType.SWAP, mc.player);
+                        mc.gameMode.handleContainerInput(mc.player.inventoryMenu.containerId,
+                            slot + 36, mc.player.getInventory().getSelectedSlot(), ContainerInput.SWAP, mc.player);
                     } else if (antiWeaknessConfig.get() == Swap.SILENT) {
                         Managers.INVENTORY.syncToClient();
                     }
@@ -834,7 +834,7 @@ public class AutoCrystal extends CombatModule {
         hand = hand != null ? hand : InteractionHand.MAIN_HAND;
         EndCrystal entity2 = new EndCrystal(mc.level, 0.0, 0.0, 0.0);
         entity2.setId(crystalEntity);
-        ServerboundInteractPacket packet = ServerboundInteractPacket.createAttackPacket(entity2, mc.player.isShiftKeyDown());
+        ServerboundAttackPacket packet = new ServerboundAttackPacket(entity2.getId());
         Managers.NETWORK.sendPacket(packet);
         if (swingConfig.get()) {
             mc.player.swing(hand);
@@ -885,8 +885,8 @@ public class AutoCrystal extends CombatModule {
                 boolean canSwap = crystalSlot != Managers.INVENTORY.getServerSlot() && (autoSwapConfig.get() != Swap.NORMAL || autoSwapTimer.passed(500));
                 if (canSwap) {
                     if (autoSwapConfig.get() == Swap.SILENT_ALT) {
-                        mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId,
-                            crystalSlot + 36, mc.player.getInventory().getSelectedSlot(), ClickType.SWAP, mc.player);
+                        mc.gameMode.handleContainerInput(mc.player.inventoryMenu.containerId,
+                            crystalSlot + 36, mc.player.getInventory().getSelectedSlot(), ContainerInput.SWAP, mc.player);
                     } else if (autoSwapConfig.get() == Swap.SILENT) {
                         Managers.INVENTORY.setSlot(crystalSlot);
                     } else {
@@ -897,8 +897,8 @@ public class AutoCrystal extends CombatModule {
                 placePackets.put(blockPos, System.currentTimeMillis());
                 if (canSwap) {
                     if (autoSwapConfig.get() == Swap.SILENT_ALT) {
-                        mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId,
-                            crystalSlot + 36, mc.player.getInventory().getSelectedSlot(), ClickType.SWAP, mc.player);
+                        mc.gameMode.handleContainerInput(mc.player.inventoryMenu.containerId,
+                            crystalSlot + 36, mc.player.getInventory().getSelectedSlot(), ContainerInput.SWAP, mc.player);
                     } else if (autoSwapConfig.get() == Swap.SILENT) {
                         Managers.INVENTORY.syncToClient();
                     }
@@ -933,7 +933,7 @@ public class AutoCrystal extends CombatModule {
             }
             EndCrystal entity2 = new EndCrystal(mc.level, 0.0, 0.0, 0.0);
             entity2.setId(id);
-            ServerboundInteractPacket packet = ServerboundInteractPacket.createAttackPacket(entity2, false);
+            ServerboundAttackPacket packet = new ServerboundAttackPacket(entity2.getId());
             Managers.NETWORK.sendPacket(packet);
             Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
             attackPackets.put(id, System.currentTimeMillis());

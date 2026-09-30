@@ -27,7 +27,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.projectile.FireworkRocketEntity;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.FireworkRocketItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -106,9 +106,9 @@ public class Disabler extends AddonModule {
                 }
                 if (fireworkTimer.passed(1700) && !mc.player.onGround() && mc.player.getDeltaMovement().y < 0.0) {
                     if (mc.player.getItemBySlot(EquipmentSlot.CHEST).getItem() != Items.ELYTRA && elytraSlot != -1) {
-                        mc.gameMode.handleInventoryMouseClick(0, elytraSlot < 9 ? elytraSlot + 36 : elytraSlot, 0, ClickType.PICKUP, mc.player);
-                        mc.gameMode.handleInventoryMouseClick(0, 6, 0, ClickType.PICKUP, mc.player);
-                        mc.gameMode.handleInventoryMouseClick(0, elytraSlot < 9 ? elytraSlot + 36 : elytraSlot, 0, ClickType.PICKUP, mc.player);
+                        mc.gameMode.handleContainerInput(0, elytraSlot < 9 ? elytraSlot + 36 : elytraSlot, 0, ContainerInput.PICKUP, mc.player);
+                        mc.gameMode.handleContainerInput(0, 6, 0, ContainerInput.PICKUP, mc.player);
+                        mc.gameMode.handleContainerInput(0, elytraSlot < 9 ? elytraSlot + 36 : elytraSlot, 0, ContainerInput.PICKUP, mc.player);
                     }
                     Managers.NETWORK.sendPacket(new ServerboundPlayerCommandPacket(mc.player, ServerboundPlayerCommandPacket.Action.START_FALL_FLYING));
                     Managers.INVENTORY.setSlot(fireworkSlot);
@@ -117,9 +117,9 @@ public class Disabler extends AddonModule {
                     Managers.INVENTORY.syncToClient();
                     fireworkTimer.reset();
                     if (mc.player.getItemBySlot(EquipmentSlot.CHEST).getItem() == Items.ELYTRA && elytraSlot != -1) {
-                        mc.gameMode.handleInventoryMouseClick(0, 6, 0, ClickType.PICKUP, mc.player);
-                        mc.gameMode.handleInventoryMouseClick(0, elytraSlot < 9 ? elytraSlot + 36 : elytraSlot, 0, ClickType.PICKUP, mc.player);
-                        mc.gameMode.handleInventoryMouseClick(0, 6, 0, ClickType.PICKUP, mc.player);
+                        mc.gameMode.handleContainerInput(0, 6, 0, ContainerInput.PICKUP, mc.player);
+                        mc.gameMode.handleContainerInput(0, elytraSlot < 9 ? elytraSlot + 36 : elytraSlot, 0, ContainerInput.PICKUP, mc.player);
+                        mc.gameMode.handleContainerInput(0, 6, 0, ContainerInput.PICKUP, mc.player);
                     }
                 }
             }

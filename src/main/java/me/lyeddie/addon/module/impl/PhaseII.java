@@ -17,7 +17,7 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import net.minecraft.network.protocol.game.ServerboundAttackPacket;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.network.protocol.game.ServerboundSwingPacket;
 import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
@@ -25,7 +25,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.ItemFrame;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.EnderpearlItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.ScaffoldingBlock;
@@ -155,9 +155,9 @@ public class PhaseII extends ObsidianPlacerModule {
                 for (Entity entity : mc.level.getEntities(null, new AABB(hitResult.getBlockPos()).inflate(0.2))) {
                     if (entity instanceof ItemFrame itemFrameEntity) {
                         if (!itemFrameEntity.getItem().isEmpty()) {
-                            Managers.NETWORK.sendPacket(ServerboundInteractPacket.createAttackPacket(entity, mc.player.isShiftKeyDown()));
+                            Managers.NETWORK.sendPacket(new ServerboundAttackPacket(entity.getId()));
                         }
-                        Managers.NETWORK.sendPacket(ServerboundInteractPacket.createAttackPacket(entity, mc.player.isShiftKeyDown()));
+                        Managers.NETWORK.sendPacket(new ServerboundAttackPacket(entity.getId()));
                         Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
                     }
                 }
@@ -208,9 +208,9 @@ public class PhaseII extends ObsidianPlacerModule {
 
             setRotationClient(yaw, pitchConfig.get());
             if (swapAltConfig.get()) {
-                mc.gameMode.handleInventoryMouseClick(0, pearlSlot < 9 ? pearlSlot + 36 : pearlSlot, 0, ClickType.PICKUP, mc.player);
-                mc.gameMode.handleInventoryMouseClick(0, mc.player.getInventory().getSelectedSlot() + 36, 0, ClickType.PICKUP, mc.player);
-                mc.gameMode.handleInventoryMouseClick(0, pearlSlot < 9 ? pearlSlot + 36 : pearlSlot, 0, ClickType.PICKUP, mc.player);
+                mc.gameMode.handleContainerInput(0, pearlSlot < 9 ? pearlSlot + 36 : pearlSlot, 0, ContainerInput.PICKUP, mc.player);
+                mc.gameMode.handleContainerInput(0, mc.player.getInventory().getSelectedSlot() + 36, 0, ContainerInput.PICKUP, mc.player);
+                mc.gameMode.handleContainerInput(0, pearlSlot < 9 ? pearlSlot + 36 : pearlSlot, 0, ContainerInput.PICKUP, mc.player);
             } else if (pearlSlot < 9) {
                 Managers.INVENTORY.setSlot(pearlSlot);
             }
@@ -225,9 +225,9 @@ public class PhaseII extends ObsidianPlacerModule {
             }
 
             if (swapAltConfig.get()) {
-                mc.gameMode.handleInventoryMouseClick(0, pearlSlot < 9 ? pearlSlot + 36 : pearlSlot, 0, ClickType.PICKUP, mc.player);
-                mc.gameMode.handleInventoryMouseClick(0, mc.player.getInventory().getSelectedSlot() + 36, 0, ClickType.PICKUP, mc.player);
-                mc.gameMode.handleInventoryMouseClick(0, pearlSlot < 9 ? pearlSlot + 36 : pearlSlot, 0, ClickType.PICKUP, mc.player);
+                mc.gameMode.handleContainerInput(0, pearlSlot < 9 ? pearlSlot + 36 : pearlSlot, 0, ContainerInput.PICKUP, mc.player);
+                mc.gameMode.handleContainerInput(0, mc.player.getInventory().getSelectedSlot() + 36, 0, ContainerInput.PICKUP, mc.player);
+                mc.gameMode.handleContainerInput(0, pearlSlot < 9 ? pearlSlot + 36 : pearlSlot, 0, ContainerInput.PICKUP, mc.player);
             } else if (pearlSlot < 9) {
                 Managers.INVENTORY.syncToClient();
             }

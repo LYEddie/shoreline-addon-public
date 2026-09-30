@@ -11,7 +11,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -60,13 +60,13 @@ public class ChestSwapII extends AddonModule {
                         mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
                         Managers.INVENTORY.syncToClient();
                     } else {
-                        mc.gameMode.handleInventoryMouseClick(0, slot, 0, ClickType.PICKUP, mc.player);
-                        mc.gameMode.handleInventoryMouseClick(0, mc.player.getInventory().getSelectedSlot() + 36, 0, ClickType.PICKUP, mc.player);
-                        mc.gameMode.handleInventoryMouseClick(0, slot, 0, ClickType.PICKUP, mc.player);
+                        mc.gameMode.handleContainerInput(0, slot, 0, ContainerInput.PICKUP, mc.player);
+                        mc.gameMode.handleContainerInput(0, mc.player.getInventory().getSelectedSlot() + 36, 0, ContainerInput.PICKUP, mc.player);
+                        mc.gameMode.handleContainerInput(0, slot, 0, ContainerInput.PICKUP, mc.player);
                         mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
-                        mc.gameMode.handleInventoryMouseClick(0, slot, 0, ClickType.PICKUP, mc.player);
-                        mc.gameMode.handleInventoryMouseClick(0, mc.player.getInventory().getSelectedSlot() + 36, 0, ClickType.PICKUP, mc.player);
-                        mc.gameMode.handleInventoryMouseClick(0, slot, 0, ClickType.PICKUP, mc.player);
+                        mc.gameMode.handleContainerInput(0, slot, 0, ContainerInput.PICKUP, mc.player);
+                        mc.gameMode.handleContainerInput(0, mc.player.getInventory().getSelectedSlot() + 36, 0, ContainerInput.PICKUP, mc.player);
+                        mc.gameMode.handleContainerInput(0, slot, 0, ContainerInput.PICKUP, mc.player);
                     }
                 }
             }

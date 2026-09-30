@@ -16,7 +16,7 @@ public final class PlayerUtil implements Globals {
     }
 
     public static int computeFallDamage(float fallDistance, float damageMultiplier) {
-        if (mc.player.getType().is(EntityTypeTags.FALL_DAMAGE_IMMUNE)) {
+        if (mc.player.getType().builtInRegistryHolder().is(EntityTypeTags.FALL_DAMAGE_IMMUNE)) {
             return 0;
         } else {
             final MobEffectInstance statusEffectInstance = mc.player.getEffect(MobEffects.JUMP_BOOST);

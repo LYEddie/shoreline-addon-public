@@ -6,7 +6,7 @@ import me.lyeddie.addon.util.Helpers;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.commands.Command;
 import net.minecraft.client.multiplayer.PlayerInfo;
-import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.client.multiplayer.ClientSuggestionProvider;
 import net.minecraft.core.ClientAsset;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -21,7 +21,7 @@ public class SkinGrab extends Command implements Helpers {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<SharedSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
         builder.then(argument("player", PlayerArgumentType.player()).executes(c -> {
             String player = PlayerArgumentType.getPlayer(c, "player");
             String skinTexture = null;

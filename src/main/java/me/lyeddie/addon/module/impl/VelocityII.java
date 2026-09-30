@@ -158,11 +158,11 @@ public class VelocityII extends AddonModule {
         }
 
         if (event.packet instanceof ClientboundSetEntityMotionPacket packet && knockbackConfig.get()) {
-            if (packet.getId() != mc.player.getId()) {
+            if (packet.id() != mc.player.getId()) {
                 return;
             }
 
-            Vec3 velocity = packet.getMovement();
+            Vec3 velocity = packet.movement();
             if (concealVelocity && velocity.x == 0 && velocity.y == 0 && velocity.z == 0) {
                 concealVelocity = false;
                 return;
@@ -184,7 +184,7 @@ public class VelocityII extends AddonModule {
                         event.cancel();
                         return;
                     }
-                    ((AccessorEntityVelocityUpdateS2CPacket) packet).setVelocity(new Vec3(
+                    ((AccessorEntityVelocityUpdateS2CPacket) (Object) packet).setVelocity(new Vec3(
                         velocity.x * (horizontalConfig.get() / 100.0f),
                         velocity.y * (verticalConfig.get() / 100.0f),
                         velocity.z * (horizontalConfig.get() / 100.0f)));
@@ -266,7 +266,7 @@ public class VelocityII extends AddonModule {
                         }
                     }
                 } else if (packet1 instanceof ClientboundSetEntityMotionPacket packet2 && knockbackConfig.get()) {
-                    if (packet2.getId() != mc.player.getId()) {
+                    if (packet2.id() != mc.player.getId()) {
                         allowedBundle.add(packet1);
                         continue;
                     }
@@ -288,8 +288,8 @@ public class VelocityII extends AddonModule {
                             if (horizontalConfig.get() == 0.0f && verticalConfig.get() == 0.0f) {
                                 continue;
                             } else {
-                                Vec3 velocity = packet2.getMovement();
-                                ((AccessorEntityVelocityUpdateS2CPacket) packet2).setVelocity(new Vec3(
+                                Vec3 velocity = packet2.movement();
+                                ((AccessorEntityVelocityUpdateS2CPacket) (Object) packet2).setVelocity(new Vec3(
                                     velocity.x * (horizontalConfig.get() / 100.0f),
                                     velocity.y * (verticalConfig.get() / 100.0f),
                                     velocity.z * (horizontalConfig.get() / 100.0f)));
