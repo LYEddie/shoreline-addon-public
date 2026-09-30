@@ -35,6 +35,7 @@
     "accessor.AccessorEntityVelocityUpdateS2CPacket",
     "accessor.AccessorExplosionS2CPacket",
     "accessor.AccessorFireworkRocketEntity",
+    "accessor.AccessorInput",
     "accessor.AccessorKeyBinding",
     "accessor.AccessorMinecraftClient",
     "accessor.AccessorPlayerMoveC2SPacket",

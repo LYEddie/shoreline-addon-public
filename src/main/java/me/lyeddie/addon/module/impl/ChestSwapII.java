@@ -34,7 +34,7 @@ public class ChestSwapII extends AddonModule {
 
     @Override
     public void onActivate() {
-        ItemStack armorStack = mc.player.getInventory().getArmorStack(2);
+        ItemStack armorStack = mc.player.getEquippedStack(EquipmentSlot.CHEST);
         if (isChestArmor(armorStack)) {
             int elytraSlot = getElytraSlot();
             if (elytraSlot != -1) {
@@ -60,11 +60,11 @@ public class ChestSwapII extends AddonModule {
                         Managers.INVENTORY.syncToClient();
                     } else {
                         mc.interactionManager.clickSlot(0, slot, 0, SlotActionType.PICKUP, mc.player);
-                        mc.interactionManager.clickSlot(0, mc.player.getInventory().selectedSlot + 36, 0, SlotActionType.PICKUP, mc.player);
+                        mc.interactionManager.clickSlot(0, mc.player.getInventory().getSelectedSlot() + 36, 0, SlotActionType.PICKUP, mc.player);
                         mc.interactionManager.clickSlot(0, slot, 0, SlotActionType.PICKUP, mc.player);
                         mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
                         mc.interactionManager.clickSlot(0, slot, 0, SlotActionType.PICKUP, mc.player);
-                        mc.interactionManager.clickSlot(0, mc.player.getInventory().selectedSlot + 36, 0, SlotActionType.PICKUP, mc.player);
+                        mc.interactionManager.clickSlot(0, mc.player.getInventory().getSelectedSlot() + 36, 0, SlotActionType.PICKUP, mc.player);
                         mc.interactionManager.clickSlot(0, slot, 0, SlotActionType.PICKUP, mc.player);
                     }
                 }
@@ -113,7 +113,8 @@ public class ChestSwapII extends AddonModule {
 
     private boolean isChestArmor(ItemStack stack) {
         var equippable = stack.get(DataComponentTypes.EQUIPPABLE);
-        return stack.getItem() instanceof ArmorItem && equippable != null && equippable.slot() == EquipmentSlot.CHEST;
+        return equippable != null && equippable.slot() == EquipmentSlot.CHEST
+            && stack.contains(DataComponentTypes.ATTRIBUTE_MODIFIERS) && !stack.isOf(Items.ELYTRA);
     }
 
     public static ChestSwapII getInstance() {

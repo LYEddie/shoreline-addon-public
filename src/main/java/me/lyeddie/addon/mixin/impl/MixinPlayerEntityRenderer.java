@@ -19,7 +19,7 @@ public class MixinPlayerEntityRenderer {
         MeteorClient.EVENT_BUS.post(renderPlayerEvent);
         if (renderPlayerEvent.isCancelled()) {
             state.bodyYaw = renderPlayerEvent.getYaw();
-            state.yawDegrees = 0.0f;
+            state.relativeHeadYaw = 0.0f;
             state.pitch = renderPlayerEvent.getPitch();
         }
     }

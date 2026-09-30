@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class MixinEntity implements Globals {
 
     @Shadow
-    public float fallDistance;
+    public double fallDistance;
     @Shadow
     protected Vec3d movementMultiplier;
 

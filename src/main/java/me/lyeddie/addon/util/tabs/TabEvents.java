@@ -117,7 +117,7 @@ public class TabEvents implements Globals, Helpers {
     @EventHandler
     public void onMenuDisconnect(MenuDisconnectEvent event) {
         if (TabConfigs.get().illegalDisconnectConfig.get()) {
-            Managers.NETWORK.sendPacket(new ChatMessageC2SPacket("§", Instant.now(), NetworkEncryptionUtils.SecureRandomUtil.nextLong(), null, new LastSeenMessageList.Acknowledgment(1, new BitSet(2))));
+            Managers.NETWORK.sendPacket(new ChatMessageC2SPacket("§", Instant.now(), NetworkEncryptionUtils.SecureRandomUtil.nextLong(), null, new LastSeenMessageList.Acknowledgment(1, new BitSet(2), (byte) 0)));
         }
     }
 

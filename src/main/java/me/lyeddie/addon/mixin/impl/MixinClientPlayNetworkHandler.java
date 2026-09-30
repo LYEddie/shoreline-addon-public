@@ -40,24 +40,24 @@ public abstract class MixinClientPlayNetworkHandler implements IClientPlayNetwor
             Vec3d change = packet.change().position();
             if (packet.relatives().contains(PositionFlag.X)) {
                 playerEntity.lastRenderX += change.x;
-                playerEntity.prevX += change.x;
+                playerEntity.lastX += change.x;
             } else {
                 playerEntity.lastRenderX = position.x;
-                playerEntity.prevX = position.x;
+                playerEntity.lastX = position.x;
             }
             if (packet.relatives().contains(PositionFlag.Y)) {
                 playerEntity.lastRenderY += change.y;
-                playerEntity.prevY += change.y;
+                playerEntity.lastY += change.y;
             } else {
                 playerEntity.lastRenderY = position.y;
-                playerEntity.prevY = position.y;
+                playerEntity.lastY = position.y;
             }
             if (packet.relatives().contains(PositionFlag.Z)) {
                 playerEntity.lastRenderZ += change.z;
-                playerEntity.prevZ += change.z;
+                playerEntity.lastZ += change.z;
             } else {
                 playerEntity.lastRenderZ = position.z;
-                playerEntity.prevZ = position.z;
+                playerEntity.lastZ = position.z;
             }
             float yaw = serverRotationEvent.getYaw();
             float pitch = serverRotationEvent.getPitch();

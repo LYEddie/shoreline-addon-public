@@ -255,8 +255,8 @@ public class CrawlTrap extends ObsidianPlacerModule {
 
         int ticks = 0;
         while (ticks <= extrapolateTicksConfig.get()) {
-            double ox = (x - entity.prevX) * ticks;
-            double oz = (z - entity.prevZ) * ticks;
+            double ox = (x - entity.lastX) * ticks;
+            double oz = (z - entity.lastZ) * ticks;
             BlockPos blockPos = BlockPos.ofFloored(x + ox, y, z + oz);
             if (!crawlTrap.contains(blockPos.up())) {
                 crawlTrap.add(blockPos.up());

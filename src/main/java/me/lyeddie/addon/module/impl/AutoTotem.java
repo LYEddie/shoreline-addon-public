@@ -14,6 +14,7 @@ import meteordevelopment.meteorclient.settings.*;
 import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.BlockState;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.decoration.EndCrystalEntity;
 import net.minecraft.entity.effect.StatusEffects;
@@ -167,9 +168,10 @@ public class AutoTotem extends AddonModule {
         if (checkLethal()) {
             offhandItem = Items.TOTEM_OF_UNDYING;
         } else {
-            final Item mainHandItem = mc.player.getMainHandStack().getItem();
+            final ItemStack mainHandStack = mc.player.getMainHandStack();
+            final Item mainHandItem = mainHandStack.getItem();
             if (gappleConfig.get() && mc.options.useKey.isPressed()
-                && (mainHandItem instanceof SwordItem
+                && (mainHandStack.contains(DataComponentTypes.WEAPON)
                 || mainHandItem instanceof TridentItem
                 || mainHandItem instanceof AxeItem)
                 && PlayerUtil.getLocalPlayerHealth() >= healthConfig.get()) {
@@ -272,7 +274,7 @@ public class AutoTotem extends AddonModule {
     private boolean checkLethal() {
         final float health = PlayerUtil.getLocalPlayerHealth();
         return health <= healthConfig.get() || lethalConfig.get() && checkLethalCrystal(health) ||
-            PlayerUtil.computeFallDamage(mc.player.fallDistance, 1.0f) + 0.5f > mc.player.getHealth();
+            PlayerUtil.computeFallDamage((float) mc.player.fallDistance, 1.0f) + 0.5f > mc.player.getHealth();
     }
 
     private boolean checkLethalCrystal(float health) {

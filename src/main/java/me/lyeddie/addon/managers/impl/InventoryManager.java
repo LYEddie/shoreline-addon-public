@@ -1,7 +1,5 @@
 package me.lyeddie.addon.managers.impl;
 
-import com.google.common.collect.Lists;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import me.lyeddie.addon.events.irrevocable.EntityDeathEvent;
 import me.lyeddie.addon.events.ItemDesyncEvent;
 import me.lyeddie.addon.managers.Managers;
@@ -18,15 +16,12 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
 import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
 import net.minecraft.network.packet.s2c.play.BundleS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.UpdateSelectedSlotS2CPacket;
 import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.util.collection.DefaultedList;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -137,9 +132,9 @@ public class InventoryManager implements Globals {
     }
 
     public void setClientSlot(final int barSlot) {
-        if (mc.player.getInventory().selectedSlot != barSlot
+        if (mc.player.getInventory().getSelectedSlot() != barSlot
             && PlayerInventory.isValidHotbarIndex(barSlot)) {
-            mc.player.getInventory().selectedSlot = barSlot;
+            mc.player.getInventory().setSelectedSlot(barSlot);
             setSlotForced(barSlot);
         }
     }
@@ -150,7 +145,7 @@ public class InventoryManager implements Globals {
 
     public void syncToClient() {
         if (isDesynced()) {
-            setSlotForced(mc.player.getInventory().selectedSlot);
+            setSlotForced(mc.player.getInventory().getSelectedSlot());
 
             for (PreSwapData swapData : swapData) {
                 swapData.beginClear();
@@ -159,7 +154,7 @@ public class InventoryManager implements Globals {
     }
 
     public boolean isDesynced() {
-        return mc.player.getInventory().selectedSlot != slot;
+        return mc.player.getInventory().getSelectedSlot() != slot;
     }
 
     public int pickupSlot(final int slot) {
@@ -171,21 +166,7 @@ public class InventoryManager implements Globals {
             return -1;
         }
         ScreenHandler screenHandler = mc.player.currentScreenHandler;
-        DefaultedList<Slot> defaultedList = screenHandler.slots;
-        int i = defaultedList.size();
-        ArrayList<ItemStack> list = Lists.newArrayListWithCapacity(i);
-        for (Slot slot1 : defaultedList) {
-            list.add(slot1.getStack().copy());
-        }
-        screenHandler.onSlotClick(slot, button, type, mc.player);
-        Int2ObjectOpenHashMap<ItemStack> int2ObjectMap = new Int2ObjectOpenHashMap<>();
-        for (int j = 0; j < i; ++j) {
-            ItemStack itemStack2;
-            ItemStack itemStack = list.get(j);
-            if (ItemStack.areEqual(itemStack, itemStack2 = defaultedList.get(j).getStack())) continue;
-            int2ObjectMap.put(j, itemStack2.copy());
-        }
-        mc.player.networkHandler.sendPacket(new ClickSlotC2SPacket(screenHandler.syncId, screenHandler.getRevision(), slot, button, type, screenHandler.getCursorStack().copy(), int2ObjectMap));
+        mc.interactionManager.clickSlot(screenHandler.syncId, slot, button, type, mc.player);
         return screenHandler.getRevision();
     }
 

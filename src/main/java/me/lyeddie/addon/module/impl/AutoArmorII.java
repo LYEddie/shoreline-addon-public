@@ -12,7 +12,6 @@ import net.minecraft.component.type.AttributeModifiersComponent;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.RegistryKey;
@@ -74,14 +73,14 @@ public class AutoArmorII extends AddonModule {
         boots.clear();
         for (int j = 0; j < 36; j++) {
             ItemStack stack = mc.player.getInventory().getStack(j);
-            if (stack.isEmpty() || !(stack.getItem() instanceof ArmorItem)) {
+            if (stack.isEmpty()) {
                 continue;
             }
             if (noBindingConfig.get() && hasEnchantment(stack, Enchantments.BINDING_CURSE)) {
                 continue;
             }
             var equippable = stack.get(DataComponentTypes.EQUIPPABLE);
-            if (equippable == null) continue;
+            if (equippable == null || getArmorValue(stack) <= 0.0) continue;
             int index = equippable.slot().getEntitySlotId();
             float dura = (stack.getMaxDamage() - stack.getDamage()) / (float) stack.getMaxDamage();
             if (dura < minDurabilityConfig.get()) {
@@ -96,7 +95,7 @@ public class AutoArmorII extends AddonModule {
             }
         }
         for (int i = 0; i < 4; i++) {
-            ItemStack armorStack = mc.player.getInventory().getArmorStack(i);
+            ItemStack armorStack = getArmorStack(i);
             if (elytraPriorityConfig.get() && armorStack.getItem() == Items.ELYTRA) {
                 continue;
             }
@@ -134,7 +133,7 @@ public class AutoArmorII extends AddonModule {
     }
 
     public void swapArmor(int armorSlot, int slot) {
-        ItemStack stack = mc.player.getInventory().getArmorStack(armorSlot);
+        ItemStack stack = getArmorStack(armorSlot);
         armorSlot = 8 - armorSlot;
         Managers.INVENTORY.pickupSlot(slot < 9 ? slot + 36 : slot);
         boolean rt = !stack.isEmpty();
@@ -230,5 +229,15 @@ public class AutoArmorII extends AddonModule {
             .filter(entry -> entry.attribute().equals(EntityAttributes.ARMOR))
             .mapToDouble(entry -> entry.modifier().value())
             .sum();
+    }
+
+    private ItemStack getArmorStack(int armorSlot) {
+        return mc.player.getEquippedStack(switch (armorSlot) {
+            case 0 -> net.minecraft.entity.EquipmentSlot.FEET;
+            case 1 -> net.minecraft.entity.EquipmentSlot.LEGS;
+            case 2 -> net.minecraft.entity.EquipmentSlot.CHEST;
+            case 3 -> net.minecraft.entity.EquipmentSlot.HEAD;
+            default -> throw new IllegalArgumentException("Invalid armor slot: " + armorSlot);
+        });
     }
 }

@@ -9,6 +9,7 @@ import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.managers.impl.util.Rotation;
 import me.lyeddie.addon.util.tabs.TabConfigs;
 import me.lyeddie.addon.util.Globals;
+import me.lyeddie.addon.util.literal.MovementUtil;
 import me.lyeddie.addon.util.literal.PlayerUtil;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
@@ -139,8 +140,8 @@ public class RotationManager implements Globals {
     @EventHandler
     public void onRenderPlayer(RenderPlayerEvent event) {
         if (event.getEntity() == mc.player && rotation != null) {
-            event.setYaw(Interpolation.interpolateFloat(prevYaw, getServerYaw(), mc.getRenderTickCounter().getTickDelta(true)));
-            event.setPitch(Interpolation.interpolateFloat(prevPitch, getServerPitch(), mc.getRenderTickCounter().getTickDelta(true)));
+            event.setYaw(Interpolation.interpolateFloat(prevYaw, getServerYaw(), mc.getRenderTickCounter().getTickProgress(true)));
+            event.setPitch(Interpolation.interpolateFloat(prevPitch, getServerPitch(), mc.getRenderTickCounter().getTickProgress(true)));
             prevYaw = event.getYaw();
             prevPitch = event.getPitch();
             event.cancel();
@@ -149,13 +150,13 @@ public class RotationManager implements Globals {
 
     public void applyInputFix() {
         if (rotation != null && mc.player != null && TabConfigs.get().getMovementFix()) {
-            float forward = mc.player.input.movementForward;
-            float sideways = mc.player.input.movementSideways;
+            float forward = MovementUtil.getForward(mc.player.input);
+            float sideways = MovementUtil.getSideways(mc.player.input);
             float delta = (mc.player.getYaw() - rotation.getYaw()) * MathHelper.RADIANS_PER_DEGREE;
             float cos = MathHelper.cos(delta);
             float sin = MathHelper.sin(delta);
-            mc.player.input.movementSideways = Math.round(sideways * cos - forward * sin);
-            mc.player.input.movementForward = Math.round(forward * cos + sideways * sin);
+            MovementUtil.set(mc.player.input, Math.round(sideways * cos - forward * sin),
+                Math.round(forward * cos + sideways * sin));
         }
     }
 

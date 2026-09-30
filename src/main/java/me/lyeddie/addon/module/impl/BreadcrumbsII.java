@@ -82,7 +82,7 @@ public class BreadcrumbsII extends AddonModule {
             if (!checkEntity(entity)) {
                 continue;
             }
-            final Vec3d pos = Interpolation.getInterpolatedPosition(entity, mc.getRenderTickCounter().getTickDelta(true));
+            final Vec3d pos = Interpolation.getInterpolatedPosition(entity, mc.getRenderTickCounter().getTickProgress(true));
             if (positions.containsKey(entity.getId())) {
                 positions.get(entity.getId()).add(new TimedPosition(pos, System.currentTimeMillis()));
             } else {

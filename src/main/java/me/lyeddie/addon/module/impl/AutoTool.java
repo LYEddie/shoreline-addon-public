@@ -10,7 +10,6 @@ import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.SwordItem;
 
 public class AutoTool extends AddonModule {
     private static AutoTool INST;
@@ -25,7 +24,7 @@ public class AutoTool extends AddonModule {
         final BlockState state = mc.world.getBlockState(event.getPos());
         final int blockSlot = getBestToolNoFallback(state);
         if (blockSlot != -1) {
-            mc.player.getInventory().selectedSlot = blockSlot;
+            mc.player.getInventory().setSelectedSlot(blockSlot);
         }
     }
 
@@ -34,14 +33,14 @@ public class AutoTool extends AddonModule {
         if (slot != -1) {
             return slot;
         }
-        return mc.player.getInventory().selectedSlot;
+        return mc.player.getInventory().getSelectedSlot();
     }
 
     public int getBestToolNoFallback(final BlockState state) {
         if (state.getBlock() == Blocks.COBWEB) {
             for (int i = 0; i < 9; i++) {
                 final ItemStack stack = mc.player.getInventory().getStack(i);
-                if (stack.isEmpty() || !(stack.getItem() instanceof SwordItem)) {
+                if (stack.isEmpty() || !stack.contains(DataComponentTypes.WEAPON)) {
                     continue;
                 }
                 return i;

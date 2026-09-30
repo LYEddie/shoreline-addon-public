@@ -138,8 +138,8 @@ public class SpeedII extends AddonModule {
         if (boostTicks > boostTicksConfig.get()) {
             boostSpeed = 0.0;
         }
-        double dx = mc.player.getX() - mc.player.prevX;
-        double dz = mc.player.getZ() - mc.player.prevZ;
+        double dx = mc.player.getX() - mc.player.lastX;
+        double dz = mc.player.getZ() - mc.player.lastZ;
         distance = Math.sqrt(dx * dx + dz * dz);
         if (speedModeConfig.get() == SpeedMode.GRIM_COLLIDE && MovementUtil.isInputtingMovement()) {
             int collisions = 0;
@@ -470,9 +470,9 @@ public class SpeedII extends AddonModule {
     }
 
     public Vec2f handleStrafeMotion(final float speed) {
-        float forward = mc.player.input.movementForward;
-        float strafe = mc.player.input.movementSideways;
-        float yaw = mc.player.prevYaw + (mc.player.getYaw() - mc.player.prevYaw) * mc.getRenderTickCounter().getTickDelta(true);
+        float forward = MovementUtil.getForward(mc.player.input);
+        float strafe = MovementUtil.getSideways(mc.player.input);
+        float yaw = mc.player.lastYaw + (mc.player.getYaw() - mc.player.lastYaw) * mc.getRenderTickCounter().getTickProgress(true);
         if (forward == 0.0f && strafe == 0.0f) {
             return Vec2f.ZERO;
         } else if (forward != 0.0f) {
@@ -496,8 +496,8 @@ public class SpeedII extends AddonModule {
     }
 
     public Vec2f handleVanillaMotion(final float speed) {
-        float forward = mc.player.input.movementForward;
-        float strafe = mc.player.input.movementSideways;
+        float forward = MovementUtil.getForward(mc.player.input);
+        float strafe = MovementUtil.getSideways(mc.player.input);
         if (forward == 0.0f && strafe == 0.0f) {
             return Vec2f.ZERO;
         } else if (forward != 0.0f && strafe != 0.0f) {

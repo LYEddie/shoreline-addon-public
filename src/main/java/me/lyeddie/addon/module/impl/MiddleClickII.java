@@ -87,11 +87,11 @@ public class MiddleClickII extends AddonModule {
                     Managers.INVENTORY.syncToClient();
                 } else {
                     mc.interactionManager.clickSlot(0, slot, 0, SlotActionType.PICKUP, mc.player);
-                    mc.interactionManager.clickSlot(0, mc.player.getInventory().selectedSlot + 36, 0, SlotActionType.PICKUP, mc.player);
+                    mc.interactionManager.clickSlot(0, mc.player.getInventory().getSelectedSlot() + 36, 0, SlotActionType.PICKUP, mc.player);
                     mc.interactionManager.clickSlot(0, slot, 0, SlotActionType.PICKUP, mc.player);
                     mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
                     mc.interactionManager.clickSlot(0, slot, 0, SlotActionType.PICKUP, mc.player);
-                    mc.interactionManager.clickSlot(0, mc.player.getInventory().selectedSlot + 36, 0, SlotActionType.PICKUP, mc.player);
+                    mc.interactionManager.clickSlot(0, mc.player.getInventory().getSelectedSlot() + 36, 0, SlotActionType.PICKUP, mc.player);
                     mc.interactionManager.clickSlot(0, slot, 0, SlotActionType.PICKUP, mc.player);
                 }
             }

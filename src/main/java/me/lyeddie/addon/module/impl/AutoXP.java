@@ -5,6 +5,7 @@ import me.lyeddie.addon.events.irrevocable.PlayerTickEvent;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.module.RotationModule;
 import me.lyeddie.addon.util.literal.InventoryUtil;
+import me.lyeddie.addon.util.literal.EntityUtil;
 import me.lyeddie.addon.managers.impl.util.TickTimer;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.orbit.EventHandler;
@@ -110,7 +111,7 @@ public class AutoXP extends RotationModule {
             return false;
         }
 
-        for (ItemStack stack : player.getArmorItems()) {
+        for (ItemStack stack : EntityUtil.getArmorItems(player)) {
             if (!isItemFullDura(stack)) {
                 return false;
             }

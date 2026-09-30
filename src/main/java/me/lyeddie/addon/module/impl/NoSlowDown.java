@@ -7,6 +7,7 @@ import me.lyeddie.addon.events.irrevocable.SetCurrentHandEvent;
 import me.lyeddie.addon.events.staged.PrePlayerUpdateEvent;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.mixin.impl.accessor.AccessorKeyBinding;
+import me.lyeddie.addon.util.literal.MovementUtil;
 import me.lyeddie.addon.util.literal.PositionUtil;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
@@ -240,13 +241,11 @@ public class NoSlowDown extends AddonModule {
     public void onMovementSlowdown(MovementSlowdownEvent event) {
         if (sneakConfig.get() && mc.player.isSneaking() || crawlConfig.get() && mc.player.isCrawling()) {
             float f = 1.0f / (float) mc.player.getAttributeValue(EntityAttributes.SNEAKING_SPEED);
-            event.input.movementForward *= f;
-            event.input.movementSideways *= f;
+            MovementUtil.scale(event.input, f);
         }
 
         if (checkSlowed()) {
-            event.input.movementForward *= 5.0f;
-            event.input.movementSideways *= 5.0f;
+            MovementUtil.scale(event.input, 5.0f);
         }
     }
 
@@ -280,7 +279,7 @@ public class NoSlowDown extends AddonModule {
             return;
         } else if (event.packet instanceof PlayerMoveC2SPacket packet && packet.changesPosition()
             && strictConfig.get() && checkSlowed()) {
-            Managers.INVENTORY.setSlotForced(mc.player.getInventory().selectedSlot);
+            Managers.INVENTORY.setSlotForced(mc.player.getInventory().getSelectedSlot());
         } else if (event.packet instanceof ClickSlotC2SPacket && strictConfig.get()) {
             if (mc.player.isUsingItem()) {
                 mc.player.stopUsingItem();

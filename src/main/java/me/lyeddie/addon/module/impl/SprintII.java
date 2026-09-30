@@ -85,8 +85,8 @@ public class SprintII extends RotationModule {
     public void onJumpYaw(JumpRotationEvent event) {
         if (jumpFixConfig.get() && (modeConfig.get() == SprintMode.RAGE || modeConfig.get() == SprintMode.RAGE_STRICT)) {
             float yaw = event.getYaw();
-            float forward = Math.signum(mc.player.input.movementForward);
-            float strafe = 90.0f * Math.signum(mc.player.input.movementSideways);
+            float forward = Math.signum(MovementUtil.getForward(mc.player.input));
+            float strafe = 90.0f * Math.signum(MovementUtil.getSideways(mc.player.input));
             if (forward != 0.0f) {
                 strafe *= (forward * 0.5f);
             }

@@ -49,9 +49,9 @@ public class ExplosionUtil implements Globals {
 
         Vec3d vec3d2 = Vec3d.ZERO;
         if (extrapolationTicks != 0) {
-            double ox = (x - entity.prevX) * extrapolationTicks;
-            double oy = (y - entity.prevY) * extrapolationTicks * 0.3;
-            double oz = (z - entity.prevZ) * extrapolationTicks;
+            double ox = (x - entity.lastX) * extrapolationTicks;
+            double oy = (y - entity.lastY) * extrapolationTicks * 0.3;
+            double oz = (z - entity.lastZ) * extrapolationTicks;
             x += ox;
             y += oy;
             z += oz;
@@ -75,9 +75,9 @@ public class ExplosionUtil implements Globals {
 
         Vec3d vec3d2 = Vec3d.ZERO;
         if (extrapolationTicks != 0) {
-            double ox = (x - entity.prevX) * extrapolationTicks;
-            double oy = (y - entity.prevY) * extrapolationTicks * 0.3;
-            double oz = (z - entity.prevZ) * extrapolationTicks;
+            double ox = (x - entity.lastX) * extrapolationTicks;
+            double oy = (y - entity.lastY) * extrapolationTicks * 0.3;
+            double oz = (z - entity.lastZ) * extrapolationTicks;
             x += ox;
             y += oy;
             z += oz;
@@ -117,7 +117,7 @@ public class ExplosionUtil implements Globals {
 
     private static float getProtectionReduction(Entity player, double damage, DamageSource source, boolean assumeBestArmor) {
         if (player instanceof LivingEntity livingEntity) {
-            float protLevel = getProtectionAmount(livingEntity.getArmorItems(), assumeBestArmor);
+            float protLevel = getProtectionAmount(EntityUtil.getArmorItems(livingEntity), assumeBestArmor);
             return DamageUtil.getInflictedDamage((float) damage, protLevel);
         }
         return 0.0f;

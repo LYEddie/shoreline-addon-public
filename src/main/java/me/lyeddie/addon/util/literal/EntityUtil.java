@@ -2,6 +2,7 @@ package me.lyeddie.addon.util.literal;
 
 import me.lyeddie.addon.util.Globals;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.AmbientEntity;
 import net.minecraft.entity.mob.EndermanEntity;
@@ -13,8 +14,18 @@ import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.entity.vehicle.FurnaceMinecartEntity;
 import net.minecraft.entity.vehicle.MinecartEntity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.item.ItemStack;
+
+import java.util.List;
 
 public class EntityUtil implements Globals {
+    public static List<ItemStack> getArmorItems(LivingEntity entity) {
+        return List.of(EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD).stream()
+            .map(entity::getEquippedStack)
+            .filter(stack -> !stack.isEmpty())
+            .toList();
+    }
+
     public static BlockPos getRoundedBlockPos(Entity entity) {
         return new BlockPos(entity.getBlockX(), (int) Math.round(entity.getY()), entity.getBlockZ());
     }

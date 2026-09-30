@@ -295,7 +295,7 @@ public class Aura extends CombatModule {
 
         int slot = getSwordSlot();
         boolean silentSwapped = false;
-        if (!(mc.player.getMainHandStack().getItem() instanceof SwordItem) && slot != -1) {
+        if (!mc.player.getMainHandStack().contains(DataComponentTypes.WEAPON) && slot != -1) {
             switch (autoSwapConfig.get()) {
                 case NORMAL -> {
                     if (autoSwapTimer.passed(500)) {
@@ -347,7 +347,7 @@ public class Aura extends CombatModule {
         }
         if (attackDelayConfig.get()) {
             PlayerInventory inventory = mc.player.getInventory();
-            ItemStack itemStack = inventory.getStack((slot == -1 || !swordCheckConfig.get()) ? mc.player.getInventory().selectedSlot : slot);
+            ItemStack itemStack = inventory.getStack((slot == -1 || !swordCheckConfig.get()) ? mc.player.getInventory().getSelectedSlot() : slot);
 
             MutableDouble attackSpeed = new MutableDouble(mc.player.getAttributeBaseValue(EntityAttributes.ATTACK_SPEED));
 
@@ -455,7 +455,7 @@ public class Aura extends CombatModule {
         int slot = -1;
         for (int i = 0; i < 9; i++) {
             final ItemStack stack = mc.player.getInventory().getStack(i);
-            if (stack.getItem() instanceof SwordItem) {
+            if (stack.contains(DataComponentTypes.WEAPON)) {
                 float sharpness = EnchantmentUtil.getLevel(stack,
                     Enchantments.SHARPNESS) * 0.5f + 0.5f;
                 float dmg = getAttackDamage(stack) + sharpness;
@@ -579,7 +579,7 @@ public class Aura extends CombatModule {
             }
             if (armorCheckConfig.get()
                 && entity instanceof LivingEntity livingEntity
-                && !livingEntity.getArmorItems().iterator().hasNext()) {
+                && EntityUtil.getArmorItems(livingEntity).isEmpty()) {
                 continue;
             }
             double dist = pos.distanceTo(entity.getPos());
@@ -621,7 +621,7 @@ public class Aura extends CombatModule {
     private float getArmorDurability(LivingEntity e) {
         float edmg = 0.0f;
         float emax = 0.0f;
-        for (ItemStack armor : e.getArmorItems()) {
+        for (ItemStack armor : EntityUtil.getArmorItems(e)) {
             if (armor != null && !armor.isEmpty()) {
                 edmg += armor.getDamage();
                 emax += armor.getMaxDamage();
@@ -660,7 +660,7 @@ public class Aura extends CombatModule {
     }
 
     public boolean isHoldingSword() {
-        return !swordCheckConfig.get() || mc.player.getMainHandStack().getItem() instanceof SwordItem
+        return !swordCheckConfig.get() || mc.player.getMainHandStack().contains(DataComponentTypes.WEAPON)
             || mc.player.getMainHandStack().getItem() instanceof AxeItem
             || mc.player.getMainHandStack().getItem() instanceof TridentItem
             || mc.player.getMainHandStack().getItem() instanceof MaceItem;

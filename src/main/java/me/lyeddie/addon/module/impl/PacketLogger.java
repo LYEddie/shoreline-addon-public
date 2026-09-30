@@ -244,7 +244,7 @@ public class PacketLogger extends AddonModule implements Helpers {
             logPacket(packet, "ClientStatus - mode: %s", packet.getMode().name());
         }
         if (event.packet instanceof ClickSlotC2SPacket packet && clickSlotConfig.get()) {
-            logPacket(packet, "ClickSlot - type: %s, slot: %s, button: %s, id: %s", packet.getActionType().name(), packet.getSlot(), packet.getButton(), packet.getSyncId());
+            logPacket(packet, "ClickSlot - type: %s, slot: %s, button: %s, id: %s", packet.actionType().name(), packet.slot(), packet.button(), packet.syncId());
         }
         if (event.packet instanceof PickItemFromBlockC2SPacket packet && pickInventoryConfig.get()) {
             logPacket(packet, "PickBlock - pos: %s, includeData: %s", packet.pos(), packet.includeData());
