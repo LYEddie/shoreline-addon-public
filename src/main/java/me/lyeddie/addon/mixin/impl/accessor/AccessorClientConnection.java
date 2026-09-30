@@ -1,7 +1,7 @@
 package me.lyeddie.addon.mixin.impl.accessor;
 
+import io.netty.channel.ChannelFutureListener;
 import net.minecraft.network.ClientConnection;
-import net.minecraft.network.PacketCallbacks;
 import net.minecraft.network.packet.Packet;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -11,5 +11,5 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 public interface AccessorClientConnection {
 
     @Invoker("sendInternal")
-    void hookSendInternal(Packet<?> packet, @Nullable PacketCallbacks callbacks, boolean flush);
+    void hookSendInternal(Packet<?> packet, @Nullable ChannelFutureListener callback, boolean flush);
 }

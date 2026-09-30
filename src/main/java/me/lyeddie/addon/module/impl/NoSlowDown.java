@@ -142,7 +142,7 @@ public class NoSlowDown extends AddonModule {
     @Override
     public void onDeactivate() {
         if (airStrictConfig.get() && sneaking) {
-            Managers.NETWORK.sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.RELEASE_SHIFT_KEY));
+            Managers.MOVEMENT.sendSneaking(false);
         }
         sneaking = false;
         Managers.TICK.setClientTick(1.0f);
@@ -163,8 +163,7 @@ public class NoSlowDown extends AddonModule {
     public void onTick(TickEvent.Pre event) {
         if (airStrictConfig.get() && !mc.player.isUsingItem()) {
             sneaking = false;
-            Managers.NETWORK.sendPacket(new ClientCommandC2SPacket(mc.player,
-                ClientCommandC2SPacket.Mode.RELEASE_SHIFT_KEY));
+            Managers.MOVEMENT.sendSneaking(false);
         }
         if (strafeFixConfig.get() && checkSlowed()) {
         }
@@ -204,8 +203,7 @@ public class NoSlowDown extends AddonModule {
     public void onSetCurrentHand(SetCurrentHandEvent event) {
         if (airStrictConfig.get() && !sneaking && checkSlowed()) {
             sneaking = true;
-            Managers.NETWORK.sendPacket(new ClientCommandC2SPacket(mc.player,
-                ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY));
+            Managers.MOVEMENT.sendSneaking(true);
         }
     }
 
@@ -285,8 +283,7 @@ public class NoSlowDown extends AddonModule {
                 mc.player.stopUsingItem();
             }
             if (sneaking || Managers.POSITION.isSneaking()) {
-                Managers.NETWORK.sendPacket(new ClientCommandC2SPacket(mc.player,
-                    ClientCommandC2SPacket.Mode.RELEASE_SHIFT_KEY));
+                Managers.MOVEMENT.sendSneaking(false);
             }
             if (Managers.POSITION.isSprinting()) {
                 Managers.NETWORK.sendPacket(new ClientCommandC2SPacket(mc.player,

@@ -15,9 +15,10 @@ import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.MovementType;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.util.Hand;
+import net.minecraft.util.PlayerInput;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Final;
@@ -46,7 +47,7 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
     @Final
     protected MinecraftClient client;
     @Shadow
-    private boolean lastSneaking;
+    private PlayerInput lastPlayerInput;
     @Shadow
     private float lastYawClient;
     @Shadow
@@ -64,9 +65,6 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 
     @Shadow
     protected abstract void sendSprintingPacket();
-
-    @Shadow
-    public abstract boolean isSneaking();
 
     @Shadow
     protected abstract boolean isCamera();
@@ -100,11 +98,10 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
         if (movementPacketsEvent.isCancelled() || encodeYawEvent.isCancelled()) {
             ci.cancel();
             sendSprintingPacket();
-            boolean bl = isSneaking();
-            if (bl != lastSneaking) {
-                ClientCommandC2SPacket.Mode mode = bl ? ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY : ClientCommandC2SPacket.Mode.RELEASE_SHIFT_KEY;
-                networkHandler.sendPacket(new ClientCommandC2SPacket(this, mode));
-                lastSneaking = bl;
+            PlayerInput currentInput = input.playerInput;
+            if (!currentInput.equals(lastPlayerInput)) {
+                networkHandler.sendPacket(new PlayerInputC2SPacket(currentInput));
+                lastPlayerInput = currentInput;
             }
             if (isCamera()) {
                 double d = x - lastXClient;

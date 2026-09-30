@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MixinGameMenuScreen {
 
     @Inject(method = "disconnect", at = @At(value = "HEAD"), cancellable = true)
-    private void hookDisconnect(CallbackInfo ci) {
+    private static void hookDisconnect(CallbackInfo ci) {
         MenuDisconnectEvent menuDisconnectEvent = new MenuDisconnectEvent();
         MeteorClient.EVENT_BUS.post(menuDisconnectEvent);
         if (menuDisconnectEvent.isCancelled()) {

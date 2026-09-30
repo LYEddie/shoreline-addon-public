@@ -7,6 +7,7 @@ import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -37,9 +38,9 @@ public class PositionManager implements Globals {
                 switch (packet.getMode()) {
                     case START_SPRINTING -> sprinting = true;
                     case STOP_SPRINTING -> sprinting = false;
-                    case PRESS_SHIFT_KEY -> sneaking = true;
-                    case RELEASE_SHIFT_KEY -> sneaking = false;
                 }
+            } else if (event.packet instanceof PlayerInputC2SPacket packet) {
+                sneaking = packet.input().sneak();
             }
         }
     }

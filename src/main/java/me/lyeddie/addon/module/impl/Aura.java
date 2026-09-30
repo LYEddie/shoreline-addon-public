@@ -538,8 +538,7 @@ public class Aura extends CombatModule {
         if (stopSprintConfig.get()) {
             sneaking = Managers.POSITION.isSneaking();
             if (sneaking) {
-                Managers.NETWORK.sendPacket(new ClientCommandC2SPacket(mc.player,
-                    ClientCommandC2SPacket.Mode.RELEASE_SHIFT_KEY));
+                Managers.MOVEMENT.sendSneaking(false);
             }
             sprinting = Managers.POSITION.isSprinting();
             if (sprinting) {
@@ -555,8 +554,7 @@ public class Aura extends CombatModule {
                 new PlayerInteractItemC2SPacket(Hand.OFF_HAND, s, mc.player.getYaw(), mc.player.getPitch()));
         }
         if (sneaking) {
-            Managers.NETWORK.sendPacket(new ClientCommandC2SPacket(mc.player,
-                ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY));
+            Managers.MOVEMENT.sendSneaking(true);
         }
         if (sprinting) {
             Managers.NETWORK.sendPacket(new ClientCommandC2SPacket(mc.player,

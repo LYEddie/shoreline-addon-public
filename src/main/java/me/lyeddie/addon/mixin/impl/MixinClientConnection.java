@@ -1,13 +1,13 @@
 package me.lyeddie.addon.mixin.impl;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelFutureListener;
 import me.lyeddie.addon.events.DecodePacketEvent;
 import me.lyeddie.addon.events.irrevocable.DisconnectEvent;
 import me.lyeddie.addon.events.staged.OutboundPostPacketEvent;
 import me.lyeddie.addon.util.Globals;
 import meteordevelopment.meteorclient.MeteorClient;
 import net.minecraft.network.ClientConnection;
-import net.minecraft.network.PacketCallbacks;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
@@ -37,7 +37,7 @@ public class MixinClientConnection implements Globals {
     }
 
     @Inject(method = "sendImmediately", at = @At(value = "TAIL"), cancellable = true)
-    private void hookSendImmediately$2(Packet<?> packet, @Nullable PacketCallbacks callbacks,
+    private void hookSendImmediately$2(Packet<?> packet, @Nullable ChannelFutureListener callbacks,
                                        boolean flush, CallbackInfo ci) {
         if ((mc.world != null || mc.player != null)) {
             OutboundPostPacketEvent packetOutboundEvent = new OutboundPostPacketEvent(packet);

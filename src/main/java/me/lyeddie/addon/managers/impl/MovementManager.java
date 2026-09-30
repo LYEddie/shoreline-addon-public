@@ -5,9 +5,8 @@ import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.util.Globals;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import static net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY;
-import static net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket.Mode.RELEASE_SHIFT_KEY;
+import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
+import net.minecraft.util.PlayerInput;
 
 public class MovementManager implements Globals {
     private boolean packetSneaking;
@@ -22,11 +21,13 @@ public class MovementManager implements Globals {
 
     public void setPacketSneaking(final boolean packetSneaking) {
         this.packetSneaking = packetSneaking;
-        if (packetSneaking) {
-            Managers.NETWORK.sendPacket(new ClientCommandC2SPacket(mc.player, PRESS_SHIFT_KEY));
-        } else {
-            Managers.NETWORK.sendPacket(new ClientCommandC2SPacket(mc.player, RELEASE_SHIFT_KEY));
-        }
+        sendSneaking(packetSneaking);
+    }
+
+    public void sendSneaking(boolean sneaking) {
+        PlayerInput input = mc.player.input.playerInput;
+        Managers.NETWORK.sendPacket(new PlayerInputC2SPacket(new PlayerInput(
+            input.forward(), input.backward(), input.left(), input.right(), input.jump(), sneaking, input.sprint())));
     }
 
     @EventHandler
