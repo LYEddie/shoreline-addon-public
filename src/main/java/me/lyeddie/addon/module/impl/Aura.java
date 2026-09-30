@@ -580,7 +580,7 @@ public class Aura extends CombatModule {
                 && EntityUtil.getArmorItems(livingEntity).isEmpty()) {
                 continue;
             }
-            double dist = pos.distanceTo(entity.getPos());
+            double dist = pos.distanceTo(entity.getEntityPos());
             if (dist <= searchRangeConfig.get()) {
                 if (entity.age < ticksExistedConfig.get()) {
                     continue;
@@ -665,7 +665,7 @@ public class Aura extends CombatModule {
     }
 
     private Vec3d getAttackRotateVec(Entity entity) {
-        Vec3d feetPos = entity.getPos();
+        Vec3d feetPos = entity.getEntityPos();
         return switch (hitVectorConfig.get()) {
             case FEET -> feetPos;
             case TORSO -> feetPos.add(0.0, entity.getHeight() / 2.0f, 0.0);

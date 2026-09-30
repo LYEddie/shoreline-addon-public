@@ -12,7 +12,9 @@ import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.network.packet.s2c.play.GameStateChangeS2CPacket;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.world.biome.BiomeParticleConfig;
+import net.minecraft.world.attribute.AmbientParticle;
+
+import java.util.List;
 
 public class NoWeather extends AddonModule {
     private static NoWeather INST;
@@ -66,7 +68,7 @@ public class NoWeather extends AddonModule {
     public void onBiomeEffects(BiomeEffectsEvent event) {
         if (weatherConfig.get() == Weather.ASH) {
             event.cancel();
-            event.setParticleConfig(new BiomeParticleConfig(ParticleTypes.WHITE_ASH, 0.118093334f));
+            event.setParticles(List.of(new AmbientParticle(ParticleTypes.WHITE_ASH, 0.118093334f)));
         }
     }
 

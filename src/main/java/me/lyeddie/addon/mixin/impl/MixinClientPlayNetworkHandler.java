@@ -7,7 +7,7 @@ import me.lyeddie.addon.util.Globals;
 import meteordevelopment.meteorclient.MeteorClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.player.PlayerPosition;
+import net.minecraft.entity.EntityPosition;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkThreadUtils;
 import net.minecraft.network.packet.Packet;
@@ -33,9 +33,9 @@ public abstract class MixinClientPlayNetworkHandler implements IClientPlayNetwor
         MeteorClient.EVENT_BUS.post(serverRotationEvent);
         if (serverRotationEvent.isCancelled()) {
             ci.cancel();
-            NetworkThreadUtils.forceMainThread(packet, (ClientPlayNetworkHandler) (Object) this, mc);
+            NetworkThreadUtils.forceMainThread(packet, (ClientPlayNetworkHandler) (Object) this, mc.getPacketApplyBatcher());
             ClientPlayerEntity playerEntity = mc.player;
-            PlayerPosition resolved = PlayerPosition.apply(PlayerPosition.fromEntity(playerEntity), packet.change(), packet.relatives());
+            EntityPosition resolved = EntityPosition.apply(EntityPosition.fromEntity(playerEntity), packet.change(), packet.relatives());
             Vec3d position = resolved.position();
             Vec3d change = packet.change().position();
             if (packet.relatives().contains(PositionFlag.X)) {

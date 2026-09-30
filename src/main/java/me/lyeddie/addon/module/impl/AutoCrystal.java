@@ -472,7 +472,7 @@ public class AutoCrystal extends CombatModule {
         }
         renderPos = null;
         ArrayList<Entity> entities = Lists.newArrayList(mc.world.getEntities());
-        List<BlockPos> blocks = getSphere(placeRangeEyeConfig.get() ? mc.player.getEyePos() : mc.player.getPos());
+        List<BlockPos> blocks = getSphere(placeRangeEyeConfig.get() ? mc.player.getEyePos() : mc.player.getEntityPos());
         long timePre = System.nanoTime();
         if (placeConfig.get()) {
             placeCrystal = calculatePlaceCrystal(blocks, entities);
@@ -482,7 +482,7 @@ public class AutoCrystal extends CombatModule {
             if (placeCrystal != null) {
                 EndCrystalEntity crystalEntity = intersectingCrystalCheck(placeCrystal.getDamageData());
                 if (crystalEntity != null) {
-                    double self = ExplosionUtil.getDamageTo(mc.player, crystalEntity.getPos(),
+                    double self = ExplosionUtil.getDamageTo(mc.player, crystalEntity.getEntityPos(),
                         blockDestructionConfig.get(), selfExtrapolateConfig.get() ? extrapolateTicksConfig.get() : 0, false);
                     if (!safetyConfig.get() || !playerDamageCheck(self)) {
                         attackCrystal = new DamageData<>(crystalEntity, placeCrystal.getAttackTarget(),
@@ -512,7 +512,7 @@ public class AutoCrystal extends CombatModule {
         }
         attackRotate = attackCrystal != null && attackDelayConfig.get() <= 0.0 && lastAttackTimer.passed(breakDelay);
         if (attackCrystal != null) {
-            crystalRotation = attackCrystal.damageData.getPos();
+            crystalRotation = attackCrystal.damageData.getEntityPos();
         } else if (placeCrystal != null) {
             crystalRotation = placeCrystal.damageData.toCenterPos().add(0.0, 0.5, 0.0);
         }
@@ -683,7 +683,7 @@ public class AutoCrystal extends CombatModule {
         if (!(event.getEntity() instanceof EndCrystalEntity crystalEntity)) {
             return;
         }
-        Vec3d crystalPos = crystalEntity.getPos();
+        Vec3d crystalPos = crystalEntity.getEntityPos();
         BlockPos blockPos = BlockPos.ofFloored(crystalPos.add(0.0, -1.0, 0.0));
         Long time = placePackets.remove(blockPos);
         attackRotate = time != null;
@@ -716,7 +716,7 @@ public class AutoCrystal extends CombatModule {
                     || (entity instanceof PlayerEntity ent && Friends.get().isFriend(ent))) {
                     continue;
                 }
-                double crystalDist = crystalPos.squaredDistanceTo(entity.getPos());
+                double crystalDist = crystalPos.squaredDistanceTo(entity.getEntityPos());
                 if (crystalDist > 144.0f) {
                     continue;
                 }
@@ -996,7 +996,7 @@ public class AutoCrystal extends CombatModule {
             if (attackRangeCheck(crystal1)) {
                 continue;
             }
-            double selfDamage = ExplosionUtil.getDamageTo(mc.player, crystal.getPos(),
+            double selfDamage = ExplosionUtil.getDamageTo(mc.player, crystal.getEntityPos(),
                 blockDestructionConfig.get(), selfExtrapolateConfig.get() ? extrapolateTicksConfig.get() : 0, false);
             boolean unsafeToPlayer = playerDamageCheck(selfDamage);
             if (unsafeToPlayer && !safetyOverride.get()) {
@@ -1041,7 +1041,7 @@ public class AutoCrystal extends CombatModule {
                     }
                 }
 
-                double damage = ExplosionUtil.getDamageTo(entity, crystal.getPos(), blockDestructionConfig.get(),
+                double damage = ExplosionUtil.getDamageTo(entity, crystal.getEntityPos(), blockDestructionConfig.get(),
                     extrapolateTicksConfig.get(), assumeArmorConfig.get());
                 if (checkOverrideSafety(unsafeToPlayer, damage, entity)) {
                     continue;
@@ -1068,7 +1068,7 @@ public class AutoCrystal extends CombatModule {
     }
 
     private boolean attackRangeCheck(EndCrystalEntity entity) {
-        return attackRangeCheck(entity.getPos());
+        return attackRangeCheck(entity.getEntityPos());
     }
 
     private boolean attackRangeCheck(Vec3d entityPos) {
@@ -1113,7 +1113,7 @@ public class AutoCrystal extends CombatModule {
                     || (entity instanceof PlayerEntity ent && Friends.get().isFriend(ent))) {
                     continue;
                 }
-                double blockDist = pos.getSquaredDistance(entity.getPos());
+                double blockDist = pos.getSquaredDistance(entity.getEntityPos());
                 if (blockDist > 144.0f) {
                     continue;
                 }
@@ -1176,7 +1176,7 @@ public class AutoCrystal extends CombatModule {
     private boolean placeRangeCheck(BlockPos pos) {
         double placeRange = placeRangeConfig.get();
         double placeWallRange = placeWallRangeConfig.get();
-        Vec3d player = placeRangeEyeConfig.get() ? mc.player.getEyePos() : mc.player.getPos();
+        Vec3d player = placeRangeEyeConfig.get() ? mc.player.getEyePos() : mc.player.getEntityPos();
         double dist = placeRangeCenterConfig.get() ?
             player.squaredDistanceTo(pos.toCenterPos()) : pos.getSquaredDistance(player.x, player.y, player.z);
         if (dist > placeRange * placeRange) {
@@ -1283,7 +1283,7 @@ public class AutoCrystal extends CombatModule {
         }
 
         if (shulkersConfig.get() && entity instanceof PlayerEntity) {
-            for (BlockPos pos : getSphere(3.0f, entity.getPos())) {
+            for (BlockPos pos : getSphere(3.0f, entity.getEntityPos())) {
                 BlockState state = mc.world.getBlockState(pos);
                 if (state.getBlock() instanceof ShulkerBoxBlock) {
                     return true;
@@ -1369,7 +1369,7 @@ public class AutoCrystal extends CombatModule {
                     entities.remove(entity);
                 } else {
                     double dist = mc.player.squaredDistanceTo(entity1);
-                    stuckCrystals.add(new AntiStuckData(entity1.getId(), entity1.getBlockPos(), entity1.getPos(), dist));
+                    stuckCrystals.add(new AntiStuckData(entity1.getId(), entity1.getBlockPos(), entity1.getEntityPos(), dist));
                 }
             }
         }

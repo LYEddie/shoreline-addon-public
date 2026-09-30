@@ -33,7 +33,7 @@ public class HoleManager implements Globals {
     public void onTickEvent(TickEvent.Pre event) {
         if (mc.player == null && mc.world == null) return; // ¿
 
-        HoleTask runnable = new HoleTask(getSphere(mc.player.getPos()));
+        HoleTask runnable = new HoleTask(getSphere(mc.player.getEntityPos()));
         result = executor.submit(runnable);
     }
 

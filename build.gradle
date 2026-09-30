@@ -1,12 +1,14 @@
 plugins {
-    id "fabric-loom" version "1.10-SNAPSHOT"
+    id "fabric-loom" version "1.14-SNAPSHOT"
     id 'com.github.gmazzo.buildconfig' version '5.3.5'
 }
 
-def shortHash = "${execute("git rev-parse --short HEAD")}"
+def shortHash = providers.exec {
+    commandLine "git", "rev-parse", "--short", "HEAD"
+}.standardOutput.asText.get().trim()
 
 base {
-    archivesBaseName = project.archives_base_name
+    archivesName = project.archives_base_name
     version = project.mod_version + "-" + shortHash
     group = project.maven_group
 }
@@ -68,7 +70,7 @@ tasks {
 
     jar {
         from("LICENSE") {
-            rename { "${it}_${project.base.archivesBaseName}" }
+            rename { "${it}_${project.base.archivesName.get()}" }
         }
     }
 
@@ -80,20 +82,5 @@ tasks {
     tasks.withType(JavaCompile).configureEach {
         it.options.encoding = "UTF-8"
         it.options.release = 21
-    }
-}
-
-def execute(String cmd) {
-    try {
-        final def stdout = new ByteArrayOutputStream()
-
-        exec {
-            commandLine cmd.split(" ")
-            standardOutput = stdout
-        }
-
-        return stdout.toString().trim()
-    } catch (ignored) {
-        return null
     }
 }

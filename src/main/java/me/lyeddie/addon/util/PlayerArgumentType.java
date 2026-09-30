@@ -31,7 +31,7 @@ public class PlayerArgumentType implements ArgumentType<String>, Globals {
         String[] literal = context.getInput().split(" ");
         Collection<PlayerListEntry> playerListEntries = mc.player.networkHandler.getPlayerList();
         for (PlayerListEntry playerListEntry : playerListEntries) {
-            String playerName = playerListEntry.getProfile().getName();
+            String playerName = playerListEntry.getProfile().name();
             for (String string : literal) {
                 if (string.isBlank() || playerName.toLowerCase().startsWith(string.toLowerCase())) {
                     builder.suggest(playerName);

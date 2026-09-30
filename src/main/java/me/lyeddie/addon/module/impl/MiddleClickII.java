@@ -4,7 +4,7 @@ import me.lyeddie.addon.Shoreline;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.module.AddonModule;
 import me.lyeddie.addon.util.literal.RayCastUtil;
-import meteordevelopment.meteorclient.events.meteor.MouseButtonEvent;
+import meteordevelopment.meteorclient.events.meteor.MouseClickEvent;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
@@ -44,11 +44,11 @@ public class MiddleClickII extends AddonModule {
     }
 
     @EventHandler
-    public void onMouseClick(MouseButtonEvent event) {
+    public void onMouseClick(MouseClickEvent event) {
         if (mc.player == null || mc.interactionManager == null) {
             return;
         }
-        if (event.action == KeyAction.Press && event.button == 2 && this.mc.currentScreen == null) {
+        if (event.action == KeyAction.Press && event.button() == 2 && this.mc.currentScreen == null) {
             double d = mc.player.getEntityInteractionRange();
             HitResult result = RayCastUtil.raycastEntity(d);
             if (result != null && result.getType() == HitResult.Type.ENTITY && friendConfig.get() && ((EntityHitResult) result).getEntity() instanceof PlayerEntity target) {

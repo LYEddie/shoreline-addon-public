@@ -62,8 +62,8 @@ public abstract class MixinTridentItem implements Globals {
                     if (!stack.willBreakNextUse()) {
                         used = true;
                         RegistryEntry<SoundEvent> registryEntry = EnchantmentHelper.getEffect(stack, EnchantmentEffectComponentTypes.TRIDENT_SOUND).orElse(SoundEvents.ITEM_TRIDENT_THROW);
-                        if (!world.isClient) {
-                            stack.damage(1, playerEntity, LivingEntity.getSlotForHand(user.getActiveHand()));
+                        if (!world.isClient()) {
+                            stack.damage(1, playerEntity, user.getActiveHand().getEquipmentSlot());
                             if (f == 0.0F) {
                                 TridentEntity tridentEntity = new TridentEntity(world, playerEntity, stack);
                                 tridentEntity.setVelocity(playerEntity, playerEntity.getPitch(), playerEntity.getYaw(), 0.0F, 2.5F, 1.0F);

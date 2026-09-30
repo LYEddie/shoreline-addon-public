@@ -286,7 +286,7 @@ public class AutoTotem extends AddonModule {
             if (mc.player.squaredDistanceTo(e) > 144.0) {
                 continue;
             }
-            double potential = ExplosionUtil.getDamageTo(mc.player, crystal.getPos(), false);
+            double potential = ExplosionUtil.getDamageTo(mc.player, crystal.getEntityPos(), false);
             if (health + 0.5 > potential) {
                 continue;
             }

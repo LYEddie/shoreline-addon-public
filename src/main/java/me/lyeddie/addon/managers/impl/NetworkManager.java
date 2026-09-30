@@ -91,7 +91,7 @@ public class NetworkManager implements Globals {
     public int getClientLatency() {
         if (mc.getNetworkHandler() != null) {
             final PlayerListEntry playerEntry =
-                mc.getNetworkHandler().getPlayerListEntry(mc.player.getGameProfile().getId());
+                mc.getNetworkHandler().getPlayerListEntry(mc.player.getGameProfile().id());
             if (playerEntry != null) {
                 return playerEntry.getLatency();
             }

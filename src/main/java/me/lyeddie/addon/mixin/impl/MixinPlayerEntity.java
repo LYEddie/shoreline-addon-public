@@ -41,7 +41,7 @@ public abstract class MixinPlayerEntity extends LivingEntity implements Globals 
         }
     }
 
-    @Redirect(method = "attack", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;setVelocity(Lnet/minecraft/util/math/Vec3d;)V"))
+    @Redirect(method = "knockbackTarget", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;setVelocity(Lnet/minecraft/util/math/Vec3d;)V"))
     private void hookAttack(PlayerEntity playerEntity, Vec3d movementInput) {
         if (playerEntity instanceof ClientPlayerEntity) {
             SprintResetEvent sprintResetEvent = new SprintResetEvent();
@@ -52,7 +52,7 @@ public abstract class MixinPlayerEntity extends LivingEntity implements Globals 
         }
     }
 
-    @Redirect(method = "attack", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;setSprinting(Z)V"))
+    @Redirect(method = "knockbackTarget", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;setSprinting(Z)V"))
     private void hookAttack$1(PlayerEntity instance, boolean b) {
         if (instance instanceof ClientPlayerEntity) {
             SprintResetEvent sprintResetEvent = new SprintResetEvent();

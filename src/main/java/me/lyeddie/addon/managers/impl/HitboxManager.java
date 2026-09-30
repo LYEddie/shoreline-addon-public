@@ -55,6 +55,6 @@ public class HitboxManager implements Globals {
     }
 
     public Box getCrawlingBoundingBox(Entity entity) {
-        return entity.getDimensions(EntityPose.SWIMMING).getBoxAt(entity.getPos());
+        return entity.getDimensions(EntityPose.SWIMMING).getBoxAt(entity.getEntityPos());
     }
 }

@@ -22,9 +22,9 @@ public class LookupManager implements Globals {
         if (mc.getNetworkHandler() != null) {
             List<PlayerListEntry> playerListEntries =
                 new ArrayList<>(mc.getNetworkHandler().getPlayerList());
-            PlayerListEntry profile = playerListEntries.stream().filter(info -> info.getProfile().getName().equalsIgnoreCase(name)).findFirst().orElse(null);
+            PlayerListEntry profile = playerListEntries.stream().filter(info -> info.getProfile().name().equalsIgnoreCase(name)).findFirst().orElse(null);
             if (profile != null) {
-                UUID result = profile.getProfile().getId();
+                UUID result = profile.getProfile().id();
                 LOOKUPS_UUID.put(name, result);
                 return result;
             }

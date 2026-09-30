@@ -462,8 +462,8 @@ public class SpeedII extends AddonModule {
         }
         if (event.packet instanceof EntityVelocityUpdateS2CPacket packet
             && packet.getEntityId() == mc.player.getId()) {
-            double x = packet.getVelocityX();
-            double z = packet.getVelocityZ();
+            double x = packet.getVelocity().x;
+            double z = packet.getVelocity().z;
         } else if (event.packet instanceof PlayerPositionLookS2CPacket) {
             resetStrafe();
         }

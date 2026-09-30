@@ -12,7 +12,7 @@ public final class RayCastUtil implements Globals {
 
     public static HitResult raycastEntity(final double reach) {
         Camera view = mc.gameRenderer.getCamera();
-        Vec3d vec3d = view.getPos();
+        Vec3d vec3d = view.getCameraPos();
         Vec3d vec3d2 = RotationUtil.getRotationVector(view.getPitch(), view.getYaw());
         Vec3d vec3d3 = vec3d.add(vec3d2.x * reach, vec3d2.y * reach, vec3d2.z * reach);
         Box box = view.getFocusedEntity().getBoundingBox().stretch(vec3d2.multiply(reach)).expand(1.0, 1.0, 1.0);

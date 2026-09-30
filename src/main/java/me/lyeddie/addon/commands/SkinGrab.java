@@ -7,6 +7,7 @@ import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.commands.Command;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.command.CommandSource;
+import net.minecraft.util.AssetInfo;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,9 +26,11 @@ public class SkinGrab extends Command implements Helpers {
             String player = PlayerArgumentType.getPlayer(c, "player");
             String skinTexture = null;
             for (PlayerListEntry playerListEntry : mc.player.networkHandler.getPlayerList()) {
-                String playerName = playerListEntry.getProfile().getName();
+                String playerName = playerListEntry.getProfile().name();
                 if (player.equals(playerName)) {
-                    skinTexture = playerListEntry.getSkinTextures().textureUrl();
+                    if (playerListEntry.getSkinTextures().body() instanceof AssetInfo.SkinAssetInfo skin) {
+                        skinTexture = skin.url();
+                    }
                     break;
                 }
             }

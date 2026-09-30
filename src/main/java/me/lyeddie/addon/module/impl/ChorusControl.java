@@ -8,7 +8,7 @@ import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.EntityPose;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
@@ -78,7 +78,7 @@ public class ChorusControl extends AddonModule {
     public void onRender(Render3DEvent event) {
         if (teleportPacket != null) {
             Vec3d vec3d = teleportPacket.change().position();
-            Box teleportBox = PlayerEntity.STANDING_DIMENSIONS.getBoxAt(vec3d);
+            Box teleportBox = mc.player.getDimensions(EntityPose.STANDING).getBoxAt(vec3d);
             event.renderer.box(teleportBox, TabConfigs.get().getClampColor(60), TabConfigs.get().getClampColor(100), ShapeMode.Both, 0);
         }
     }

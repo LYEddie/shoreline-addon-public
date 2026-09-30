@@ -158,7 +158,8 @@ public class VelocityII extends AddonModule {
                 return;
             }
 
-            if (concealVelocity && packet.getVelocityX() == 0 && packet.getVelocityZ() == 0 && packet.getVelocityZ() == 0) {
+            Vec3d velocity = packet.getVelocity();
+            if (concealVelocity && velocity.x == 0 && velocity.y == 0 && velocity.z == 0) {
                 concealVelocity = false;
                 return;
             }
@@ -179,12 +180,10 @@ public class VelocityII extends AddonModule {
                         event.cancel();
                         return;
                     }
-                    ((AccessorEntityVelocityUpdateS2CPacket) packet).setVelocityX((int) (packet.getVelocityX()
-                        * (horizontalConfig.get() / 100.0f)));
-                    ((AccessorEntityVelocityUpdateS2CPacket) packet).setVelocityY((int) (packet.getVelocityY()
-                        * (verticalConfig.get() / 100.0f)));
-                    ((AccessorEntityVelocityUpdateS2CPacket) packet).setVelocityZ((int) (packet.getVelocityZ()
-                        * (horizontalConfig.get() / 100.0f)));
+                    ((AccessorEntityVelocityUpdateS2CPacket) packet).setVelocity(new Vec3d(
+                        velocity.x * (horizontalConfig.get() / 100.0f),
+                        velocity.y * (verticalConfig.get() / 100.0f),
+                        velocity.z * (horizontalConfig.get() / 100.0f)));
                 }
                 case GRIM -> {
                     if (!Managers.ANTICHEAT.hasPassed(100)) {
@@ -285,12 +284,11 @@ public class VelocityII extends AddonModule {
                             if (horizontalConfig.get() == 0.0f && verticalConfig.get() == 0.0f) {
                                 continue;
                             } else {
-                                ((AccessorEntityVelocityUpdateS2CPacket) packet2).setVelocityX((int) (packet2.getVelocityX()
-                                    * (horizontalConfig.get() / 100.0f)));
-                                ((AccessorEntityVelocityUpdateS2CPacket) packet2).setVelocityY((int) (packet2.getVelocityY()
-                                    * (verticalConfig.get() / 100.0f)));
-                                ((AccessorEntityVelocityUpdateS2CPacket) packet2).setVelocityZ((int) (packet2.getVelocityZ()
-                                    * (horizontalConfig.get() / 100.0f)));
+                                Vec3d velocity = packet2.getVelocity();
+                                ((AccessorEntityVelocityUpdateS2CPacket) packet2).setVelocity(new Vec3d(
+                                    velocity.x * (horizontalConfig.get() / 100.0f),
+                                    velocity.y * (verticalConfig.get() / 100.0f),
+                                    velocity.z * (horizontalConfig.get() / 100.0f)));
                             }
                         }
                         case GRIM -> {

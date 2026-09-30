@@ -104,9 +104,8 @@ public class TabEvents implements Globals, Helpers {
                     || Math.abs(velocity.y) > 1000 || Math.abs(velocity.z) > 1000).orElse(false))) {
                 event.cancel();
             } else if (event.packet instanceof EntityVelocityUpdateS2CPacket packet
-                    && (packet.getVelocityX() > 1000 || packet.getVelocityY() > 1000 ||
-                    packet.getVelocityZ() > 1000 || packet.getVelocityX() < -1000 ||
-                    packet.getVelocityY() < -1000 || packet.getVelocityZ() < -1000)) {
+                    && (Math.abs(packet.getVelocity().x) > 1000 || Math.abs(packet.getVelocity().y) > 1000
+                    || Math.abs(packet.getVelocity().z) > 1000)) {
                 event.cancel();
             } else if (event.packet instanceof ParticleS2CPacket packet && packet.getCount() > 500) {
                 event.cancel();
