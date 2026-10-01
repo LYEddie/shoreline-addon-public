@@ -38,7 +38,7 @@ public class Logo extends HudElement {
         .defaultValue(new SettingColor(255, 255, 255, 255))
         .build());
 
-    private final Identifier logoFile = Identifier.of("shoreline", "icon.png");
+    private final Identifier logoFile = Identifier.of("shornselines", "icon.png");
 
     public static final HudElementInfo<Logo> INFO = new HudElementInfo<>(
         Shoreline.HUD, "logo", ".", Logo::new);
