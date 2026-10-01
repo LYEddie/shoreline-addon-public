@@ -6,19 +6,23 @@ plugins {
 def shortHash = providers.exec {
     commandLine "git", "rev-parse", "--short", "HEAD"
 }.standardOutput.asText.get().trim()
+def commitCount = providers.exec {
+    commandLine "git", "rev-list", "--count", "HEAD"
+}.standardOutput.asText.get().trim()
 
 base {
     archivesName = project.archives_base_name
-    version = project.mod_version + "-" + shortHash
+    version = project.mod_version
     group = project.maven_group
 }
 
 buildConfig {
     buildConfigField(String, "HASH", shortHash)
     buildConfigField(String, "VERSION", project.mod_version)
-    buildConfigField(String, "BUILD_NUMBER", project.build_number)
+    buildConfigField(String, "BUILD_NUMBER", commitCount)
     buildConfigField(String, "BUILD_IDENTIFIER", project.build_identifier)
     buildConfigField(String, "BUILD_TIME", "${new Date(System.currentTimeMillis()).format("dd/MM/yyyy HH:mm")}")
+    buildConfigField(String, "BASE_NAME", project.archives_base_name)
 
     packageName "me.lyeddie.addon.util"
     useJavaOutput()
@@ -27,7 +31,7 @@ buildConfig {
 }
 
 loom {
-    accessWidenerPath = file("src/main/resources/shoreline-addon.accesswidener")
+    accessWidenerPath = file("src/main/resources/shornselines.accesswidener")
 }
 
 repositories {
