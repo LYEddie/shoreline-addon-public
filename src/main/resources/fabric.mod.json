@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "shoreline-addon",
+  "id": "shornselines-addon",
   "version": "${version}",
   "name": "Shoreline Addon",
-  "description": "cool tech now on meteor",
+  "description": "cool outdated tech now on meteor -> ${hash}",
   "authors": [
     "Linus",
     "LYEddie",
@@ -12,7 +12,7 @@
   "contact": {
     "repo": "https://github.com/LYEddie/shoreline-addon-public"
   },
-  "icon": "assets/shoreline/icon.png",
+  "icon": "assets/shornselines/icon.png",
   "environment": "client",
   "entrypoints": {
     "meteor": [
@@ -20,12 +20,12 @@
     ]
   },
   "mixins": [
-    "shoreline-addon.mixins.json"
+    "shornselines.mixins.json"
   ],
   "custom": {
     "meteor-client:color": "50,100,205"
   },
-  "accessWidener": "shoreline-addon.accesswidener",
+  "accessWidener": "shornselines.accesswidener",
   "depends": {
     "java": ">=25",
     "minecraft": ["${mc_version}"],
