@@ -1,0 +1,272 @@
+name: Build and release addon
+
+on:
+  push:
+    branches:
+      - "port_*"
+
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "Canal de publicación"
+        required: true
+        default: nightly
+        type: choice
+        options:
+          - nightly
+          - beta
+          - release
+
+      publish:
+        description: "Crear tags y GitHub Release"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  discovery:
+    name: Prepare metadata
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    outputs:
+      minecraft_version: ${{ steps.meta.outputs.minecraft_version }}
+      mod_version: ${{ steps.meta.outputs.mod_version }}
+      git_hash: ${{ steps.meta.outputs.git_hash }}
+      build_number: ${{ steps.meta.outputs.build_number }}
+      channel: ${{ steps.meta.outputs.channel }}
+      release_tag: ${{ steps.meta.outputs.release_tag }}
+      rolling_tag: ${{ steps.meta.outputs.rolling_tag }}
+      release_name: ${{ steps.meta.outputs.release_name }}
+      prerelease: ${{ steps.meta.outputs.prerelease }}
+      make_latest: ${{ steps.meta.outputs.make_latest }}
+      changelog: ${{ steps.meta.outputs.changelog }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Prepare release metadata
+        id: meta
+        shell: bash
+        run: |
+          BRANCH="${GITHUB_REF_NAME}"
+
+          if [[ ! "$BRANCH" =~ ^port_[0-9]+(_[0-9]+)+$ ]]; then
+            echo "This workflow must run from a port_<minecraft_version> branch."
+            echo "Current branch: $BRANCH"
+            exit 1
+          fi
+
+          MC="${BRANCH#port_}"
+          MC="${MC//_/.}"
+
+          MOD="$(
+            awk -F= '
+              /^[[:space:]]*mod_version[[:space:]]*=/ {
+                gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2)
+                print $2
+                exit
+              }
+            ' gradle.properties
+          )"
+
+          if [[ -z "$MOD" ]]; then
+            echo "mod_version was not found in gradle.properties."
+            echo "Add a line such as: mod_version=1.0"
+            exit 1
+          fi
+
+          HASH="$(git rev-parse --short HEAD)"
+          BUILD_NUMBER="$(git rev-list --count HEAD)"
+          CHANNEL="${{ github.event.inputs.channel || 'nightly' }}"
+
+          RELEASE_TAG="v${MOD}+${HASH}-mc${MC}-${CHANNEL}"
+          ROLLING_TAG="mc${MC}-${CHANNEL}"
+
+          case "$CHANNEL" in
+            nightly)
+              RELEASE_NAME="Shornselines nightly v${MOD}+${HASH} for MC ${MC}"
+              PRERELEASE=true
+              MAKE_LATEST=false
+              ;;
+            beta)
+              RELEASE_NAME="Shornselines beta v${MOD}+${HASH} for MC ${MC}"
+              PRERELEASE=true
+              MAKE_LATEST=false
+              ;;
+            release)
+              RELEASE_NAME="Shoreline Addon v${MOD}-b${BUILD_NUMBER} at ${MC}"
+              PRERELEASE=false
+              MAKE_LATEST=true
+              ;;
+          esac
+
+          LAST_TAG="$(git tag -l "v*-mc${MC}-${CHANNEL}" --sort=-creatordate | head -1)"
+
+          if [[ -n "$LAST_TAG" ]]; then
+            CHANGELOG="$(git log "${LAST_TAG}..HEAD" --pretty=format:'- %s (%h)' --no-merges)"
+          else
+            CHANGELOG="$(git log --pretty=format:'- %s (%h)' --no-merges -20)"
+          fi
+
+          [[ -n "$CHANGELOG" ]] || CHANGELOG="- No changes"
+
+          {
+            echo "minecraft_version=$MC"
+            echo "mod_version=$MOD"
+            echo "git_hash=$HASH"
+            echo "channel=$CHANNEL"
+            echo "release_tag=$RELEASE_TAG"
+            echo "rolling_tag=$ROLLING_TAG"
+            echo "release_name=$RELEASE_NAME"
+            echo "prerelease=$PRERELEASE"
+            echo "make_latest=$MAKE_LATEST"
+            echo "changelog<<EOF"
+            echo "$CHANGELOG"
+            echo "EOF"
+            echo "build_number=$BUILD_NUMBER"
+          } >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build addon
+    needs: discovery
+    runs-on: ubuntu-latest
+
+    outputs:
+      jar_name: ${{ steps.jar.outputs.jar_name }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build
+        env:
+          BUILD_IDENTIFIER: ${{ needs.discovery.outputs.channel }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew clean build --no-daemon -Pbuild_identifier="$BUILD_IDENTIFIER"
+
+      - name: Rename JAR for the release
+        id: jar
+        env:
+          MC: ${{ needs.discovery.outputs.minecraft_version }}
+          MOD: ${{ needs.discovery.outputs.mod_version }}
+          HASH: ${{ needs.discovery.outputs.git_hash }}
+          CHANNEL: ${{ needs.discovery.outputs.channel }}
+          BUILD_NUMBER: ${{ needs.discovery.outputs.build_number }}
+        shell: bash
+        run: |
+          SOURCE_JAR="$(
+            find build/libs -maxdepth 1 -type f \
+              -name 'shornselines-*.jar' \
+              ! -name '*-sources.jar' \
+              ! -name '*-javadoc.jar' \
+              -print -quit
+          )"
+
+          if [[ -z "$SOURCE_JAR" ]]; then
+            echo "no addon JAR found in build/libs¿"
+            find build/libs -maxdepth 1 -type f -print || true
+            exit 1
+          fi
+
+          if [[ "$CHANNEL" == "release" ]]; then
+            RELEASE_JAR="shoreline-addon-v${MOD}-b${BUILD_NUMBER}+${HASH}-mc${MC}.jar"
+          else
+            RELEASE_JAR="shoreline-addon-v${MOD}-b${BUILD_NUMBER}-mc${MC}-${CHANNEL}.jar"
+          fi
+
+          cp "$SOURCE_JAR" "$RELEASE_JAR"
+
+          echo "jar_path=$RELEASE_JAR" >> "$GITHUB_OUTPUT"
+          echo "jar_name=$RELEASE_JAR" >> "$GITHUB_OUTPUT"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shornselines-mc${{ needs.discovery.outputs.minecraft_version }}-${{ needs.discovery.outputs.git_hash }}
+          path: ${{ steps.jar.outputs.jar_path }}
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Tag and publish release
+    needs: [discovery, build]
+    if: github.event_name == 'workflow_dispatch' && inputs.publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download built JAR
+        uses: actions/download-artifact@v5
+        with:
+          name: shornselines-mc${{ needs.discovery.outputs.minecraft_version }}-${{ needs.discovery.outputs.git_hash }}
+          path: release
+
+      - name: Create release tags
+        env:
+          STATIC_TAG: ${{ needs.discovery.outputs.release_tag }}
+          ROLLING_TAG: ${{ needs.discovery.outputs.rolling_tag }}
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git rev-parse -q --verify "refs/tags/$STATIC_TAG" >/dev/null; then
+            TAG_COMMIT="$(git rev-list -n 1 "$STATIC_TAG")"
+
+            if [[ "$TAG_COMMIT" != "$GITHUB_SHA" ]]; then
+              echo "Tag $STATIC_TAG already exists for another commit."
+              exit 1
+            fi
+          else
+            git tag -a "$STATIC_TAG" -m "Release $STATIC_TAG"
+            git push origin "$STATIC_TAG"
+          fi
+
+          git tag -fa "$ROLLING_TAG" -m "Latest $ROLLING_TAG build"
+          git push --force origin "$ROLLING_TAG"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.discovery.outputs.release_tag }}
+          target_commitish: ${{ github.sha }}
+          name: ${{ needs.discovery.outputs.release_name }}
+          prerelease: ${{ needs.discovery.outputs.prerelease }}
+          make_latest: ${{ needs.discovery.outputs.make_latest }}
+          body: |
+            **Minecraft:** `${{ needs.discovery.outputs.minecraft_version }}`
+            **Addon version:** `${{ needs.discovery.outputs.mod_version }}`
+            **Commit:** `${{ needs.discovery.outputs.git_hash }}`
+
+            ### Changes
+            ${{ needs.discovery.outputs.changelog }}
+          files: release/${{ needs.build.outputs.jar_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
