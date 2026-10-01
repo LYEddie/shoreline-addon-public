@@ -5,6 +5,7 @@ import me.lyeddie.addon.events.irrevocable.EntityDeathEvent;
 import me.lyeddie.addon.events.ItemUseEvent;
 import me.lyeddie.addon.events.irrevocable.RunTickEvent;
 import me.lyeddie.addon.mixin.IMinecraftClient;
+import me.lyeddie.addon.util.BuildConfig;
 import meteordevelopment.meteorclient.MeteorClient;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.RunArgs;
@@ -62,7 +63,8 @@ public abstract class MixinMinecraftClient implements IMinecraftClient {
 
     @Inject(method = {"<init>"}, at = {@At(value = "INVOKE", target = "Lnet/minecraft/text/KeybindTranslations;setFactory(Ljava/util/function/Function;)V")})
     private void hookInit(RunArgs args, CallbackInfo info) {
-        Shoreline.LOG.info("init mixin at " + getClass().getSimpleName());
+        final String str = "usin n' bussin w/ shornselines-%s build %s+%s dated at %s".formatted(BuildConfig.BUILD_IDENTIFIER, BuildConfig.BUILD_NUMBER, BuildConfig.HASH, BuildConfig.BUILD_TIME);
+        Shoreline.LOG.info(str);
     }
 
     @Inject(method = "run", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;render(Z)V", shift = At.Shift.BEFORE))
