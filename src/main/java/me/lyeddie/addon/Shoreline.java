@@ -30,7 +30,7 @@ public class Shoreline extends MeteorAddon {
 
     @Override
     public void onInitialize() {
-        LOG.info("initializing floydline!!1 -> %s at %s".formatted(BuildConfig.HASH, BuildConfig.BUILD_TIME));
+        LOG.info("initializing shornselines addon!! [%s]".formatted(BuildConfig.HASH));
 
         Managers.init();
         registerModules(Modules.get());
@@ -51,7 +51,7 @@ public class Shoreline extends MeteorAddon {
 
     @Override
     public String getWebsite() {
-        return "https://shoreline.dev";
+        return "https://vicoredevelopment.com/";
     }
 
     @Override
