@@ -13,9 +13,9 @@ import me.lyeddie.addon.util.tabs.ShorelineTab;
 import me.lyeddie.addon.util.BuildConfig;
 import meteordevelopment.meteorclient.addons.GithubRepo;
 import meteordevelopment.meteorclient.addons.MeteorAddon;
-import meteordevelopment.meteorclient.commands.Command;
 import meteordevelopment.meteorclient.commands.Commands;
 import meteordevelopment.meteorclient.gui.tabs.Tabs;
+import meteordevelopment.meteorclient.systems.Systems;
 import meteordevelopment.meteorclient.systems.hud.Hud;
 import meteordevelopment.meteorclient.systems.hud.HudGroup;
 import meteordevelopment.meteorclient.systems.modules.Category;
@@ -33,33 +33,7 @@ public class Shoreline extends MeteorAddon {
         LOG.info("initializing shornselines addon!! [%s]".formatted(BuildConfig.HASH));
 
         Managers.init();
-        registerModules(Modules.get());
-        registerWidgets(Hud.get());
-        registerCommands();
-        Tabs.add(new ShorelineTab());
-    }
-
-    @Override
-    public void onRegisterCategories() {
-        Modules.registerCategory(MAIN);
-    }
-
-    @Override
-    public String getPackage() {
-        return "me.lyeddie.addon";
-    }
-
-    @Override
-    public String getWebsite() {
-        return "https://vicoredevelopment.com/";
-    }
-
-    @Override
-    public GithubRepo getRepo() {
-        return new GithubRepo("LYEddie", "shoreline-addon-public");
-    }
-
-    private void registerModules(Modules mods) {
+        Modules mods = Modules.get();
         mods.add(new AirPlaceII());
         mods.add(new AntiInteract());
         mods.add(new AntiLevitation());
@@ -105,21 +79,36 @@ public class Shoreline extends MeteorAddon {
         mods.add(new SurroundII());
         mods.add(new TimerII());
         mods.add(new VelocityII());
-    }
 
-    private void registerWidgets(Hud hud) {
+        Hud hud = Systems.get(Hud.class);
         hud.register(Logo.INFO);
         hud.register(Watermark.INFO);
+
+        Commands.add(new LookUp());
+        Commands.add(new Queue());
+        Commands.add(new SkinGrab());
+        Commands.add(new Stats());
+
+        Tabs.add(new ShorelineTab());
     }
 
-    private void registerCommands() {
-        reg(new LookUp());
-        reg(new Queue());
-        reg(new SkinGrab());
-        reg(new Stats());
+    @Override
+    public void onRegisterCategories() {
+        Modules.registerCategory(MAIN);
     }
 
-    private void reg(Command cc) {
-        Commands.add(cc);
+    @Override
+    public String getPackage() {
+        return "me.lyeddie.addon";
+    }
+
+    @Override
+    public String getWebsite() {
+        return "https://vicoredevelopment.com/";
+    }
+
+    @Override
+    public GithubRepo getRepo() {
+        return new GithubRepo("LYEddie", "shoreline-addon-public");
     }
 }
