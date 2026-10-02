@@ -1,0 +1,7 @@
+accessWidener v1 official
+accessible field net/minecraft/network/syncher/SynchedEntityData itemsById [Lnet/minecraft/network/syncher/SynchedEntityData$DataItem;
+accessible field net/minecraft/world/entity/Entity DATA_POSE Lnet/minecraft/network/syncher/EntityDataAccessor;
+accessible class net/minecraft/client/particle/FireworkParticles$SparkParticle
+accessible method net/minecraft/client/particle/FireworkParticles$SparkParticle setTrail (Z)V
+accessible method net/minecraft/client/particle/FireworkParticles$SparkParticle setTwinkle (Z)V
+accessible method net/minecraft/client/particle/SimpleAnimatedParticle setColor (I)V
