@@ -9,7 +9,6 @@ import meteordevelopment.meteorclient.MeteorClient;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.registry.entry.RegistryEntry;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -21,10 +20,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class MixinLivingEntity extends MixinEntity implements Globals {
 
     @Shadow
-    public abstract float getYaw(float tickDelta);
-
-    @Shadow
-    public abstract boolean hasStatusEffect(RegistryEntry<StatusEffect> par1);
+    public abstract boolean hasStatusEffect(StatusEffect effect);
 
     @ModifyExpressionValue(method = "jump", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;getYaw()F"))
     private float hookJump$getYaw(float original) {
@@ -41,8 +37,8 @@ public abstract class MixinLivingEntity extends MixinEntity implements Globals {
         return original;
     }
 
-    @Redirect(method = "travel", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;hasStatusEffect(Lnet/minecraft/registry/entry/RegistryEntry;)Z"))
-    private boolean hookHasStatusEffect(LivingEntity instance, RegistryEntry<StatusEffect> effect) {
+    @Redirect(method = "travel", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;hasStatusEffect(Lnet/minecraft/entity/effect/StatusEffect;)Z"))
+    private boolean hookHasStatusEffect(LivingEntity instance, StatusEffect effect) {
         if (instance.equals(mc.player) && effect == StatusEffects.LEVITATION) {
             LevitationEvent levitationEvent = new LevitationEvent();
             MeteorClient.EVENT_BUS.post(levitationEvent);

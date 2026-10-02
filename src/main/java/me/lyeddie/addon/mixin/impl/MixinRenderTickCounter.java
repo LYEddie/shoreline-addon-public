@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(RenderTickCounter.Dynamic.class)
+@Mixin(RenderTickCounter.class)
 public class MixinRenderTickCounter {
 
     @Shadow

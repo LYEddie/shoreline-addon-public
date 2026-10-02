@@ -5,6 +5,7 @@ import me.lyeddie.addon.util.PlayerArgumentType;
 import me.lyeddie.addon.util.Helpers;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.commands.Command;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.command.CommandSource;
 import java.io.FileOutputStream;
@@ -22,17 +23,17 @@ public class SkinGrab extends Command implements Helpers {
     @Override
     public void build(LiteralArgumentBuilder<CommandSource> builder) {
         builder.then(argument("player", PlayerArgumentType.player()).executes(c -> {
-            String player = PlayerArgumentType.getPlayer(c, "player");
+            String playerNameArg = PlayerArgumentType.getPlayer(c, "player");
             String skinTexture = null;
-            for (PlayerListEntry playerListEntry : mc.player.networkHandler.getPlayerList()) {
+            for (PlayerListEntry playerListEntry : MinecraftClient.getInstance().player.networkHandler.getPlayerList()) {
                 String playerName = playerListEntry.getProfile().getName();
-                if (player.equals(playerName)) {
+                if (playerNameArg.equals(playerName)) {
                     skinTexture = playerListEntry.getSkinTextures().textureUrl();
                     break;
                 }
             }
             if (skinTexture == null) {
-                error("Failed to find skin texture for " + player);
+                error("Failed to find skin texture for " + playerNameArg);
                 return 0;
             }
             try {
@@ -41,7 +42,7 @@ public class SkinGrab extends Command implements Helpers {
                 InputStream inputStream = connection.getInputStream();
                 FileOutputStream outputStream = null;
                 try {
-                    outputStream = new FileOutputStream(MeteorClient.FOLDER.toString() + "/" + player + ".png");
+                    outputStream = new FileOutputStream(MeteorClient.FOLDER.toString() + "/" + playerNameArg + ".png");
                 } catch (Exception e) {
                     e.printStackTrace();
                     info("SkinGrab", e.getMessage());
@@ -50,12 +51,12 @@ public class SkinGrab extends Command implements Helpers {
 
                 if (outputStream != null) {
                     outputStream.write(inputStream.readAllBytes());
-                    info(player + " skin downloaded to client folder");
+                    info(playerNameArg + " skin downloaded to client folder");
                 } else {
                     info("SkinGrab", "outputStream is null¿");
                 }
             } catch (IOException e) {
-                error("Failed to download skin texture for " + player);
+                error("Failed to download skin texture for " + playerNameArg);
             }
 
             return 1;

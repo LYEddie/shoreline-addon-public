@@ -647,7 +647,7 @@ public class AutoCrystal extends CombatModule {
         }
 
         if (serverPacket instanceof PlaySoundS2CPacket packet) {
-            if (packet.getSound().value() == SoundEvents.ENTITY_GENERIC_EXPLODE.value() && packet.getCategory() == SoundCategory.BLOCKS) {
+            if (packet.getSound() == SoundEvents.ENTITY_GENERIC_EXPLODE && packet.getCategory() == SoundCategory.BLOCKS) {
                 for (Entity entity : Lists.newArrayList(mc.world.getEntities())) {
                     if (entity instanceof EndCrystalEntity && entity.squaredDistanceTo(packet.getX(), packet.getY(), packet.getZ()) < 144.0) {
                         mc.executeSync(() -> mc.world.removeEntity(entity.getId(), Entity.RemovalReason.DISCARDED));
@@ -671,12 +671,12 @@ public class AutoCrystal extends CombatModule {
             }
         }
 
-        if (serverPacket instanceof ExperienceOrbSpawnS2CPacket packet && packet.getEntityId() > predictId) {
-            predictId = packet.getEntityId();
+        if (serverPacket instanceof ExperienceOrbSpawnS2CPacket packet && packet.getId() > predictId) {
+            predictId = packet.getId();
         }
 
-        if (serverPacket instanceof EntitySpawnS2CPacket packet && packet.getEntityId() > predictId) {
-            predictId = packet.getEntityId();
+        if (serverPacket instanceof EntitySpawnS2CPacket packet && packet.getId() > predictId) {
+            predictId = packet.getId();
         }
     }
 

@@ -1,4 +1,4 @@
-# shornselines 1.21.1 branch
+# shornselines 1.20.4 branch
 
 aka. shoreline addon public
 

@@ -139,8 +139,8 @@ public class RotationManager implements Globals {
     @EventHandler
     public void onRenderPlayer(RenderPlayerEvent event) {
         if (event.getEntity() == mc.player && rotation != null) {
-            event.setYaw(Interpolation.interpolateFloat(prevYaw, getServerYaw(), mc.getRenderTickCounter().getTickDelta(true)));
-            event.setPitch(Interpolation.interpolateFloat(prevPitch, getServerPitch(), mc.getRenderTickCounter().getTickDelta(true)));
+            event.setYaw(Interpolation.interpolateFloat(prevYaw, getServerYaw(), mc.getTickDelta()));
+            event.setPitch(Interpolation.interpolateFloat(prevPitch, getServerPitch(), mc.getTickDelta()));
             prevYaw = event.getYaw();
             prevPitch = event.getPitch();
             event.cancel();

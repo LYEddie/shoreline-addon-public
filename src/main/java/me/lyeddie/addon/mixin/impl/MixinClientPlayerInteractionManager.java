@@ -84,9 +84,8 @@ public abstract class MixinClientPlayerInteractionManager implements Globals {
             syncSelectedSlot();
             MutableObject<ActionResult> mutableObject = new MutableObject<>();
             this.sendSequencedPacket(mc.world, (sequence) -> {
-                PlayerInteractItemC2SPacket playerInteractItemC2SPacket = new PlayerInteractItemC2SPacket(
-                    hand, sequence, Managers.ROTATION.isRotating() ? Managers.ROTATION.getRotationYaw() : player.getYaw(),
-                    Managers.ROTATION.isRotating() ? Managers.ROTATION.getRotationPitch() : player.getPitch());
+                PlayerInteractItemC2SPacket playerInteractItemC2SPacket =
+                    new PlayerInteractItemC2SPacket(hand, sequence);
                 ItemStack itemStack = player.getStackInHand(hand);
                 if (player.getItemCooldownManager().isCoolingDown(itemStack.getItem())) {
                     mutableObject.setValue(ActionResult.PASS);

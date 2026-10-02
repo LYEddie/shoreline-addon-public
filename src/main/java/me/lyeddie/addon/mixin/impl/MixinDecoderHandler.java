@@ -15,7 +15,7 @@ import java.util.List;
 @Mixin(DecoderHandler.class)
 public class MixinDecoderHandler {
 
-    @Inject(method = "decode", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/NetworkPhase;getId()Ljava/lang/String;", shift = At.Shift.AFTER), cancellable = true)
+    @Inject(method = "decode", at = @At("HEAD"), cancellable = true)
     private void hookDecode(ChannelHandlerContext ctx, ByteBuf buf, List<Object> objects, CallbackInfo ci) {
         DecodePacketEvent decodePacketEvent = new DecodePacketEvent();
         MeteorClient.EVENT_BUS.post(decodePacketEvent);

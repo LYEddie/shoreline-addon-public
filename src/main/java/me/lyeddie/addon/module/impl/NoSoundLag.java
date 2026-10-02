@@ -15,14 +15,14 @@ public class NoSoundLag extends AddonModule {
     private static NoSoundLag INST;
 
     private final static Set<SoundEvent> LAG_SOUNDS = Set.of(
-        SoundEvents.ITEM_ARMOR_EQUIP_GENERIC.value(),
-        SoundEvents.ITEM_ARMOR_EQUIP_ELYTRA.value(),
-        SoundEvents.ITEM_ARMOR_EQUIP_NETHERITE.value(),
-        SoundEvents.ITEM_ARMOR_EQUIP_DIAMOND.value(),
-        SoundEvents.ITEM_ARMOR_EQUIP_IRON.value(),
-        SoundEvents.ITEM_ARMOR_EQUIP_GOLD.value(),
-        SoundEvents.ITEM_ARMOR_EQUIP_CHAIN.value(),
-        SoundEvents.ITEM_ARMOR_EQUIP_LEATHER.value()
+        SoundEvents.ITEM_ARMOR_EQUIP_GENERIC,
+        SoundEvents.ITEM_ARMOR_EQUIP_ELYTRA,
+        SoundEvents.ITEM_ARMOR_EQUIP_NETHERITE,
+        SoundEvents.ITEM_ARMOR_EQUIP_DIAMOND,
+        SoundEvents.ITEM_ARMOR_EQUIP_IRON,
+        SoundEvents.ITEM_ARMOR_EQUIP_GOLD,
+        SoundEvents.ITEM_ARMOR_EQUIP_CHAIN,
+        SoundEvents.ITEM_ARMOR_EQUIP_LEATHER
     );
 
     public NoSoundLag() {
@@ -32,8 +32,8 @@ public class NoSoundLag extends AddonModule {
 
     @EventHandler
     public void onPacketInbound(PacketEvent.Receive event) {
-        if (event.packet instanceof PlaySoundFromEntityS2CPacket packet && LAG_SOUNDS.contains(packet.getSound().value())
-            || event.packet instanceof PlaySoundS2CPacket packet2 && LAG_SOUNDS.contains(packet2.getSound().value())) {
+        if (event.packet instanceof PlaySoundFromEntityS2CPacket packet && LAG_SOUNDS.contains(packet.getSound())
+            || event.packet instanceof PlaySoundS2CPacket packet2 && LAG_SOUNDS.contains(packet2.getSound())) {
             event.cancel();
         }
     }

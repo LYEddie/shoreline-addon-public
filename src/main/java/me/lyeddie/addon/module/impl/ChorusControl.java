@@ -68,7 +68,7 @@ public class ChorusControl extends AddonModule {
         if (!cancelChorusTeleport && mc.player.isUsingItem()) {
             ItemStack stack = mc.player.getStackInHand(mc.player.getActiveHand());
             if (stack.getItem() instanceof ChorusFruitItem
-                && stack.getMaxUseTime(mc.player) - mc.player.getItemUseTime() <= 1) {
+                && stack.getMaxUseTime() - mc.player.getItemUseTime() <= 1) {
                 cancelChorusTeleport = true;
             }
         }

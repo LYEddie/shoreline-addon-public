@@ -35,9 +35,9 @@ accessible method net/minecraft/client/MinecraftClient doAttack ()Z
 accessible field net/minecraft/client/option/SimpleOption callbacks Lnet/minecraft/client/option/SimpleOption$Callbacks;
 accessible class net/minecraft/client/particle/FireworksSparkParticle$Explosion
 accessible method net/minecraft/client/render/entity/PlayerEntityRenderer getArmPose (Lnet/minecraft/client/network/AbstractClientPlayerEntity;Lnet/minecraft/util/Hand;)Lnet/minecraft/client/render/entity/model/BipedEntityModel$ArmPose;
-accessible method net/minecraft/client/render/entity/LivingEntityRenderer setupTransforms (Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/client/util/math/MatrixStack;FFFF)V
+accessible method net/minecraft/client/render/entity/LivingEntityRenderer setupTransforms (Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/client/util/math/MatrixStack;FFF)V
 accessible method net/minecraft/client/render/entity/LivingEntityRenderer scale (Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/client/util/math/MatrixStack;F)V
-accessible method net/minecraft/client/render/entity/PlayerEntityRenderer setupTransforms (Lnet/minecraft/client/network/AbstractClientPlayerEntity;Lnet/minecraft/client/util/math/MatrixStack;FFFF)V
+accessible method net/minecraft/client/render/entity/PlayerEntityRenderer setupTransforms (Lnet/minecraft/client/network/AbstractClientPlayerEntity;Lnet/minecraft/client/util/math/MatrixStack;FFF)V
 accessible method net/minecraft/client/render/entity/PlayerEntityRenderer scale (Lnet/minecraft/client/network/AbstractClientPlayerEntity;Lnet/minecraft/client/util/math/MatrixStack;F)V
 accessible field net/minecraft/client/render/entity/model/LlamaEntityModel head Lnet/minecraft/client/model/ModelPart;
 accessible field net/minecraft/client/render/entity/model/LlamaEntityModel body Lnet/minecraft/client/model/ModelPart;
@@ -81,5 +81,5 @@ accessible field net/minecraft/client/render/item/HeldItemRenderer equipProgress
 accessible field net/minecraft/client/render/item/HeldItemRenderer prevEquipProgressOffHand F
 accessible field net/minecraft/client/render/item/HeldItemRenderer equipProgressOffHand F
 accessible field net/minecraft/block/spawner/MobSpawnerLogic spawnDelay I
-accessible field net/minecraft/entity/data/DataTracker entries [Lnet/minecraft/entity/data/DataTracker$Entry;
+accessible field net/minecraft/entity/data/DataTracker entries Lit/unimi/dsi/fastutil/ints/Int2ObjectMap;
 accessible field net/minecraft/entity/Entity POSE Lnet/minecraft/entity/data/TrackedData;

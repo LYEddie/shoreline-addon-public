@@ -80,7 +80,7 @@ public class Disabler extends AddonModule {
             }
 
             Managers.INVENTORY.setSlot(tridentSlot);
-            Managers.NETWORK.sendSequencedPacket(id -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, id, mc.player.getYaw(), mc.player.getPitch()));
+            Managers.NETWORK.sendSequencedPacket(id -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, id));
             Managers.NETWORK.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, Direction.DOWN));
             Managers.INVENTORY.syncToClient();
         } else if (modeConfig.get() == Mode.GRIM_FIREWORK) {
@@ -109,7 +109,7 @@ public class Disabler extends AddonModule {
                     }
                     Managers.NETWORK.sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
                     Managers.INVENTORY.setSlot(fireworkSlot);
-                    Managers.NETWORK.sendSequencedPacket(id -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, id, mc.player.getYaw(), mc.player.getPitch()));
+                    Managers.NETWORK.sendSequencedPacket(id -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, id));
                     Managers.NETWORK.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
                     Managers.INVENTORY.syncToClient();
                     fireworkTimer.reset();

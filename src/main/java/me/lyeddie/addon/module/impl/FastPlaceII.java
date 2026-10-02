@@ -72,7 +72,7 @@ public class FastPlaceII extends AddonModule {
             && placeCheck(mc.player.getMainHandStack())) {
             if (ghostFixConfig.get()) {
                 Managers.NETWORK.sendSequencedPacket(id ->
-                    new PlayerInteractItemC2SPacket(mc.player.getActiveHand(), id, mc.player.getYaw(), mc.player.getPitch()));
+                    new PlayerInteractItemC2SPacket(mc.player.getActiveHand(), id));
             }
             ((AccessorMinecraftClient) mc).hookSetItemUseCooldown(delayConfig.get());
         }

@@ -52,7 +52,7 @@ public class FastLatency extends AddonModule {
 
     @EventHandler
     public void onPacketInbound(PacketEvent.Receive event) {
-        if (event.packet instanceof CommandSuggestionsS2CPacket packet && packet.id() == 1000) {
+        if (event.packet instanceof CommandSuggestionsS2CPacket packet && packet.getCompletionId() == 1000) {
             latency = System.currentTimeMillis() - requestTime;
             lastRequest.setElapsedTime(Timer.MAX_TIME);
         }

@@ -49,7 +49,7 @@ public class MiddleClickII extends AddonModule {
             return;
         }
         if (event.action == KeyAction.Press && event.button == 2 && this.mc.currentScreen == null) {
-            double d = mc.player.getEntityInteractionRange();
+            double d = mc.interactionManager.getReachDistance();
             HitResult result = RayCastUtil.raycastEntity(d);
             if (result != null && result.getType() == HitResult.Type.ENTITY && friendConfig.get() && ((EntityHitResult) result).getEntity() instanceof PlayerEntity target) {
                 Friend playerObj = Friends.get().get(target.getName().getString());

@@ -96,7 +96,7 @@ public class AutoXP extends RotationModule {
             }
         }
         for (int i = 0; i < shiftTicksConfig.get(); i++) {
-            Managers.NETWORK.sendSequencedPacket(id -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, id, mc.player.getYaw(), mc.player.getPitch()));
+            Managers.NETWORK.sendSequencedPacket(id -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, id));
             if (swingConfig.get()) {
                 mc.player.swingHand(Hand.MAIN_HAND);
             }

@@ -464,7 +464,7 @@ public class SpeedII extends AddonModule {
             double x = packet.getPlayerVelocityX();
             double z = packet.getPlayerVelocityZ();
         } else if (event.packet instanceof EntityVelocityUpdateS2CPacket packet
-            && packet.getEntityId() == mc.player.getId()) {
+            && packet.getId() == mc.player.getId()) {
             double x = packet.getVelocityX();
             double z = packet.getVelocityZ();
         } else if (event.packet instanceof PlayerPositionLookS2CPacket) {
@@ -475,7 +475,7 @@ public class SpeedII extends AddonModule {
     public Vec2f handleStrafeMotion(final float speed) {
         float forward = mc.player.input.movementForward;
         float strafe = mc.player.input.movementSideways;
-        float yaw = mc.player.prevYaw + (mc.player.getYaw() - mc.player.prevYaw) * mc.getRenderTickCounter().getTickDelta(true);
+        float yaw = mc.player.prevYaw + (mc.player.getYaw() - mc.player.prevYaw) * mc.getTickDelta();
         if (forward == 0.0f && strafe == 0.0f) {
             return Vec2f.ZERO;
         } else if (forward != 0.0f) {

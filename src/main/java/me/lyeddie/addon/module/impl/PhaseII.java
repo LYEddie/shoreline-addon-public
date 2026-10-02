@@ -1,7 +1,6 @@
 package me.lyeddie.addon.module.impl;
 
 import me.lyeddie.addon.Shoreline;
-import me.lyeddie.addon.events.BlockCollisionEvent;
 import me.lyeddie.addon.events.PushOutOfBlocksEvent;
 import me.lyeddie.addon.events.staged.PostPlayerUpdateEvent;
 import me.lyeddie.addon.events.staged.PrePlayerUpdateEvent;
@@ -12,6 +11,7 @@ import me.lyeddie.addon.util.EnumFormatter;
 import me.lyeddie.addon.util.literal.EntityUtil;
 import me.lyeddie.addon.util.literal.RayCastUtil;
 import me.lyeddie.addon.util.literal.RotationUtil;
+import meteordevelopment.meteorclient.events.world.CollisionShapeEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.orbit.EventHandler;
@@ -213,7 +213,7 @@ public class PhaseII extends ObsidianPlacerModule {
             }
 
             setRotationSilent(yaw, pitchConfig.get());
-            Managers.NETWORK.sendSequencedPacket(id -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, id, yaw, pitchConfig.get()));
+            Managers.NETWORK.sendSequencedPacket(id -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, id));
             Managers.PEARL.setLastThrownAngles(new float[]{yaw, pitchConfig.get()});
             if (swingConfig.get()) {
                 mc.player.swingHand(Hand.MAIN_HAND);
@@ -261,38 +261,38 @@ public class PhaseII extends ObsidianPlacerModule {
     }
 
     @EventHandler
-    public void onBlockCollision(BlockCollisionEvent event) {
+    public void onBlockCollision(CollisionShapeEvent event) {
         if (mc.player == null) {
             return;
         }
         switch (modeConfig.get()) {
             case NORMAL -> {
-                if (event.getVoxelShape() != VoxelShapes.empty() && event.getVoxelShape().getBoundingBox().maxY > mc.player.getBoundingBox().minY && mc.player.isSneaking()) {
+                if (event.shape != VoxelShapes.empty() && event.shape.getBoundingBox().maxY > mc.player.getBoundingBox().minY && mc.player.isSneaking()) {
                     event.cancel();
-                    event.setVoxelShape(VoxelShapes.empty());
+                    event.shape = VoxelShapes.empty();
                 }
             }
             case SAND -> {
                 event.cancel();
-                event.setVoxelShape(VoxelShapes.empty());
+                event.shape = VoxelShapes.empty();
                 mc.player.noClip = true;
             }
             case CLIMB -> {
                 if (mc.player.horizontalCollision) {
                     event.cancel();
-                    event.setVoxelShape(VoxelShapes.empty());
+                    event.shape = VoxelShapes.empty();
                 }
                 if (mc.player.input.sneaking || (mc.player.input.jumping
-                    && event.getPos().getY() > mc.player.getY())) {
+                    && event.pos.getY() > mc.player.getY())) {
                     event.cancel();
                 }
             }
             case GRIM -> {
-                if (!event.getPos().equals(this.grimPos)) {
+                if (!event.pos.equals(this.grimPos)) {
                     return;
                 }
                 event.cancel();
-                event.setVoxelShape(VoxelShapes.empty());
+                event.shape = VoxelShapes.empty();
             }
         }
     }

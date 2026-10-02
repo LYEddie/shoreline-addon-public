@@ -33,7 +33,7 @@ public class HitboxManager implements Globals {
             }
 
             for (DataTracker.SerializedEntry<?> serializedEntry : packet.trackedValues()) {
-                DataTracker.Entry<?> entry = entity.getDataTracker().entries[serializedEntry.id()];
+                DataTracker.Entry<?> entry = entity.getDataTracker().entries.get(serializedEntry.id());
                 if (!entry.getData().equals(Entity.POSE)) {
                     continue;
                 }

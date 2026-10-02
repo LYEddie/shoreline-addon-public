@@ -5,7 +5,6 @@
   "client": [
     "MixinBiomeEffects",
     "MixinBlock",
-    "MixinBlockCollisionSpliterator",
     "MixinClientConnection",
     "MixinClientPlayerEntity",
     "MixinClientPlayerInteractionManager",
@@ -22,7 +21,6 @@
     "MixinMinecraftClient",
     "MixinPlayerEntity",
     "MixinPlayerEntityRenderer",
-    "MixinPlayerInteractEntityC2SPacket",
     "MixinRenderTickCounter",
     "MixinServerPlayerEntity",
     "MixinShulkerBoxSlot",

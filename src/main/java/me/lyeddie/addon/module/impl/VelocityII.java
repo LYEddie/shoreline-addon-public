@@ -152,7 +152,7 @@ public class VelocityII extends AddonModule {
         }
 
         if (event.packet instanceof EntityVelocityUpdateS2CPacket packet && knockbackConfig.get()) {
-            if (packet.getEntityId() != mc.player.getId()) {
+            if (packet.getId() != mc.player.getId()) {
                 return;
             }
 
@@ -225,7 +225,7 @@ public class VelocityII extends AddonModule {
 
             if (event.isCancelled()) {
                 mc.executeSync(() -> ((AccessorClientWorld) mc.world).hookPlaySound(packet.getX(), packet.getY(), packet.getZ(),
-                    SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.BLOCKS,
+                    SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.BLOCKS,
                     4.0f, (1.0f + (RANDOM.nextFloat() - RANDOM.nextFloat()) * 0.2f) * 0.7f, false, RANDOM.nextLong()));
             }
         } else if (event.packet instanceof BundleS2CPacket packet) {
@@ -234,7 +234,7 @@ public class VelocityII extends AddonModule {
             for (Packet<?> packet1 : packet.getPackets()) {
                 if (packet1 instanceof ExplosionS2CPacket packet2 && explosionConfig.get()) {
                     mc.executeSync(() -> ((AccessorClientWorld) mc.world).hookPlaySound(packet2.getX(), packet2.getY(), packet2.getZ(),
-                        SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.BLOCKS,
+                        SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.BLOCKS,
                         4.0f, (1.0f + (RANDOM.nextFloat() - RANDOM.nextFloat()) * 0.2f) * 0.7f, false, RANDOM.nextLong()));
 
                     if (modeConfig.get() == VelocityMode.WALLS && !isPhased()) {
@@ -271,7 +271,7 @@ public class VelocityII extends AddonModule {
                         }
                     }
                 } else if (packet1 instanceof EntityVelocityUpdateS2CPacket packet2 && knockbackConfig.get()) {
-                    if (packet2.getEntityId() != mc.player.getId()) {
+                    if (packet2.getId() != mc.player.getId()) {
                         allowedBundle.add(packet1);
                         continue;
                     }

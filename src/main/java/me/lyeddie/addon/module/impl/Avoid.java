@@ -1,11 +1,11 @@
 package me.lyeddie.addon.module.impl;
 
 import me.lyeddie.addon.Shoreline;
-import me.lyeddie.addon.events.BlockCollisionEvent;
 import me.lyeddie.addon.events.PlayerClimbEvent;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.module.AddonModule;
 import me.lyeddie.addon.util.literal.BlockUtil;
+import meteordevelopment.meteorclient.events.world.CollisionShapeEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.Setting;
@@ -57,15 +57,14 @@ public class Avoid extends AddonModule {
     }
 
     @EventHandler
-    public void onBlockCollision(BlockCollisionEvent event) {
-        BlockPos pos = event.getPos();
-        if (fireConfig.get() && event.getBlock() == Blocks.FIRE
+    public void onBlockCollision(CollisionShapeEvent event) {
+        BlockPos pos = event.pos;
+        if (fireConfig.get() && event.state.getBlock() == Blocks.FIRE
             && mc.player.getY() < pos.getY() + 1.0 || cactiConfig.get()
-            && event.getBlock() == Blocks.CACTUS || berryBushConfig.get()
-            && event.getBlock() == Blocks.SWEET_BERRY_BUSH || unloadedConfig.get()
+            && event.state.getBlock() == Blocks.CACTUS || berryBushConfig.get()
+            && event.state.getBlock() == Blocks.SWEET_BERRY_BUSH || unloadedConfig.get()
             && !BlockUtil.isBlockLoaded(pos.getX(), pos.getZ())) {
-            event.cancel();
-            event.setVoxelShape(VoxelShapes.fullCube());
+            event.shape = VoxelShapes.fullCube();
         }
     }
 

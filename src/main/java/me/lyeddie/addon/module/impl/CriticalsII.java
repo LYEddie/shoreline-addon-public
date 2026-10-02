@@ -2,7 +2,6 @@ package me.lyeddie.addon.module.impl;
 
 import me.lyeddie.addon.Shoreline;
 import me.lyeddie.addon.events.staged.OutboundPostPacketEvent;
-import me.lyeddie.addon.mixin.IPlayerInteractEntityC2SPacket;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.util.*;
 import me.lyeddie.addon.util.literal.EntityUtil;
@@ -16,6 +15,7 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.orbit.EventHandler;
+import meteordevelopment.meteorclient.mixininterface.IPlayerInteractEntityC2SPacket;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
@@ -101,7 +101,7 @@ public class CriticalsII extends AddonModule {
         }
 
         if (event.packet instanceof IPlayerInteractEntityC2SPacket packet
-            && packet.getType() == InteractType.ATTACK) {
+            && packet.getType() == PlayerInteractEntityC2SPacket.InteractType.ATTACK) {
             if (mc.player.isRiding() || mc.player.isFallFlying()
                 || mc.player.isTouchingWater()
                 || mc.player.isInLava()

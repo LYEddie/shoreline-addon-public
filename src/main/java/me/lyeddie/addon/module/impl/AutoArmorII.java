@@ -7,14 +7,12 @@ import meteordevelopment.meteorclient.settings.*;
 import me.lyeddie.addon.module.AddonModule;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.entry.RegistryEntry;
 
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -140,16 +138,8 @@ public class AutoArmorII extends AddonModule {
         }
     }
 
-    public boolean hasEnchantment(ItemStack armorStack, RegistryKey<Enchantment> enchantment) {
-        if (armorStack.getComponents().contains(DataComponentTypes.ENCHANTMENTS)) {
-            for (RegistryEntry<Enchantment> entry : armorStack.getComponents()
-                .get(DataComponentTypes.ENCHANTMENTS).getEnchantments()) {
-                if (entry.getKey().isPresent() && entry.getKey().get().equals(enchantment)) {
-                    return true;
-                }
-            }
-        }
-        return false;
+    public boolean hasEnchantment(ItemStack armorStack, Enchantment enchantment) {
+        return EnchantmentHelper.getLevel(enchantment, armorStack) > 0;
     }
 
     public static AutoArmorII getInstance() {
@@ -161,13 +151,13 @@ public class AutoArmorII extends AddonModule {
         PROTECTION(Enchantments.PROTECTION),
         PROJECTILE_PROTECTION(Enchantments.PROJECTILE_PROTECTION);
 
-        private final RegistryKey<Enchantment> enchant;
+        private final Enchantment enchant;
 
-        Priority(RegistryKey<Enchantment> enchant) {
+        Priority(Enchantment enchant) {
             this.enchant = enchant;
         }
 
-        public RegistryKey<Enchantment> getEnchantment() {
+        public Enchantment getEnchantment() {
             return enchant;
         }
     }
@@ -191,12 +181,12 @@ public class AutoArmorII extends AddonModule {
             final ItemStack otherStack = other.getArmorStack();
             ArmorItem armorItem = (ArmorItem) armorStack.getItem();
             ArmorItem otherItem = (ArmorItem) otherStack.getItem();
-            int durabilityDiff = armorItem.getMaterial().value().getProtection(armorItem.getType())
-                - otherItem.getMaterial().value().getProtection(otherItem.getType());
+            int durabilityDiff = armorItem.getMaterial().getProtection(armorItem.getType())
+                - otherItem.getMaterial().getProtection(otherItem.getType());
             if (durabilityDiff != 0) {
                 return durabilityDiff;
             }
-            RegistryKey<Enchantment> enchantment = priorityConfig.get().getEnchantment();
+            Enchantment enchantment = priorityConfig.get().getEnchantment();
             if (blastLeggingsConfig.get() && armorType == 2
                 && hasEnchantment(armorStack, Enchantments.BLAST_PROTECTION)) {
                 return -1;

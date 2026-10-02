@@ -13,7 +13,6 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
 import net.minecraft.network.packet.c2s.play.*;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 
 import java.util.ArrayList;
@@ -153,10 +152,10 @@ public class PacketLogger extends AddonModule implements Helpers {
             return;
         }
 
-        Map<Identifier, Integer> packetCountMap = new HashMap<>();
+        Map<String, Integer> packetCountMap = new HashMap<>();
         for (PacketLog packetLog : packetLogs) {
             Packet<?> packet = packetLog.packet();
-            Identifier identifier = packet.getPacketId().id();
+            String identifier = packet.getClass().getSimpleName();
             if (packetCountMap.containsKey(identifier)) {
                 packetCountMap.replace(identifier, packetCountMap.get(identifier) + 1);
             } else {
@@ -165,9 +164,8 @@ public class PacketLogger extends AddonModule implements Helpers {
         }
 
         List<String> strings = new ArrayList<>();
-        for (Map.Entry<Identifier, Integer> entry : packetCountMap.entrySet()) {
-            Identifier packet = entry.getKey();
-            strings.add(packet.toShortTranslationKey() + ": " + entry.getValue());
+        for (Map.Entry<String, Integer> entry : packetCountMap.entrySet()) {
+            strings.add(entry.getKey() + ": " + entry.getValue());
         }
 
         info("PacketLogger", String.join(",", strings));

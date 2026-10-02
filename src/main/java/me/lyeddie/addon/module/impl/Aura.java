@@ -21,8 +21,6 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.AttributeModifiersComponent;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
@@ -46,6 +44,7 @@ import net.minecraft.world.RaycastContext;
 import org.apache.commons.lang3.mutable.MutableDouble;
 
 import java.util.Comparator;
+import java.util.Locale;
 import java.util.stream.Stream;
 
 import static me.lyeddie.addon.util.Globals.RANDOM;
@@ -184,6 +183,16 @@ public class Aura extends CombatModule {
         .name("MaceBreach").description("Abuses vanilla exploit to apply breach enchantment to swords")
         .defaultValue(false)
         .visible(() -> (autoSwapConfig.get() != Swap.SILENT))
+        .build());
+    private final Setting<Boolean> replaceMaceWithAxeConfig = sgSwitch.add(new BoolSetting.Builder()
+        .name("ReplaceMaceWithAxe").description("Uses the axe closest to hotbar slot 0 instead of searching for a mace")
+        .defaultValue(false)
+        .visible(maceBreachConfig::get)
+        .build());
+    private final Setting<String> checkItemNameConfig = sgSwitch.add(new StringSetting.Builder()
+        .name("check item name").description("Requires the replacement axe name to contain this text; leave empty to disable the check")
+        .defaultValue("mace")
+        .visible(() -> maceBreachConfig.get() && replaceMaceWithAxeConfig.get())
         .build());
     private final Setting<Boolean> playersConfig = sgTargets.add(new BoolSetting.Builder()
         .name("Players").description("Target players")
@@ -351,14 +360,11 @@ public class Aura extends CombatModule {
 
             MutableDouble attackSpeed = new MutableDouble(mc.player.getAttributeBaseValue(EntityAttributes.GENERIC_ATTACK_SPEED));
 
-            AttributeModifiersComponent attributeModifiers = itemStack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
-            if (attributeModifiers != null) {
-                attributeModifiers.applyModifiers(EquipmentSlot.MAINHAND, (entry, modifier) -> {
-                    if (entry == EntityAttributes.GENERIC_ATTACK_SPEED) {
-                        attackSpeed.add(modifier.value());
-                    }
-                });
-            }
+            itemStack.getAttributeModifiers(EquipmentSlot.MAINHAND).forEach((attribute, modifier) -> {
+                if (attribute == EntityAttributes.GENERIC_ATTACK_SPEED) {
+                    attackSpeed.add(modifier.getValue());
+                }
+            });
 
             double attackCooldownTicks = 1.0 / attackSpeed.getValue() * 20.0;
 
@@ -479,34 +485,29 @@ public class Aura extends CombatModule {
                     sharp = dmg;
                     slot = i;
                 }
-            } else if (stack.getItem() instanceof MaceItem) {
-                float sharpness = EnchantmentUtil.getLevel(stack,
-                    Enchantments.SHARPNESS) * 0.5f + 0.5f;
-                float dmg = 5.0f + sharpness;
-                if (dmg > sharp) {
-                    sharp = dmg;
-                    slot = i;
-                }
             }
         }
         return slot;
     }
 
     private int getBreachMaceSlot() {
-        int slot = -1;
-        int maxBreach = 0;
+        if (!replaceMaceWithAxeConfig.get()) {
+            return -1;
+        }
+
+        String expectedName = checkItemNameConfig.get().trim().toLowerCase(Locale.ROOT);
         for (int i = 0; i < 9; i++) {
             ItemStack stack = mc.player.getInventory().getStack(i);
-            if (!(stack.getItem() instanceof MaceItem)) {
+            if (!(stack.getItem() instanceof AxeItem)) {
                 continue;
             }
-            int breach = EnchantmentUtil.getLevel(stack, Enchantments.BREACH);
-            if (breach > maxBreach) {
-                slot = i;
-                maxBreach = breach;
+            if (!expectedName.isEmpty()
+                && !stack.getName().getString().toLowerCase(Locale.ROOT).contains(expectedName)) {
+                continue;
             }
+            return i;
         }
-        return slot;
+        return -1;
     }
 
     private void preAttackTarget() {
@@ -539,7 +540,7 @@ public class Aura extends CombatModule {
     private void postAttackTarget(Entity entity) {
         if (shielding) {
             Managers.NETWORK.sendSequencedPacket(s ->
-                new PlayerInteractItemC2SPacket(Hand.OFF_HAND, s, mc.player.getYaw(), mc.player.getPitch()));
+                new PlayerInteractItemC2SPacket(Hand.OFF_HAND, s));
         }
         if (sneaking) {
             Managers.NETWORK.sendPacket(new ClientCommandC2SPacket(mc.player,
@@ -649,8 +650,7 @@ public class Aura extends CombatModule {
     public boolean isHoldingSword() {
         return !swordCheckConfig.get() || mc.player.getMainHandStack().getItem() instanceof SwordItem
             || mc.player.getMainHandStack().getItem() instanceof AxeItem
-            || mc.player.getMainHandStack().getItem() instanceof TridentItem
-            || mc.player.getMainHandStack().getItem() instanceof MaceItem;
+            || mc.player.getMainHandStack().getItem() instanceof TridentItem;
     }
 
     private Vec3d getAttackRotateVec(Entity entity) {

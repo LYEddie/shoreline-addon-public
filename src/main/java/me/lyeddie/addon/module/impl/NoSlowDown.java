@@ -22,7 +22,6 @@ import net.minecraft.client.gui.screen.DeathScreen;
 import net.minecraft.client.gui.screen.ingame.SignEditScreen;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -151,9 +150,9 @@ public class NoSlowDown extends AddonModule {
     public void onPlayerUpdate(PrePlayerUpdateEvent event) {
         if (grimConfig.get() && mc.player.isUsingItem() && !mc.player.isSneaking() && itemsConfig.get()) {
             if (mc.player.getActiveHand() == Hand.OFF_HAND && checkStack(mc.player.getMainHandStack())) {
-                Managers.NETWORK.sendSequencedPacket(id -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, id, mc.player.getYaw(), mc.player.getPitch()));
+                Managers.NETWORK.sendSequencedPacket(id -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, id));
             } else if (checkStack(mc.player.getOffHandStack())) {
-                Managers.NETWORK.sendSequencedPacket(id -> new PlayerInteractItemC2SPacket(Hand.OFF_HAND, id, mc.player.getYaw(), mc.player.getPitch()));
+                Managers.NETWORK.sendSequencedPacket(id -> new PlayerInteractItemC2SPacket(Hand.OFF_HAND, id));
             }
         }
     }
@@ -239,7 +238,7 @@ public class NoSlowDown extends AddonModule {
     @EventHandler
     public void onMovementSlowdown(MovementSlowdownEvent event) {
         if (sneakConfig.get() && mc.player.isSneaking() || crawlConfig.get() && mc.player.isCrawling()) {
-            float f = 1.0f / (float) mc.player.getAttributeValue(EntityAttributes.PLAYER_SNEAKING_SPEED);
+            float f = 1.0f / 0.3f;
             event.input.movementForward *= f;
             event.input.movementSideways *= f;
         }
@@ -297,7 +296,7 @@ public class NoSlowDown extends AddonModule {
     }
 
     private boolean checkStack(ItemStack stack) {
-        return !stack.getComponents().contains(DataComponentTypes.FOOD) && stack.getItem() != Items.BOW && stack.getItem() != Items.CROSSBOW && stack.getItem() != Items.SHIELD;
+        return !stack.isFood() && stack.getItem() != Items.BOW && stack.getItem() != Items.CROSSBOW && stack.getItem() != Items.SHIELD;
     }
 
     private boolean checkGrimNew() {

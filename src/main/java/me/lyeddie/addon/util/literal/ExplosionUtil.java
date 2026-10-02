@@ -102,7 +102,7 @@ public class ExplosionUtil implements Globals {
         }
 
         if (entity instanceof LivingEntity livingEntity) {
-            damage = DamageUtil.getDamageLeft(livingEntity, (float) damage, damageSource, getArmor(livingEntity), (float) livingEntity.getAttributeValue(EntityAttributes.GENERIC_ARMOR_TOUGHNESS));
+            damage = DamageUtil.getDamageLeft((float) damage, getArmor(livingEntity), (float) livingEntity.getAttributeValue(EntityAttributes.GENERIC_ARMOR_TOUGHNESS));
             damage = getResistanceReduction(livingEntity, damage);
             damage = getProtectionReduction(livingEntity, damage, damageSource, assumeBestArmor);
         }
@@ -128,8 +128,8 @@ public class ExplosionUtil implements Globals {
             if (assumeBestArmor && EnchantmentUtil.isFakeEnchant2b2t(i)) {
                 mutableInt.add(i.getItem() instanceof ArmorItem armorItem && armorItem.getType() == ArmorItem.Type.LEGGINGS ? 8 : 4);
             } else {
-                int modifierBlast = EnchantmentHelper.getLevel(mc.world.getRegistryManager().get(Enchantments.BLAST_PROTECTION.getRegistryRef()).getEntry(Enchantments.BLAST_PROTECTION).get(), i);
-                int modifier = EnchantmentHelper.getLevel(mc.world.getRegistryManager().get(Enchantments.PROTECTION.getRegistryRef()).getEntry(Enchantments.PROTECTION).get(), i);
+                int modifierBlast = EnchantmentHelper.getLevel(Enchantments.BLAST_PROTECTION, i);
+                int modifier = EnchantmentHelper.getLevel(Enchantments.PROTECTION, i);
                 mutableInt.add(modifierBlast * 2 + modifier);
             }
         });
