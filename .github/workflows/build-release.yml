@@ -1,0 +1,234 @@
+name: Build latest addon prerelease
+
+on:
+  push:
+    branches:
+      - "port_*"
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  discovery:
+    name: Prepare build metadata
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    outputs:
+      minecraft_version: ${{ steps.meta.outputs.minecraft_version }}
+      mod_version: ${{ steps.meta.outputs.mod_version }}
+      build_number: ${{ steps.meta.outputs.build_number }}
+      git_hash: ${{ steps.meta.outputs.git_hash }}
+      channel: ${{ steps.meta.outputs.channel }}
+      java_version: ${{ steps.meta.outputs.java_version }}
+      rolling_tag: ${{ steps.meta.outputs.rolling_tag }}
+      release_name: ${{ steps.meta.outputs.release_name }}
+      changelog: ${{ steps.meta.outputs.changelog }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Read branch and Gradle metadata
+        id: meta
+        shell: bash
+        run: |
+          BRANCH="${GITHUB_REF_NAME}"
+
+          if [[ ! "$BRANCH" =~ ^port_[0-9]+([._][0-9]+)+$ ]]; then
+            echo "This workflow must run from a port_<minecraft_version> branch."
+            echo "Current branch: $BRANCH"
+            exit 1
+          fi
+
+          MC="${BRANCH#port_}"
+          MC="${MC//_/.}"
+          MC_MAJOR="${MC%%.*}"
+
+          MOD="$(
+            awk -F= '
+              /^[[:space:]]*mod_version[[:space:]]*=/ {
+                gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2)
+                print $2
+                exit
+              }
+            ' gradle.properties
+          )"
+
+          CHANNEL="$(
+            awk -F= '
+              /^[[:space:]]*build_identifier[[:space:]]*=/ {
+                gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2)
+                print $2
+                exit
+              }
+            ' gradle.properties
+          )"
+
+          if [[ -z "$MOD" ]]; then
+            echo "mod_version was not found in gradle.properties."
+            exit 1
+          fi
+
+          if [[ -z "$CHANNEL" ]]; then
+            echo "build_identifier was not found in gradle.properties."
+            exit 1
+          fi
+
+          if [[ ! "$CHANNEL" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "build_identifier contains unsupported characters: $CHANNEL"
+            exit 1
+          fi
+
+          if (( MC_MAJOR >= 26 )); then
+            JAVA_VERSION=25
+          else
+            JAVA_VERSION=21
+          fi
+
+          HASH="$(git rev-parse --short HEAD)"
+          BUILD_NUMBER="$(git rev-list --count HEAD)"
+          ROLLING_TAG="mc${MC}-latest"
+
+          if git rev-parse -q --verify "refs/tags/${ROLLING_TAG}^{commit}" >/dev/null; then
+
+            PREVIOUS_COMMIT="$(git rev-parse "${ROLLING_TAG}^{commit}")"
+            CHANGELOG="$(git log "${PREVIOUS_COMMIT}..HEAD" --pretty=format:'- %s (%h)' --no-merges)"
+          else
+            CHANGELOG="$(git log --pretty=format:'- %s (%h)' --no-merges -20)"
+          fi
+
+          [[ -n "$CHANGELOG" ]] || CHANGELOG="- No changes"
+
+          {
+            echo "minecraft_version=$MC"
+            echo "mod_version=$MOD"
+            echo "build_number=$BUILD_NUMBER"
+            echo "git_hash=$HASH"
+            echo "channel=$CHANNEL"
+            echo "java_version=$JAVA_VERSION"
+            echo "rolling_tag=$ROLLING_TAG"
+            echo "release_name=Shoreline Addon ${CHANNEL} v${MOD}-b${BUILD_NUMBER} at ${MC}"
+            echo "changelog<<EOF"
+            echo "$CHANGELOG"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+  build-and-update-prerelease:
+    name: Build and update prerelease
+    needs: discovery
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ needs.discovery.outputs.java_version }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build addon
+        run: |
+          chmod +x ./gradlew
+          ./gradlew clean build --no-daemon
+
+      - name: Prepare release JAR
+        id: jar
+        env:
+          MC: ${{ needs.discovery.outputs.minecraft_version }}
+          MOD: ${{ needs.discovery.outputs.mod_version }}
+          CHANNEL: ${{ needs.discovery.outputs.channel }}
+          BUILD_NUMBER: ${{ needs.discovery.outputs.build_number }}
+          HASH: ${{ needs.discovery.outputs.git_hash }}
+        shell: bash
+        run: |
+          SOURCE_JAR="$(
+            find build/libs -maxdepth 1 -type f \
+              -name 'shornselines-*.jar' \
+              ! -name '*-sources.jar' \
+              ! -name '*-javadoc.jar' \
+              -print -quit
+          )"
+
+          if [[ -z "$SOURCE_JAR" ]]; then
+            echo "No addon JAR found in build/libs."
+            find build/libs -maxdepth 1 -type f -print || true
+            exit 1
+          fi
+
+          RELEASE_JAR="shoreline-addon-v${MOD}_${CHANNEL}-b${BUILD_NUMBER}-${HASH}_${MC}.jar"
+
+          # El JAR generado por Gradle queda intacto.
+          cp "$SOURCE_JAR" "$RELEASE_JAR"
+
+          echo "path=$RELEASE_JAR" >> "$GITHUB_OUTPUT"
+
+      - name: Move rolling tag to this build
+        env:
+          TAG: ${{ needs.discovery.outputs.rolling_tag }}
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git tag -fa "$TAG" -m "Latest build for $TAG"
+          git push --force origin "$TAG"
+
+      - name: Create or update prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.discovery.outputs.rolling_tag }}
+          RELEASE_NAME: ${{ needs.discovery.outputs.release_name }}
+          JAR: ${{ steps.jar.outputs.path }}
+          MC: ${{ needs.discovery.outputs.minecraft_version }}
+          MOD: ${{ needs.discovery.outputs.mod_version }}
+          BUILD_NUMBER: ${{ needs.discovery.outputs.build_number }}
+          HASH: ${{ needs.discovery.outputs.git_hash }}
+          CHANNEL: ${{ needs.discovery.outputs.channel }}
+          CHANGELOG: ${{ needs.discovery.outputs.changelog }}
+        shell: bash
+        run: |
+          cat > release-notes.md <<EOF
+          **Minecraft:** \`${MC}\`
+          **Addon version:** \`${MOD}\`
+          **Channel:** \`${CHANNEL}\`
+          **Build:** \`${BUILD_NUMBER}\`
+          **Commit:** \`${HASH}\`
+
+          ### Changes
+          ${CHANGELOG}
+          EOF
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release view "$TAG" --json assets --jq '.assets[].name' |
+              while IFS= read -r asset; do
+                gh release delete-asset "$TAG" "$asset" --yes
+              done
+
+            gh release upload "$TAG" "$JAR" --clobber
+            gh release edit "$TAG" \
+              --title "$RELEASE_NAME" \
+              --prerelease \
+              --notes-file release-notes.md
+          else
+            gh release create "$TAG" "$JAR" \
+              --title "$RELEASE_NAME" \
+              --prerelease \
+              --notes-file release-notes.md \
+              --target "$GITHUB_SHA"
+          fi
