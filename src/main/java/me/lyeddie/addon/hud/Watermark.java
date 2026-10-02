@@ -53,7 +53,7 @@ public class Watermark extends HudElement {
         switch (displayType.get()) {
             case CLASSIC -> text += " %s (%s-%s-%s)".formatted(BuildConfig.VERSION, BuildConfig.BUILD_IDENTIFIER, BuildConfig.BUILD_NUMBER, BuildConfig.HASH);
             case MIO_LIKE -> text += " v%s-%s %s".formatted(BuildConfig.VERSION.substring(0, 1), BuildConfig.BUILD_IDENTIFIER, BuildConfig.BUILD_TIME);
-            case FUTURE_LIKE -> text += " v%s-mc%s-%s+%s.%s".formatted(BuildConfig.VERSION, SharedConstants.getGameVersion().getName(), BuildConfig.BUILD_IDENTIFIER, BuildConfig.BUILD_NUMBER, BuildConfig.HASH);
+            case FUTURE_LIKE -> text += " v%s-mc%s-%s+%s.%s".formatted(BuildConfig.VERSION, SharedConstants.getGameVersion().name(), BuildConfig.BUILD_IDENTIFIER, BuildConfig.BUILD_NUMBER, BuildConfig.HASH);
         }
 
         String last = "    %s%s".formatted(Hud.get().hasCustomFont() ? "  " : "", text);
