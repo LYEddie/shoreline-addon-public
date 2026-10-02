@@ -2,9 +2,6 @@ name: Build latest addon prerelease
 
 on:
   push:
-    branches:
-      - "port_*"
-
   workflow_dispatch:
 
 permissions:
@@ -39,12 +36,7 @@ jobs:
         shell: bash
         run: |
           BRANCH="${GITHUB_REF_NAME}"
-
-          if [[ ! "$BRANCH" =~ ^port_[0-9]+([._][0-9]+)+$ ]]; then
-            echo "This workflow must run from a port_<minecraft_version> branch."
-            echo "Current branch: $BRANCH"
-            exit 1
-          fi
+          echo "Current branch: $BRANCH"
 
           MC="${BRANCH#port_}"
           MC="${MC//_/.}"
