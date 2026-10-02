@@ -190,7 +190,7 @@ public class Aura extends CombatModule {
         .visible(maceBreachConfig::get)
         .build());
     private final Setting<String> checkItemNameConfig = sgSwitch.add(new StringSetting.Builder()
-        .name("check item name").description("Requires the replacement axe name to contain this text; leave empty to disable the check")
+        .name("CheckItemName").description("Requires the replacement axe name to contain this text; leave empty to disable the check")
         .defaultValue("mace")
         .visible(() -> maceBreachConfig.get() && replaceMaceWithAxeConfig.get())
         .build());
