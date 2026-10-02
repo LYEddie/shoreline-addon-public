@@ -10,7 +10,7 @@ import meteordevelopment.meteorclient.systems.hud.HudRenderer;
 import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import net.minecraft.SharedConstants;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 
 public class Watermark extends HudElement {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -37,7 +37,7 @@ public class Watermark extends HudElement {
         .visible(bgBool::get)
         .build());
 
-    private final Identifier id = Identifier.of("shornselines", "icon.png");
+    private final Identifier id = Identifier.fromNamespaceAndPath("shornselines", "icon.png");
 
     public static final HudElementInfo<Watermark> INFO = new HudElementInfo<>(
         Shoreline.HUD, "watermark", "cool non-pasted ai slop watermark viewer, yea", Watermark::new);
@@ -53,7 +53,7 @@ public class Watermark extends HudElement {
         switch (displayType.get()) {
             case CLASSIC -> text += " %s (%s-%s-%s)".formatted(BuildConfig.VERSION, BuildConfig.BUILD_IDENTIFIER, BuildConfig.BUILD_NUMBER, BuildConfig.HASH);
             case MIO_LIKE -> text += " v%s-%s %s".formatted(BuildConfig.VERSION.substring(0, 1), BuildConfig.BUILD_IDENTIFIER, BuildConfig.BUILD_TIME);
-            case FUTURE_LIKE -> text += " v%s-mc%s-%s+%s.%s".formatted(BuildConfig.VERSION, SharedConstants.getGameVersion().getName(), BuildConfig.BUILD_IDENTIFIER, BuildConfig.BUILD_NUMBER, BuildConfig.HASH);
+            case FUTURE_LIKE -> text += " v%s-mc%s-%s+%s.%s".formatted(BuildConfig.VERSION, SharedConstants.getCurrentVersion().name(), BuildConfig.BUILD_IDENTIFIER, BuildConfig.BUILD_NUMBER, BuildConfig.HASH);
         }
 
         String last = "    %s%s".formatted(Hud.get().hasCustomFont() ? "  " : "", text);
