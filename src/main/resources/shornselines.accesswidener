@@ -1,0 +1,4 @@
+accessWidener v1 named
+accessible class net/minecraft/client/particle/FireworksSparkParticle$Explosion
+accessible field net/minecraft/entity/data/DataTracker entries [Lnet/minecraft/entity/data/DataTracker$Entry;
+accessible field net/minecraft/entity/Entity POSE Lnet/minecraft/entity/data/TrackedData;
