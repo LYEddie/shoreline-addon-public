@@ -4,7 +4,7 @@
   <img src="assets/icon.png" alt="_tech" width="333"/>
 </p>
 
-this is the shoreline clinet (1.0 beta-24-70f3cae) but umm now into a meteor addon!!1
+this is the shoreline clinet (1.0 beta-24-70f3cae) but umm now into a meteor client addon!!1
 
 - (notice: this branch contains the addon on the mc1.20.4 version, will not be maintained anymore)
 - it surely works the same as original client -i hope- as it just contains part of their combat and utility modules
