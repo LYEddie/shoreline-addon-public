@@ -1,5 +1,6 @@
 package me.lyeddie.addon.mixin.impl;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import me.lyeddie.addon.events.*;
 import me.lyeddie.addon.managers.Managers;
 import me.lyeddie.addon.util.Globals;
@@ -18,13 +19,11 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.GameMode;
-import net.minecraft.world.border.WorldBorder;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ClientPlayerInteractionManager.class)
@@ -60,14 +59,11 @@ public abstract class MixinClientPlayerInteractionManager implements Globals {
         }
     }
 
-    @Redirect(method = "interactBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/border/WorldBorder;contains(Lnet/minecraft/util/math/BlockPos;)Z"))
-    private boolean hookInteractBlock$2(WorldBorder worldBorder, BlockPos pos) {
+    @ModifyExpressionValue(method = "interactBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/border/WorldBorder;contains(Lnet/minecraft/util/math/BlockPos;)Z"))
+    private boolean hookInteractBlock$2(boolean original) {
         InteractBorderEvent interactBorderEvent = new InteractBorderEvent();
         MeteorClient.EVENT_BUS.post(interactBorderEvent);
-        if (interactBorderEvent.isCancelled()) {
-            return true;
-        }
-        return worldBorder.contains(pos);
+        return interactBorderEvent.isCancelled() || original;
     }
 
     @Inject(method = "interactItem", at = @At(value = "HEAD"), cancellable = true)
@@ -107,27 +103,27 @@ public abstract class MixinClientPlayerInteractionManager implements Globals {
         }
     }
 
-    @Redirect(method = "interactBlockInternal", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;shouldCancelInteraction()Z"))
-    private boolean hookRedirectInteractBlockInternal$shouldCancelInteraction(ClientPlayerEntity player) {
+    @ModifyExpressionValue(method = "interactBlockInternal", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;shouldCancelInteraction()Z"))
+    private boolean hookRedirectInteractBlockInternal$shouldCancelInteraction(boolean original) {
         PacketSneakingEvent packetSneakingEvent = new PacketSneakingEvent();
         MeteorClient.EVENT_BUS.post(packetSneakingEvent);
-        return player.isSneaking() || packetSneakingEvent.isCancelled();
+        return original || packetSneakingEvent.isCancelled();
     }
 
-    @Redirect(method = "interactBlockInternal", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;getStackInHand(Lnet/minecraft/util/Hand;)Lnet/minecraft/item/ItemStack;"))
-    private ItemStack hookRedirectInteractBlockInternal$getStackInHand(ClientPlayerEntity entity, Hand hand) {
+    @ModifyExpressionValue(method = "interactBlockInternal", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;getStackInHand(Lnet/minecraft/util/Hand;)Lnet/minecraft/item/ItemStack;"))
+    private ItemStack hookRedirectInteractBlockInternal$getStackInHand(ItemStack original, ClientPlayerEntity player, Hand hand, BlockHitResult hitResult) {
         if (hand.equals(Hand.OFF_HAND)) {
-            return entity.getStackInHand(hand);
+            return original;
         }
         ItemDesyncEvent itemDesyncEvent = new ItemDesyncEvent();
         MeteorClient.EVENT_BUS.post(itemDesyncEvent);
-        return itemDesyncEvent.isCancelled() ? itemDesyncEvent.getServerItem() : entity.getStackInHand(Hand.MAIN_HAND);
+        return itemDesyncEvent.isCancelled() ? itemDesyncEvent.getServerItem() : original;
     }
 
-    @Redirect(method = "interactBlockInternal", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;isEmpty()Z", ordinal = 0))
-    private boolean hookRedirectInteractBlockInternal$getMainHandStack(ItemStack instance) {
+    @ModifyExpressionValue(method = "interactBlockInternal", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;isEmpty()Z", ordinal = 0))
+    private boolean hookRedirectInteractBlockInternal$getMainHandStack(boolean original) {
         ItemDesyncEvent itemDesyncEvent = new ItemDesyncEvent();
         MeteorClient.EVENT_BUS.post(itemDesyncEvent);
-        return itemDesyncEvent.isCancelled() ? itemDesyncEvent.getServerItem().isEmpty() : instance.isEmpty();
+        return itemDesyncEvent.isCancelled() ? itemDesyncEvent.getServerItem().isEmpty() : original;
     }
 }

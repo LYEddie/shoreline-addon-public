@@ -26,7 +26,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ClientPlayerEntity.class)
@@ -184,15 +184,11 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
         MeteorClient.EVENT_BUS.post(setCurrentHandEvent);
     }
 
-    @Redirect(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;setSprinting(Z)V", ordinal = 3))
-    private void hookSetSprinting(ClientPlayerEntity instance, boolean b) {
+    @ModifyArg(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;setSprinting(Z)V", ordinal = 3), index = 0)
+    private boolean hookSetSprinting(boolean sprinting) {
         final SprintCancelEvent sprintEvent = new SprintCancelEvent();
         MeteorClient.EVENT_BUS.post(sprintEvent);
-        if (sprintEvent.isCancelled()) {
-            instance.setSprinting(true);
-        } else {
-            instance.setSprinting(b);
-        }
+        return sprintEvent.isCancelled() ? true : sprinting;
     }
 
     @Override
