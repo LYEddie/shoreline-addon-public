@@ -11,7 +11,7 @@ public class Queue extends Command {
     private String queue = "";
 
     public Queue() {
-        super("queue", ".");
+        super("queue", "Displays the current 2b2t queue size.");
     }
 
     @Override
