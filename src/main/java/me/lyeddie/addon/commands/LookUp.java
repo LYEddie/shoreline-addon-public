@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 public class LookUp extends Command implements Helpers {
 
     public LookUp() {
-        super("lookup", ".");
+        super("lookup", "Looks up a player's name history.");
     }
 
     @Override

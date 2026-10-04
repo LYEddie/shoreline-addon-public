@@ -16,23 +16,23 @@ public class Watermark extends HudElement {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
 
     private final Setting<String> wmStr = sgGeneral.add(new StringSetting.Builder()
-        .name("value").description(".")
+        .name("value").description("Sets the text displayed before the build information.")
         .defaultValue("[Shoreline Addon]")
         .build());
     private final Setting<Type> displayType = sgGeneral.add(new EnumSetting.Builder<Type>()
-        .name("display-type").description(".")
+        .name("display-type").description("Sets the format used to display build information.")
         .defaultValue(Type.CLASSIC)
         .build());
     private final Setting<Boolean> bgBool = sgGeneral.add(new BoolSetting.Builder()
-        .name("background").description(".")
+        .name("background").description("Renders a background behind the watermark.")
         .defaultValue(false)
         .build());
     private final Setting<SettingColor> textColor = sgGeneral.add(new ColorSetting.Builder()
-        .name("text-color").description(".")
+        .name("text-color").description("Sets the watermark text color.")
         .defaultValue(new SettingColor(255, 255, 255, 255))
         .build());
     private final Setting<SettingColor> bgColor = sgGeneral.add(new ColorSetting.Builder()
-        .name("background-color").description(".")
+        .name("background-color").description("Sets the watermark background color.")
         .defaultValue(new SettingColor(0, 0, 0, 64))
         .visible(bgBool::get)
         .build());
@@ -40,7 +40,7 @@ public class Watermark extends HudElement {
     private final Identifier id = Identifier.fromNamespaceAndPath("shornselines", "icon.png");
 
     public static final HudElementInfo<Watermark> INFO = new HudElementInfo<>(
-        Shoreline.HUD, "watermark", "cool non-pasted ai slop watermark viewer, yea", Watermark::new);
+        Shoreline.HUD, "watermark", "Displays the addon name and build information.", Watermark::new);
 
     public Watermark() {
         super(INFO);
