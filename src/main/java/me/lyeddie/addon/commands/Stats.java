@@ -12,7 +12,7 @@ import java.util.concurrent.Executors;
 public class Stats extends Command implements Helpers {
 
     public Stats() {
-        super("2bstats", ".");
+        super("2bstats", "Displays a player's 2b2t statistics.");
     }
 
     @Override
