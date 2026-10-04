@@ -16,7 +16,7 @@ import java.net.URL;
 public class SkinGrab extends Command implements Helpers {
 
     public SkinGrab() {
-        super("skingrab", ".");
+        super("skingrab", "Downloads a player's skin to the client folder.");
     }
 
     @Override
