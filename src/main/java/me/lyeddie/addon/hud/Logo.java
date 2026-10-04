@@ -12,36 +12,36 @@ public class Logo extends HudElement {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
 
     private final Setting<Integer> widgetBorder = sgGeneral.add(new IntSetting.Builder()
-        .name("widget-border").description(".")
+        .name("widget-border").description("Adds padding around the logo.")
         .min(0)
         .defaultValue(5)
         .sliderMax(64)
         .build());
     private final Setting<Double> logoScale = sgGeneral.add(new DoubleSetting.Builder()
-        .name("logo-scale").description(".")
+        .name("logo-scale").description("Controls the rendered size of the logo.")
         .min(0.0)
         .defaultValue(1.0)
         .sliderRange(0, 2.0)
         .build());
     private final Setting<Integer> scaleDiv = sgGeneral.add(new IntSetting.Builder()
-        .name("scale-division").description(".")
+        .name("scale-division").description("Divides the base texture size to fine-tune the logo dimensions.")
         .min(1)
         .defaultValue(2)
         .max(5)
         .build());
     private final Setting<SideMode> side = sgGeneral.add(new EnumSetting.Builder<SideMode>()
-        .name("side").description(".")
+        .name("side").description("Sets the horizontal orientation of the logo.")
         .defaultValue(SideMode.Right)
         .build());
     private final Setting<SettingColor> sampleColor = sgGeneral.add(new ColorSetting.Builder()
-        .name("color-test").description(".")
+        .name("color").description("Sets the logo tint color.")
         .defaultValue(new SettingColor(255, 255, 255, 255))
         .build());
 
     private final Identifier logoFile = Identifier.of("shornselines", "icon.png");
 
     public static final HudElementInfo<Logo> INFO = new HudElementInfo<>(
-        Shoreline.HUD, "logo", ".", Logo::new);
+        Shoreline.HUD, "logo", "Displays the Shoreline logo.", Logo::new);
 
     public Logo() {
         super(INFO);
