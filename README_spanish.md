@@ -11,7 +11,7 @@ este es el cliente SHOREline --no es SHE, es SHO- (1.0 beta-24-70f3cae) pero con
 - no trae caracteristicas nuevas comparado con el src filtrado (rip repos de skittyyy)
 - los blockplacers funcionan de verdad (comparado con genyo) y si pueden recolocar bloques (salvo tu enemigo tengo algo menos de latencia)- comparado con otros addons similares
 - funciona en grimcc, 2b2t-practice e incluso algunas cosas en donutSMP pero ya no sirve para 2b2t (por cierto limitador de packets)
-- inicialmente en 1.21.1, ahora admite 1.21.4, 1.21.5, 1.21.8, 1.21.11, 26.1.2 y 26.2 (26.3 pronto, no hay meteor), no requiere fabric-api o baritone
+- inicialmente en 1.21.1, ahora admite 1.21.4, 1.21.5, 1.21.8, 1.21.11, 26.1.2, 26.2 y 26.3 (26.4 pronto, no hay meteor), no requiere fabric-api o baritone
 - NO FUNCIONANA CON CRACKS DE CLIENTES (si con los originales), y hay una opcion en la pestaña de "Shoreline" de meteor llamada "InvalidSlotTweak" que soluciona(ria) el double mining y silentSwitching en otros usados
 
 ## capturas (mio comprado)

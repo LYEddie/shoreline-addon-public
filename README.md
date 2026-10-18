@@ -11,7 +11,7 @@ this is the shoreline clinet (1.0 beta-24-70f3cae) but umm now into a meteor cli
 - has NO new features compared to the src leak (rip skittyyys repos)
 - blockplacers actually fixed unlike genyo and -can actually replace blocks (unless yo enemy has a bit less of ping)- compared to another pastes
 - works at grimcc, 2b2t-practice and even some features at donutSMP but it might be outdated for 2b2t (as march of 2026)
-- initially at 1.21.1, now supports 1.21.4, 1.21.5, 1.21.8, 1.21.11, 26.1.2 and 26.2 (26.3 soon), does not require fabric api or baritone
+- initially at 1.21.1, now supports 1.21.4, 1.21.5, 1.21.8, 1.21.11, 26.1.2, 26.2 and 26.3 (26.4 soon), does not require fabric api or baritone
 - wont work (crash at launch) with most cracked clients, but theres an option at the "Shoreline" meteor tab called "InvalidSlotTweak" that can fix slot-switching from others
 
 ## pics

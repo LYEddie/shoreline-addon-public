@@ -9,7 +9,7 @@
     "Misc",
     "Exploit"
   ],
-  "supported_versions": ["1.20.4", "1.21.1", "1.21.4", "1.21.5", "1.21.8", "1.21.11", "26.1.2", "26.2"],
+  "supported_versions": ["1.20.4", "1.21.1", "1.21.4", "1.21.5", "1.21.8", "1.21.11", "26.1.2", "26.2", "26.3"],
   "icon": "https://github.com/LYEddie/shoreline-addon-public/blob/main/src/main/resources/assets/shornselines/icon.png?raw=true",
   "discord": "https://discord.gg/DTUbmUyCft",
   "homepage": "https://example.com"
