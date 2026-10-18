@@ -44,7 +44,7 @@ public class HoleManager implements Globals {
                 for (double z = -rad; z <= rad; ++z) {
                     Vec3i pos = new Vec3i((int) (start.x() + x),
                         (int) (start.y() + y), (int) (start.z() + z));
-                    final BlockPos p = new BlockPos(pos);
+                    final BlockPos p = new BlockPos(pos.getX(), pos.getY(), pos.getZ());
                     sphere.add(p);
                 }
             }

@@ -19,7 +19,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.game.ServerboundAttackPacket;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
-import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.network.protocol.game.ServerboundPunchPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
@@ -117,7 +117,7 @@ public class CriticalsII extends AddonModule {
                 if (modeConfig.get() == CritMode.PACKET) {
                     for (int i = 0; i < 5; ++i) {
                         Managers.NETWORK.sendQuietPacket(new ServerboundAttackPacket(e.getId()));
-                        Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+                        Managers.NETWORK.sendPacket(ServerboundPunchPacket.INSTANCE);
                     }
                 }
                 return;
@@ -238,7 +238,7 @@ public class CriticalsII extends AddonModule {
         for (BlockPos pos : PositionUtil.getAllInBox(mc.player.getBoundingBox(), mc.player.blockPosition())) {
             BlockState state = mc.level.getBlockState(pos);
             BlockState state2 = mc.level.getBlockState(pos.above());
-            if (state.blocksMotion() && state2.blocksMotion()) {
+            if (state.isSolid() && state2.isSolid()) {
                 return true;
             }
         }
@@ -247,7 +247,7 @@ public class CriticalsII extends AddonModule {
 
     public boolean isPhased() {
         for (BlockPos pos : PositionUtil.getAllInBox(mc.player.getBoundingBox())) {
-            if (mc.level.getBlockState(pos).blocksMotion()) {
+            if (mc.level.getBlockState(pos).isSolid()) {
                 return true;
             }
         }

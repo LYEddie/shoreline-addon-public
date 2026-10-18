@@ -22,7 +22,7 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundBundlePacket;
 import net.minecraft.network.protocol.game.ServerboundAttackPacket;
-import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.network.protocol.game.ServerboundPunchPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
@@ -244,7 +244,7 @@ public class AutoTrapII extends ObsidianPlacerModule {
                 continue;
             }
             Managers.NETWORK.sendPacket(new ServerboundAttackPacket(crystalEntity.getId()));
-            Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+            Managers.NETWORK.sendPacket(ServerboundPunchPacket.INSTANCE);
             return;
         }
     }

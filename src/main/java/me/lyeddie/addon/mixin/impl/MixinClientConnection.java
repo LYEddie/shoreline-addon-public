@@ -10,6 +10,8 @@ import meteordevelopment.meteorclient.MeteorClient;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ServerboundClientTickEndPacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
@@ -22,9 +24,36 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Connection.class)
 public class MixinClientConnection implements Globals {
 
+    private boolean sentPositionThisTick;
+
     @Shadow
     @Final
     private static Logger LOGGER;
+
+    @Shadow
+    private void sendPacket(Packet<?> packet, @Nullable ChannelFutureListener callbacks,
+                            boolean flush) {
+    }
+
+    @Inject(method = "doSendPacket", at = @At("HEAD"))
+    private void hookSeparatePositionPackets(Packet<?> packet,
+                                             @Nullable ChannelFutureListener callbacks,
+                                             boolean flush, CallbackInfo ci) {
+        if (packet instanceof ServerboundClientTickEndPacket) {
+            sentPositionThisTick = false;
+            return;
+        }
+
+        if (!(packet instanceof ServerboundMovePlayerPacket movePacket)
+            || !movePacket.hasPosition()) {
+            return;
+        }
+
+        if (sentPositionThisTick) {
+            sendPacket(ServerboundClientTickEndPacket.INSTANCE, null, false);
+        }
+        sentPositionThisTick = true;
+    }
 
     @Inject(method = "exceptionCaught", at = @At("HEAD"), cancellable = true)
     private void hookExceptionCaught(ChannelHandlerContext context, Throwable ex, CallbackInfo ci) {

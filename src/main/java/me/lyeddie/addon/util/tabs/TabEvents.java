@@ -48,7 +48,7 @@ public class TabEvents implements Globals, Helpers {
         if (mc.player == null || mc.level == null) return;
 
         if (TabConfigs.get().isNCP() && TabConfigs.get().raytraceSpoofConfig.get() && event.packet instanceof ServerboundUseItemOnPacket packet && raytraceTimer.passed(250)) {
-            BlockHitResult packetResult = packet.getHitResult();
+            BlockHitResult packetResult = packet.hitResult();
             BlockPos pos = packetResult.getBlockPos();
             BlockHitResult result = mc.level.clip(new ClipContext(mc.player.getEyePosition(), getDirectionOffsetPos(pos, packetResult.getDirection()), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, mc.player));
             if (mc.level.noCollision(mc.player.getBoundingBox().expandTowards(0.0, 0.15, 0.0)) && result != null && result.getType() == HitResult.Type.BLOCK && !result.getBlockPos().equals(pos)) {
@@ -111,7 +111,7 @@ public class TabEvents implements Globals, Helpers {
                     && (Math.abs(packet.movement().x) > 1000 || Math.abs(packet.movement().y) > 1000
                     || Math.abs(packet.movement().z) > 1000)) {
                 event.cancel();
-            } else if (event.packet instanceof ClientboundLevelParticlesPacket packet && packet.getCount() > 500) {
+            } else if (event.packet instanceof ClientboundLevelParticlesPacket packet && packet.count() > 500) {
                 event.cancel();
             }
         }

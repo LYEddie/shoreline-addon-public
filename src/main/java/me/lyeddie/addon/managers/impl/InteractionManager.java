@@ -7,10 +7,11 @@ import me.lyeddie.addon.util.tabs.TabConfigs;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
-import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.network.protocol.game.ServerboundPunchPacket;
 import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.item.component.SwingAnimation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
 import net.minecraft.world.level.block.Block;
@@ -198,11 +199,11 @@ public final class InteractionManager implements Globals {
         }
         final InteractionResult actionResult = packet ? placeBlockPacket(result, hand) : placeBlockInternally(result, hand);
         if (actionResult instanceof InteractionResult.Success success
-            && success.swingSource() == InteractionResult.SwingSource.CLIENT) {
+            && success.swingSource() == InteractionResult.SwingSource.PREDICTED) {
             if (clientSwing) {
-                mc.player.swing(InteractionHand.MAIN_HAND);
+                mc.player.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT, false);
             } else {
-                Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+                Managers.NETWORK.sendPacket(ServerboundPunchPacket.INSTANCE);
             }
         }
         if (shouldSneak) {

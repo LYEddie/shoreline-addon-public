@@ -16,11 +16,11 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
 import net.minecraft.network.protocol.game.ClientboundSetHealthPacket;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
 import net.minecraft.world.inventory.ContainerInput;
-import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -176,7 +176,7 @@ public class AutoTotem extends AddonModule {
             if (gappleConfig.get() && mc.options.keyUse.isDown()
                 && (mainHandStack.has(DataComponents.WEAPON)
                 || mainHandItem instanceof TridentItem
-                || mainHandItem instanceof AxeItem)
+                || mainHandStack.is(ItemTags.AXES))
                 && PlayerUtil.getLocalPlayerHealth() >= healthConfig.get()) {
                 if (mc.hitResult instanceof BlockHitResult result) {
                     BlockState interactBlock = mc.level.getBlockState(result.getBlockPos());

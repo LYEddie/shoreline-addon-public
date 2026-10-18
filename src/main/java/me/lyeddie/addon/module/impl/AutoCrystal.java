@@ -29,12 +29,13 @@ import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.network.protocol.game.ServerboundAttackPacket;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
-import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.network.protocol.game.ServerboundPunchPacket;
 import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.component.SwingAnimation;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
@@ -44,7 +45,6 @@ import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ContainerInput;
-import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.EndCrystalItem;
 import net.minecraft.world.item.ExperienceBottleItem;
 import net.minecraft.world.item.ItemStack;
@@ -675,7 +675,7 @@ public class AutoCrystal extends CombatModule {
         }
 
         if (serverPacket instanceof ClientboundRemoveEntitiesPacket packet) {
-            for (int id : packet.getEntityIds()) {
+            for (int id : packet.entityIds()) {
                 antiStuckCrystals.remove(id);
                 Long attackTime = attackPackets.remove(id);
                 if (attackTime != null) {
@@ -786,7 +786,7 @@ public class AutoCrystal extends CombatModule {
             for (int i = 0; i < 9; ++i) {
                 ItemStack stack = mc.player.getInventory().getItem(i);
                 if (!stack.isEmpty() && (stack.has(DataComponents.WEAPON)
-                    || stack.getItem() instanceof AxeItem
+                    || stack.is(ItemTags.AXES)
                     || stack.is(ItemTags.PICKAXES))) {
                     slot = i;
                     break;
@@ -837,9 +837,9 @@ public class AutoCrystal extends CombatModule {
         ServerboundAttackPacket packet = new ServerboundAttackPacket(entity2.getId());
         Managers.NETWORK.sendPacket(packet);
         if (swingConfig.get()) {
-            mc.player.swing(hand);
+            mc.player.swing(hand, SwingAnimation.DEFAULT, false);
         } else {
-            Managers.NETWORK.sendPacket(new ServerboundSwingPacket(hand));
+            Managers.NETWORK.sendPacket(ServerboundPunchPacket.INSTANCE);
         }
 
         attackPackets.put(crystalEntity, System.currentTimeMillis());
@@ -916,9 +916,9 @@ public class AutoCrystal extends CombatModule {
         }
         Managers.NETWORK.sendSequencedPacket(id -> new ServerboundUseItemOnPacket(hand, result, id));
         if (swingConfig.get()) {
-            mc.player.swing(hand);
+            mc.player.swing(hand, SwingAnimation.DEFAULT, false);
         } else {
-            Managers.NETWORK.sendPacket(new ServerboundSwingPacket(hand));
+            Managers.NETWORK.sendPacket(ServerboundPunchPacket.INSTANCE);
         }
 
         if (idPredictConfig.get()) {
@@ -935,7 +935,7 @@ public class AutoCrystal extends CombatModule {
             entity2.setId(id);
             ServerboundAttackPacket packet = new ServerboundAttackPacket(entity2.getId());
             Managers.NETWORK.sendPacket(packet);
-            Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+            Managers.NETWORK.sendPacket(ServerboundPunchPacket.INSTANCE);
             attackPackets.put(id, System.currentTimeMillis());
         }
     }
@@ -1411,7 +1411,7 @@ public class AutoCrystal extends CombatModule {
                 for (double z = -rad; z <= rad; ++z) {
                     Vec3i pos = new Vec3i((int) (origin.x() + x),
                         (int) (origin.y() + y), (int) (origin.z() + z));
-                    final BlockPos p = new BlockPos(pos);
+                    final BlockPos p = new BlockPos(pos.getX(), pos.getY(), pos.getZ());
                     sphere.add(p);
                 }
             }

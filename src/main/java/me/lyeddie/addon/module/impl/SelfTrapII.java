@@ -23,7 +23,7 @@ import net.minecraft.network.protocol.game.ClientboundBundlePacket;
 import net.minecraft.network.protocol.game.ClientboundExplodePacket;
 import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
 import net.minecraft.network.protocol.game.ServerboundAttackPacket;
-import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.network.protocol.game.ServerboundPunchPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityTypes;
@@ -250,7 +250,7 @@ public class SelfTrapII extends ObsidianPlacerModule {
         }
 
         if (serverPacket instanceof ClientboundRemoveEntitiesPacket packetxx && replaceConfig.get() == ReplaceMode.NORMAL) {
-            for (int id : packetxx.getEntityIds()) {
+            for (int id : packetxx.entityIds()) {
                 Entity entity = mc.level.getEntity(id);
                 if (entity instanceof EndCrystal) {
                     BlockPos targetPos = entity.blockPosition();
@@ -293,7 +293,7 @@ public class SelfTrapII extends ObsidianPlacerModule {
                 continue;
             }
             Managers.NETWORK.sendPacket(new ServerboundAttackPacket(crystalEntity.getId()));
-            Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+            Managers.NETWORK.sendPacket(ServerboundPunchPacket.INSTANCE);
             return;
         }
     }

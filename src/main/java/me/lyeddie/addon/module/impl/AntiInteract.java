@@ -49,7 +49,7 @@ public class AntiInteract extends AddonModule {
             return;
         }
         if (event.packet instanceof ServerboundUseItemOnPacket packet) {
-            BlockPos pos = packet.getHitResult().getBlockPos();
+            BlockPos pos = packet.hitResult().getBlockPos();
             BlockState state = mc.level.getBlockState(pos);
             if (blacklistConfig.get().contains(state.getBlock())) {
                 event.cancel();

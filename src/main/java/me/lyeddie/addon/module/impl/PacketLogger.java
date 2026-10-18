@@ -24,7 +24,7 @@ import net.minecraft.network.protocol.game.ServerboundPickItemFromEntityPacket;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
-import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.network.protocol.game.ServerboundPunchPacket;
 import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
 import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
 import net.minecraft.resources.Identifier;
@@ -89,8 +89,8 @@ public class PacketLogger extends AddonModule implements Helpers {
         .name("PickItem").description("Logs pick-item packets")
         .defaultValue(false)
         .build());
-    private final Setting<Boolean> handSwingConfig = sgPackets.add(new BoolSetting.Builder()
-        .name("HandSwing").description("Logs HandSwingC2SPacket")
+    private final Setting<Boolean> punchConfig = sgPackets.add(new BoolSetting.Builder()
+        .name("Punch").description("Logs ServerboundPunchPacket")
         .defaultValue(false)
         .build());
     private final Setting<Boolean> interactEntityConfig = sgPackets.add(new BoolSetting.Builder()
@@ -223,7 +223,7 @@ public class PacketLogger extends AddonModule implements Helpers {
             logPacket(packet, s);
         }
         if (event.packet instanceof ServerboundMoveVehiclePacket packet && vehicleMoveConfig.get()) {
-            logPacket(packet, "VehicleMove - pos: %s, yaw: %s, pitch: %s", packet.position(), packet.yRot(), packet.xRot());
+            logPacket(packet, "VehicleMove - pos: %s, yaw: %s, pitch: %s", packet.movingTo().position(), packet.movingTo().yRot(), packet.movingTo().xRot());
         }
         if (event.packet instanceof ServerboundPlayerActionPacket packet && playerActionConfig.get()) {
             logPacket(packet, "PlayerAction - action: %s, direction: %s, pos: %s", packet.getAction().name(), packet.getDirection().name(), packet.getPos().toShortString());
@@ -231,8 +231,8 @@ public class PacketLogger extends AddonModule implements Helpers {
         if (event.packet instanceof ServerboundSetCarriedItemPacket packet && updateSlotConfig.get()) {
             logPacket(packet, "UpdateSlot - slot: %d", packet.getSlot());
         }
-        if (event.packet instanceof ServerboundSwingPacket packet && handSwingConfig.get()) {
-            logPacket(packet, "HandSwing - hand: %s", packet.getHand().name());
+        if (event.packet instanceof ServerboundPunchPacket packet && punchConfig.get()) {
+            logPacket(packet, "Punch");
         }
         if (event.packet instanceof ServerboundPongPacket packet && pongConfig.get()) {
             logPacket(packet, "Pong - %d", packet.getId());
@@ -241,11 +241,11 @@ public class PacketLogger extends AddonModule implements Helpers {
             logPacket(packet, "InteractEntity");
         }
         if (event.packet instanceof ServerboundUseItemOnPacket packet && interactBlockConfig.get()) {
-            BlockHitResult blockHitResult = packet.getHitResult();
-            logPacket(packet, "InteractBlock - pos: %s, dir: %s, hand: %s", blockHitResult.getBlockPos().toShortString(), blockHitResult.getDirection().name(), packet.getHand().name());
+            BlockHitResult blockHitResult = packet.hitResult();
+            logPacket(packet, "InteractBlock - pos: %s, dir: %s, hand: %s", blockHitResult.getBlockPos().toShortString(), blockHitResult.getDirection().name(), packet.hand().name());
         }
         if (event.packet instanceof ServerboundUseItemPacket packet && interactItemConfig.get()) {
-            logPacket(packet, "InteractItem - hand: %s", packet.getHand().name());
+            logPacket(packet, "InteractItem - hand: %s", packet.hand().name());
         }
         if (event.packet instanceof ServerboundContainerClosePacket packet && closeScreenConfig.get()) {
             logPacket(packet, "CloseScreen - id: %s", packet.getContainerId());
@@ -266,7 +266,7 @@ public class PacketLogger extends AddonModule implements Helpers {
             logPacket(packet, "PickEntity - id: %s, includeData: %s", packet.id(), packet.includeData());
         }
         if (event.packet instanceof ServerboundAcceptTeleportationPacket packet && teleportConfirmConfig.get()) {
-            logPacket(packet, "TeleportConfirm - id: %s", packet.getId());
+            logPacket(packet, "TeleportConfirm - id: %s", packet.id());
         }
     }
 

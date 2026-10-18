@@ -11,7 +11,7 @@ import net.minecraft.world.entity.animal.bee.Bee;
 import net.minecraft.world.entity.animal.golem.IronGolem;
 import net.minecraft.world.entity.animal.squid.Squid;
 import net.minecraft.world.entity.animal.wolf.Wolf;
-import net.minecraft.world.entity.monster.EnderMan;
+import net.minecraft.world.entity.monster.Enderman;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.zombie.ZombifiedPiglin;
 import net.minecraft.world.entity.vehicle.boat.Boat;
@@ -45,7 +45,7 @@ public class EntityUtil implements Globals {
     }
 
     private static boolean isNeutralInternal(Entity e) {
-        return e instanceof EnderMan enderman && !enderman.isAggressive()
+        return e instanceof Enderman enderman && !enderman.isAggressive()
             || e instanceof ZombifiedPiglin piglin && !piglin.isAggressive()
             || e instanceof Wolf wolf && !wolf.isAggressive()
             || e instanceof IronGolem ironGolem && !ironGolem.isAggressive()
@@ -53,7 +53,7 @@ public class EntityUtil implements Globals {
     }
 
     public static boolean isNeutral(Entity e) {
-        return e instanceof EnderMan || e instanceof ZombifiedPiglin || e instanceof Wolf || e instanceof IronGolem;
+        return e instanceof Enderman || e instanceof ZombifiedPiglin || e instanceof Wolf || e instanceof IronGolem;
     }
 
     public static boolean isPassive(Entity e) {

@@ -37,7 +37,8 @@ public class PearlManager implements Globals {
 
             if (!pearlBB.contains(packet.change().position())) {
                 event.cancel();
-                mc.getConnection().getConnection().send(new ServerboundAcceptTeleportationPacket(packet.id()));
+                mc.getConnection().getConnection().send(new ServerboundAcceptTeleportationPacket(packet.id(),
+                    mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYRot(), mc.player.getXRot()));
                 mc.getConnection().getConnection().send(new ServerboundMovePlayerPacket.PosRot(mc.player.getX(), mc.player.getY(),
                     mc.player.getZ(), mc.player.getYRot(), mc.player.getXRot(), false, mc.player.horizontalCollision));
             }

@@ -22,9 +22,10 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
-import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.network.protocol.game.ServerboundPunchPacket;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.component.SwingAnimation;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Block;
@@ -463,7 +464,7 @@ public class AutoMine extends CombatModule {
         if (!doubleBreakConfig.get()) {
             instantMine = data;
             startMining(instantMine);
-            mc.player.swing(InteractionHand.MAIN_HAND, false);
+            mc.player.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT, false);
             return;
         }
 
@@ -480,7 +481,7 @@ public class AutoMine extends CombatModule {
 
         instantMine = data;
         startMining(instantMine);
-        mc.player.swing(InteractionHand.MAIN_HAND, false);
+        mc.player.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT, false);
         if (updateChanged) {
             changedInstantMine = true;
         }
@@ -716,9 +717,9 @@ public class AutoMine extends CombatModule {
                 }
 
                 Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-                Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
-                Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
-                Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+                Managers.NETWORK.sendPacket(ServerboundPunchPacket.INSTANCE);
+                Managers.NETWORK.sendPacket(ServerboundPunchPacket.INSTANCE);
+                Managers.NETWORK.sendPacket(ServerboundPunchPacket.INSTANCE);
             } else {
                 Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
                 Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, data.getPos(), data.getDirection()));
@@ -726,7 +727,7 @@ public class AutoMine extends CombatModule {
                 Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
                 Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, data.getPos(), data.getDirection()));
                 Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, data.getPos(), data.getDirection()));
-                Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+                Managers.NETWORK.sendPacket(ServerboundPunchPacket.INSTANCE);
             }
         } else {
             Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(

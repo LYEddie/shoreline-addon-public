@@ -40,7 +40,6 @@ import net.minecraft.world.level.block.SweetBerryBushBlock;
 import net.minecraft.world.level.block.WebBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import org.lwjgl.glfw.GLFW;
 import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
 import java.util.List;
@@ -175,21 +174,20 @@ public class NoSlowDown extends AddonModule {
         if (strafeFixConfig.get() && checkSlowed()) {
         }
         if (inventoryMoveConfig.get() && checkScreen()) {
-            final var window = mc.getWindow();
             KeyMapping[] keys = new KeyMapping[]{mc.options.keyJump, mc.options.keyUp, mc.options.keyDown, mc.options.keyRight, mc.options.keyLeft};
             for (KeyMapping binding : keys) {
-                binding.setDown(InputConstants.isKeyDown(window, ((AccessorKeyBinding) binding).getBoundKey().getValue()));
+                binding.setDown(InputConstants.isKeyDown(((AccessorKeyBinding) binding).getBoundKey().getValue()));
             }
             if (arrowMoveConfig.get()) {
                 float yaw = mc.player.getYRot();
                 float pitch = mc.player.getXRot();
-                if (InputConstants.isKeyDown(window, GLFW.GLFW_KEY_UP)) {
+                if (InputConstants.isKeyDown(InputConstants.KEY_UP)) {
                     pitch -= 3.0f;
-                } else if (InputConstants.isKeyDown(window, GLFW.GLFW_KEY_DOWN)) {
+                } else if (InputConstants.isKeyDown(InputConstants.KEY_DOWN)) {
                     pitch += 3.0f;
-                } else if (InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT)) {
+                } else if (InputConstants.isKeyDown(InputConstants.KEY_LEFT)) {
                     yaw -= 3.0f;
-                } else if (InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT)) {
+                } else if (InputConstants.isKeyDown(InputConstants.KEY_RIGHT)) {
                     yaw += 3.0f;
                 }
                 mc.player.setYRot(yaw);

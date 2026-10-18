@@ -234,7 +234,7 @@ public class BasePlace extends ObsidianPlacerModule {
                 for (double z = -rad; z <= rad; ++z) {
                     Vec3i pos = new Vec3i((int) (origin.x() + x),
                         (int) (origin.y() + y), (int) (origin.z() + z));
-                    final BlockPos p = new BlockPos(pos);
+                    final BlockPos p = new BlockPos(pos.getX(), pos.getY(), pos.getZ());
                     sphere.add(p);
                 }
             }

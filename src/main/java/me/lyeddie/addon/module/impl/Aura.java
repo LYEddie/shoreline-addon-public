@@ -27,10 +27,12 @@ import net.minecraft.network.protocol.game.ServerboundAttackPacket;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
-import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.network.protocol.game.ServerboundPunchPacket;
 import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.component.SwingAnimation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -41,7 +43,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.arrow.Arrow;
 import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownExperienceBottle;
-import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.MaceItem;
@@ -446,9 +447,9 @@ public class Aura extends CombatModule {
         ServerboundAttackPacket packet = new ServerboundAttackPacket(entity.getId());
         Managers.NETWORK.sendPacket(packet);
         if (swingConfig.get()) {
-            mc.player.swing(InteractionHand.MAIN_HAND);
+            mc.player.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT, false);
         } else {
-            Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+            Managers.NETWORK.sendPacket(ServerboundPunchPacket.INSTANCE);
         }
         postAttackTarget(entity);
 
@@ -471,7 +472,7 @@ public class Aura extends CombatModule {
                     sharp = dmg;
                     slot = i;
                 }
-            } else if (stack.getItem() instanceof AxeItem) {
+            } else if (stack.is(ItemTags.AXES)) {
                 float sharpness = EnchantmentUtil.getLevel(stack,
                     Enchantments.SHARPNESS) * 0.5f + 0.5f;
                 float dmg = getAttackDamage(stack) + sharpness;
@@ -667,7 +668,7 @@ public class Aura extends CombatModule {
 
     public boolean isHoldingSword() {
         return !swordCheckConfig.get() || mc.player.getMainHandItem().has(DataComponents.WEAPON)
-            || mc.player.getMainHandItem().getItem() instanceof AxeItem
+            || mc.player.getMainHandItem().is(ItemTags.AXES)
             || mc.player.getMainHandItem().getItem() instanceof TridentItem
             || mc.player.getMainHandItem().getItem() instanceof MaceItem;
     }

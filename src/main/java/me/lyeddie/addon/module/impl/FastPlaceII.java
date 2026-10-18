@@ -84,8 +84,8 @@ public class FastPlaceII extends AddonModule {
         }
         if (event.packet instanceof ServerboundUseItemOnPacket packet
             && ghostFixConfig.get() && !Managers.NETWORK.isCached(event.packet)
-            && placeCheck(mc.player.getItemInHand(packet.getHand()))) {
-            BlockState state = mc.level.getBlockState(packet.getHitResult().getBlockPos());
+            && placeCheck(mc.player.getItemInHand(packet.hand()))) {
+            BlockState state = mc.level.getBlockState(packet.hitResult().getBlockPos());
             if (!SneakBlocks.isSneakBlock(state)) {
                 event.cancel();
             }

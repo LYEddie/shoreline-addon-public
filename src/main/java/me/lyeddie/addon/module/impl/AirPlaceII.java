@@ -14,8 +14,9 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
-import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.network.protocol.game.ServerboundPunchPacket;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.component.SwingAnimation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
@@ -88,12 +89,12 @@ public class AirPlaceII extends AddonModule {
             if (grimConfig.get()) {
                 Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ZERO, Direction.DOWN));
                 mc.gameMode.useItemOn(mc.player, InteractionHand.OFF_HAND, blockHitResult);
-                mc.player.swing(InteractionHand.MAIN_HAND, false);
-                Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.OFF_HAND));
+                mc.player.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT, false);
+                Managers.NETWORK.sendPacket(ServerboundPunchPacket.INSTANCE);
                 Managers.NETWORK.sendPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ZERO, Direction.DOWN));
             } else {
                 mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND, blockHitResult);
-                mc.player.swing(InteractionHand.MAIN_HAND);
+                mc.player.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT, false);
             }
         }
     }

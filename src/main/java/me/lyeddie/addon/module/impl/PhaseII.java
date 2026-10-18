@@ -19,10 +19,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.protocol.game.ServerboundAttackPacket;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
-import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.network.protocol.game.ServerboundPunchPacket;
 import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.component.SwingAnimation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.inventory.ContainerInput;
@@ -158,7 +159,7 @@ public class PhaseII extends ObsidianPlacerModule {
                             Managers.NETWORK.sendPacket(new ServerboundAttackPacket(entity.getId()));
                         }
                         Managers.NETWORK.sendPacket(new ServerboundAttackPacket(entity.getId()));
-                        Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+                        Managers.NETWORK.sendPacket(ServerboundPunchPacket.INSTANCE);
                     }
                 }
 
@@ -219,9 +220,9 @@ public class PhaseII extends ObsidianPlacerModule {
             Managers.NETWORK.sendSequencedPacket(id -> new ServerboundUseItemPacket(InteractionHand.MAIN_HAND, id, yaw, pitchConfig.get()));
             Managers.PEARL.setLastThrownAngles(new float[]{yaw, pitchConfig.get()});
             if (swingConfig.get()) {
-                mc.player.swing(InteractionHand.MAIN_HAND);
+                mc.player.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT, false);
             } else {
-                Managers.NETWORK.sendPacket(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+                Managers.NETWORK.sendPacket(ServerboundPunchPacket.INSTANCE);
             }
 
             if (swapAltConfig.get()) {
@@ -358,7 +359,7 @@ public class PhaseII extends ObsidianPlacerModule {
         for (int x = Mth.floor(bb.minX); x < Mth.floor(bb.maxX) + 1; x++) {
             for (int y = Mth.floor(bb.minY); y < Mth.floor(bb.maxY) + 1; y++) {
                 for (int z = Mth.floor(bb.minZ); z < Mth.floor(bb.maxZ) + 1; z++) {
-                    if (mc.level.getBlockState(new BlockPos(x, y, z)).blocksMotion()) {
+                    if (mc.level.getBlockState(new BlockPos(x, y, z)).isSolid()) {
                         if (bb.intersects(new AABB(x, y, z, x + 1.0, y + 1.0, z + 1.0))) {
                             return true;
                         }

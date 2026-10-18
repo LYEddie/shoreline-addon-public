@@ -43,7 +43,7 @@ public class ChorusControl extends AddonModule {
                 event.cancel();
             } else if (event.packet instanceof ServerboundAcceptTeleportationPacket packet) {
                 event.cancel();
-                chorusTeleportId = packet.getId();
+                chorusTeleportId = packet.id();
             }
         }
     }

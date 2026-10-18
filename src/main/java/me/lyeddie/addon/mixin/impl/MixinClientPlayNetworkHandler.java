@@ -64,7 +64,8 @@ public abstract class MixinClientPlayNetworkHandler implements IClientPlayNetwor
             float pitch = serverRotationEvent.getPitch();
             playerEntity.setPos(position);
             playerEntity.setDeltaMovement(resolved.deltaMovement());
-            getConnection().send(new ServerboundAcceptTeleportationPacket(packet.id()));
+            getConnection().send(new ServerboundAcceptTeleportationPacket(packet.id(), playerEntity.getX(),
+                playerEntity.getY(), playerEntity.getZ(), playerEntity.getYRot(), playerEntity.getXRot()));
             getConnection().send(new ServerboundMovePlayerPacket.PosRot(playerEntity.getX(), playerEntity.getY(),
                 playerEntity.getZ(), Float.isNaN(yaw) ? playerEntity.getYRot() : yaw,
                 Float.isNaN(pitch) ? playerEntity.getXRot() : pitch, false, playerEntity.horizontalCollision));
